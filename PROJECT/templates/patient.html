@@ -108,12 +108,12 @@ Book Appointment | Hospital Management System
               </div>
             </div>
 
-            <div class="row mb-4">
+<div class="row mb-3">
               <div class="col-md-6">
                 <label for="dept" class="form-label fw-bold text-dark">Department</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
-                  <select class="form-select" id="dept" name="dept" required>
+                  <select class="form-select" id="dept" name="dept" required onchange="filterDoctors()">
                     <option value="" selected disabled hidden>Select Department</option>
                     {% for d in doct %}
                       <option value="{{ d.dept }}">{{ d.dept | capitalize }}</option>
@@ -122,6 +122,21 @@ Book Appointment | Hospital Management System
                 </div>
               </div>
               <div class="col-md-6 mt-3 mt-md-0">
+                <label for="doctor" class="form-label fw-bold text-dark">Select Doctor</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-user-md text-muted"></i></span>
+                  <select class="form-select" id="doctor" name="doctor" required disabled>
+                    <option value="" selected disabled hidden>Choose a Specialist</option>
+                    {% for d in doct %}
+                      <option value="{{ d.doctorname }}" data-dept="{{ d.dept }}">Dr. {{ d.doctorname | capitalize }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-12">
                 <label for="gender" class="form-label fw-bold text-dark">Gender</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
@@ -149,4 +164,39 @@ Book Appointment | Hospital Management System
   </div>
 
 </div>
+
+<script>
+  function filterDoctors() {
+    // 1. Get the currently selected department
+    const selectedDept = document.getElementById("dept").value;
+    
+    // 2. Get the doctor dropdown and all its options
+    const doctorDropdown = document.getElementById("doctor");
+    const doctorOptions = doctorDropdown.querySelectorAll("option");
+    
+    // 3. Enable the doctor dropdown now that a department is chosen
+    doctorDropdown.disabled = false;
+    
+    // 4. Reset the doctor dropdown to the default placeholder
+    doctorDropdown.value = "";
+    
+    // 5. Loop through every doctor option
+    doctorOptions.forEach(option => {
+      // Always show the default "Choose a Specialist" option
+      if (option.value === "") {
+        option.style.display = "block";
+        return;
+      }
+      
+      // If the doctor's hidden data-dept matches the selected department, show them!
+      // Otherwise, hide them.
+      if (option.getAttribute("data-dept") === selectedDept) {
+        option.style.display = "block";
+      } else {
+        option.style.display = "none";
+      }
+    });
+  }
+</script>
+
 {% endblock body %}

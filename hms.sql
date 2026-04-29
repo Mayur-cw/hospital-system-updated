@@ -41,9 +41,11 @@ CREATE TABLE patients (
   time TIME NOT NULL,
   date DATE NOT NULL,
   dept VARCHAR(50) NOT NULL,
+  doctor VARCHAR(100) NOT NULL AFTER dept,
   number VARCHAR(12) NOT NULL,
   PRIMARY KEY (pid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- --------------------------------------------------------
 

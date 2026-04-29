@@ -85,15 +85,35 @@ Edit Booking | Hospital Management System
               </div>
             </div>
 
-            <div class="row mb-4">
+<div class="row mb-3">
               <div class="col-md-6">
                 <label for="dept" class="form-label fw-bold text-dark">Department</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
-                  <input type="text" class="form-control" id="dept" name="dept" value="{{ posts.dept }}" required>
+                  <select class="form-select" id="dept" name="dept" required onchange="filterDoctors(true)">
+                    {% for d in doct %}
+                      <option value="{{ d.dept }}" {% if posts.dept == d.dept %}selected{% endif %}>{{ d.dept | capitalize }}</option>
+                    {% endfor %}
+                  </select>
                 </div>
               </div>
+              
               <div class="col-md-6 mt-3 mt-md-0">
+                <label for="doctor" class="form-label fw-bold text-dark">Select Doctor</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-user-md text-muted"></i></span>
+                  <select class="form-select" id="doctor" name="doctor" required>
+                    <option value="" disabled hidden>Choose a Specialist</option>
+                    {% for d in doct %}
+                      <option value="{{ d.doctorname }}" data-dept="{{ d.dept }}" {% if posts.doctor == d.doctorname %}selected{% endif %}>Dr. {{ d.doctorname | capitalize }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-4 justify-content-center">
+              <div class="col-md-6">
                 <label for="gender" class="form-label fw-bold text-dark">Gender</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
@@ -108,7 +128,7 @@ Edit Booking | Hospital Management System
             </div>
 
             <div class="d-grid mt-2">
-              <button type="submit" class="btn btn-warning btn-lg shadow-sm fw-bold">
+              <button type="submit" class="btn btn-warning btn-lg shadow-sm fw-bold text-dark">
                 <i class="fas fa-save me-2"></i> Update Appointment
               </button>
             </div>
@@ -121,4 +141,40 @@ Edit Booking | Hospital Management System
   </div>
 
 </div>
+
+<script>
+  // ADDED: isManualChange parameter (defaults to false for page load)
+  function filterDoctors(isManualChange = false) {
+    const selectedDept = document.getElementById("dept").value;
+    const doctorDropdown = document.getElementById("doctor");
+    const doctorOptions = doctorDropdown.querySelectorAll("option");
+    
+    // If the user actively clicked a new department, wipe the old doctor selection!
+    if (isManualChange) {
+      doctorDropdown.value = "";
+    }
+    
+    // Loop through every doctor option
+    doctorOptions.forEach(option => {
+      // Always keep the blank placeholder option visible
+      if (option.value === "") {
+         option.style.display = "block";
+         return;
+      }
+
+      // Show/hide based on department
+      if (option.getAttribute("data-dept") === selectedDept) {
+        option.style.display = "block";
+      } else {
+        option.style.display = "none";
+      }
+    });
+  }
+
+  // Run on page load WITHOUT resetting the existing doctor (isManualChange = false)
+  document.addEventListener("DOMContentLoaded", function() {
+    filterDoctors(false);
+  });
+</script>
+
 {% endblock body %}
