@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Book Appointment | Hospital Management System
+{% endblock title %}
+
+{% block body %}
+<div class="container mt-5 mb-5">
+  
+  <div class="row align-items-start">
+    
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm border-0">
+        <img src="static/images/doc.jpg" class="card-img-top" alt="Hospital Doctors" style="height: 200px; object-fit: cover;">
+        <div class="card-body bg-dark text-white">
+          <h5 class="card-title fw-bold mb-0"><i class="fas fa-user-md me-2"></i>Our Specialists</h5>
+          <p class="card-text text-light small mt-1">Available departments for booking.</p>
+        </div>
+        
+        <ul class="list-group list-group-flush">
+          {% for d in doct %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold text-secondary">Dr. {{ d.doctorname | capitalize }}</span>
+              <span class="badge bg-primary rounded-pill">{{ d.dept | capitalize }}</span>
+            </li>
+          {% else %}
+            <li class="list-group-item text-muted text-center py-3">No doctors currently listed.</li>
+          {% endfor %}
+        </ul>
+        
+        <div class="card-body text-center bg-light">
+          <span class="text-muted fw-bold"><i class="fas fa-phone-alt me-2"></i>Contact Front Desk for Help</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="card shadow border-0">
+        <div class="card-header bg-primary text-white py-3">
+          <h4 class="mb-0 text-center fw-bold"><i class="fas fa-calendar-plus me-2"></i>Book Your Slot</h4>
+        </div>
+        
+        <div class="card-body p-4 bg-light">
+          <form action="/patients" method="POST">
+            
+            <input type="hidden" name="slot" value="Scheduled">
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="name" class="form-label fw-bold text-dark">Full Name</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
+                  <input type="text" class="form-control" id="name" name="name" placeholder="Enter patient name" required>
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label for="email" class="form-label fw-bold text-dark">Email Address</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-envelope text-muted"></i></span>
+                  <input type="email" class="form-control bg-light" id="email" name="email" value="{{ current_user.email }}" readonly required>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="number" class="form-label fw-bold text-dark">Phone Number</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-phone text-muted"></i></span>
+                  <input type="text" class="form-control" id="number" name="number" placeholder="10-digit number" pattern="\d{10}" title="Please enter exactly 10 digits" required>
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label for="disease" class="form-label fw-bold text-dark">Disease / Symptoms</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-notes-medical text-muted"></i></span>
+                  <input type="text" class="form-control" id="disease" name="disease" placeholder="e.g., Fever, Cold" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="date" class="form-label fw-bold text-dark">Preferred Date</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-calendar-day text-muted"></i></span>
+                  <input type="date" class="form-control" id="date" name="date" required>
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label for="time" class="form-label fw-bold text-dark">Preferred Time</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-clock text-muted"></i></span>
+                  <input type="time" class="form-control" id="time" name="time" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label for="dept" class="form-label fw-bold text-dark">Department</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
+                  <select class="form-select" id="dept" name="dept" required>
+                    <option value="" selected disabled hidden>Select Department</option>
+                    {% for d in doct %}
+                      <option value="{{ d.dept }}">{{ d.dept | capitalize }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label for="gender" class="form-label fw-bold text-dark">Gender</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
+                  <select class="form-select" id="gender" name="gender" required>
+                    <option value="" selected disabled hidden>Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Others">Others</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-grid mt-2">
+              <button type="submit" id="btn" class="btn btn-primary btn-lg shadow-sm fw-bold">
+                <i class="fas fa-check-circle me-2"></i> Confirm Booking
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock body %}

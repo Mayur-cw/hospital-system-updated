@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Edit Booking | Hospital Management System
+{% endblock title %}
+
+{% block body %}
+<div class="container mt-5 mb-5">
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+      
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="card shadow border-0 mt-3">
+        
+        <div class="card-header bg-warning text-dark text-center py-3">
+          <h4 class="mb-0 fw-bold"><i class="fas fa-edit me-2"></i>Update Booking Details</h4>
+        </div>
+        
+        <div class="card-body p-4 bg-light">
+          <p class="text-muted text-center mb-4">Modify the patient appointment details below. Make sure all fields are accurate.</p>
+          
+          <form action="/edit/{{ posts.pid }}" method="POST">
+            
+            <input type="hidden" name="slot" value="{{ posts.slot }}">
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="name" class="form-label fw-bold text-dark">Full Name</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
+                  <input type="text" class="form-control" id="name" name="name" value="{{ posts.name }}" required>
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label for="email" class="form-label fw-bold text-dark">Email Address</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-envelope text-muted"></i></span>
+                  <input type="email" class="form-control" id="email" name="email" value="{{ posts.email }}" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="number" class="form-label fw-bold text-dark">Phone Number</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-phone text-muted"></i></span>
+                  <input type="text" class="form-control" id="number" name="number" value="{{ posts.number }}" pattern="\d{10}" title="Please enter exactly 10 digits" required>
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label for="disease" class="form-label fw-bold text-dark">Disease / Symptoms</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-notes-medical text-muted"></i></span>
+                  <input type="text" class="form-control" id="disease" name="disease" value="{{ posts.disease }}" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="date" class="form-label fw-bold text-dark">Appointment Date</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-calendar-day text-muted"></i></span>
+                  <input type="date" class="form-control" id="date" name="date" value="{{ posts.date }}" required>
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label for="time" class="form-label fw-bold text-dark">Appointment Time</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-clock text-muted"></i></span>
+                  <input type="time" class="form-control" id="time" name="time" value="{{ posts.time }}" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label for="dept" class="form-label fw-bold text-dark">Department</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
+                  <input type="text" class="form-control" id="dept" name="dept" value="{{ posts.dept }}" required>
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label for="gender" class="form-label fw-bold text-dark">Gender</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
+                  <select class="form-select" id="gender" name="gender" required>
+                    <option value="{{ posts.gender }}" selected hidden>{{ posts.gender }}</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Others">Others</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-grid mt-2">
+              <button type="submit" class="btn btn-warning btn-lg shadow-sm fw-bold">
+                <i class="fas fa-save me-2"></i> Update Appointment
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock body %}

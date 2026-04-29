@@ -1,0 +1,161 @@
+.section-title {
+    text-align: center;
+    /* padding-bottom: 30px; */
+}
+
+.pricing .row {
+    padding-top: 0px;
+}
+
+.card {
+    margin-top: 57px;
+    border-radius: 8px 40px 40px 8px;
+    transition: all 0.5s ease-in-out;
+    box-shadow: 1px 0px 8px 2px greenyellow;
+}
+
+.bg-dark {
+    background-color: #63d471;
+    background-image: linear-gradient(315deg, #63d471 0%, #233329 74%);
+}
+
+label {
+    color: white;
+    margin-top: 15px;
+    font-family: 'Itim', cursive;
+}
+
+.jumbotron {
+    background-color: #63d471;
+    background-image: linear-gradient(315deg, #63d471 0%, #233329 74%);
+}
+
+#gender {
+    width: 300px;
+}
+
+#slot {
+    width: 300px;
+}
+
+#dept {
+    width: 300px;
+}
+
+.form-group input {
+    width: 300px;
+    border: none;
+    /* border-bottom: 1px solid purple; */
+    border-bottom: 2px solid green;
+    outline: none;
+    font-size: 22px;
+    margin-bottom: 5px;
+    font-family: 'Itim', cursive;
+}
+
+option {
+    width: 400px;
+    border: none;
+    border-bottom: 2px solid green;
+    outline: none;
+    font-size: 22px;
+    margin-bottom: 5px;
+}
+
+.form-group input:hover {
+    background-color: ghostwhite;
+}
+
+#btn {
+    background-color: #63d471;
+    background-image: linear-gradient(315deg, #63d471 0%, #233329 74%);
+    border-radius: 15px;
+    border: none;
+    position: relative;
+    width: 300px;
+}
+
+#btn:hover {
+    background-color: white;
+    color: white;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+#btn {
+    background-color: #63d471;
+    background-image: linear-gradient(315deg, #63d471 0%, #233329 74%);
+    border-radius: 25px; /* Softer pill shape */
+    border: none;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+#btn:hover {
+    background-color: white;
+    background-image: none; /* Remove gradient on hover */
+    color: #233329; /* Fixed invisible text bug: text is now dark green on hover */
+    box-shadow: 0 4px 10px rgba(99, 212, 113, 0.4);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   Modern SaaS Vibe (index.html components)
+   ========================================================================== */
+.hero-section {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.9) 0%, rgba(10, 88, 202, 0.95) 100%), url('../bg_sharp.jpg');
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: 100px 0;
+    border-bottom-left-radius: 50px;
+    border-bottom-right-radius: 50px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+}
+
+.feature-icon {
+    width: 60px;
+    height: 60px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   Navbar Glass Search Bar Fix
+   ========================================================================== */
+.glass-search {
+    background-color: rgba(255, 255, 255, 0.08) !important; /* Semi-transparent white */
+    backdrop-filter: blur(10px); /* The blur effect */
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 20px !important; /* Overrides the flat bottom border */
+    color: #ffffff !important;
+    padding: 8px 20px !important;
+}
+
+/* Make sure the placeholder text is visible */
+.glass-search::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* When the user clicks the search bar */
+.glass-search:focus {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(13, 110, 253, 0.8) !important;
+    box-shadow: 0 0 15px rgba(13, 110, 253, 0.4) !important;
+    color: #ffffff !important;
+}
