@@ -1,102 +1,55 @@
+/* ==========================================================================
+   Import Custom Fonts
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Itim&display=swap');
+
+body {
+    font-family: 'Itim', cursive, sans-serif; 
+}
+
 .section-title {
     text-align: center;
-    /* padding-bottom: 30px; */
-}
-
-.pricing .row {
-    padding-top: 0px;
-}
-
-.card {
-    margin-top: 57px;
-    border-radius: 8px 40px 40px 8px;
-    transition: all 0.5s ease-in-out;
-    box-shadow: 1px 0px 8px 2px greenyellow;
-}
-
-.bg-dark {
-    background-color: #63d471;
-    background-image: linear-gradient(315deg, #63d471 0%, #233329 74%);
-}
-
-label {
-    color: white;
-    margin-top: 15px;
-    font-family: 'Itim', cursive;
-}
-
-.jumbotron {
-    background-color: #63d471;
-    background-image: linear-gradient(315deg, #63d471 0%, #233329 74%);
-}
-
-#gender {
-    width: 300px;
-}
-
-#slot {
-    width: 300px;
-}
-
-#dept {
-    width: 300px;
-}
-
-.form-group input {
-    width: 300px;
-    border: none;
-    /* border-bottom: 1px solid purple; */
-    border-bottom: 2px solid green;
-    outline: none;
-    font-size: 22px;
-    margin-bottom: 5px;
-    font-family: 'Itim', cursive;
-}
-
-option {
-    width: 400px;
-    border: none;
-    border-bottom: 2px solid green;
-    outline: none;
-    font-size: 22px;
-    margin-bottom: 5px;
-}
-
-.form-group input:hover {
-    background-color: ghostwhite;
-}
-
-#btn {
-    background-color: #63d471;
-    background-image: linear-gradient(315deg, #63d471 0%, #233329 74%);
-    border-radius: 15px;
-    border: none;
-    position: relative;
-    width: 300px;
-}
-
-#btn:hover {
-    background-color: white;
-    color: white;
 }
 
 /* ==========================================================================
-   Buttons
+   Form Customizations
+   ========================================================================== */
+.form-group input, 
+.form-control,
+.form-select {
+    border: none;
+    border-bottom: 2px solid #0d6efd; 
+    border-radius: 0; 
+    background-color: transparent;
+    outline: none;
+    font-size: 1.1rem;
+    padding-left: 0;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus, 
+.form-control:focus,
+.form-select:focus {
+    box-shadow: none;
+    border-bottom: 2px solid #0a58ca;
+    background-color: ghostwhite;
+}
+
+/* ==========================================================================
+   Buttons (Medical Blue Theme)
    ========================================================================== */
 #btn {
-    background-color: #63d471;
-    background-image: linear-gradient(315deg, #63d471 0%, #233329 74%);
-    border-radius: 25px; /* Softer pill shape */
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border-radius: 25px; 
     border: none;
     color: white;
     transition: all 0.3s ease;
 }
 
 #btn:hover {
-    background-color: white;
-    background-image: none; /* Remove gradient on hover */
-    color: #233329; /* Fixed invisible text bug: text is now dark green on hover */
-    box-shadow: 0 4px 10px rgba(99, 212, 113, 0.4);
+    background: white;
+    color: #0d6efd; 
+    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.4);
     transform: translateY(-2px);
 }
 
@@ -104,11 +57,12 @@ option {
    Modern SaaS Vibe (index.html components)
    ========================================================================== */
 .hero-section {
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.9) 0%, rgba(10, 88, 202, 0.95) 100%), url('../bg_sharp.jpg');
+    /* Updated to the newest transparency, correct image, and 60px top padding */
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.45) 0%, rgba(10, 88, 202, 0.6) 100%), url('/static/bg1.jpg');
     background-size: cover;
     background-position: center;
     color: white;
-    padding: 100px 0;
+    padding: 60px 0 100px 0;
     border-bottom-left-radius: 50px;
     border-bottom-right-radius: 50px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
@@ -135,27 +89,75 @@ option {
 }
 
 /* ==========================================================================
-   Navbar Glass Search Bar Fix
+   Navbar Glass Search Bar (Enhanced for Dark Navbar)
    ========================================================================== */
 .glass-search {
-    background-color: rgba(255, 255, 255, 0.08) !important; /* Semi-transparent white */
-    backdrop-filter: blur(10px); /* The blur effect */
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 20px !important; /* Overrides the flat bottom border */
+    background-color: rgba(255, 255, 255, 0.2) !important; 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4) !important; 
+    border-radius: 20px !important;
     color: #ffffff !important;
     padding: 8px 20px !important;
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1) !important; 
 }
 
-/* Make sure the placeholder text is visible */
 .glass-search::placeholder {
-    color: rgba(255, 255, 255, 0.7) !important;
+    color: rgba(255, 255, 255, 0.9) !important; 
 }
 
-/* When the user clicks the search bar */
 .glass-search:focus {
-    background-color: rgba(255, 255, 255, 0.15) !important;
-    border: 1px solid rgba(13, 110, 253, 0.8) !important;
-    box-shadow: 0 0 15px rgba(13, 110, 253, 0.4) !important;
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    border: 1px solid rgba(13, 110, 253, 0.9) !important;
+    box-shadow: 0 0 15px rgba(13, 110, 253, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2) !important;
     color: #ffffff !important;
+}
+
+
+/* ==========================================================================
+   Glossy Effect (Database Capabilities Section)
+   ========================================================================== */
+.glossy-panel {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(240, 245, 255, 0.6) 100%);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    /* The white top-border and inset shadow create the "glass reflection" */
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-top: 2px solid #ffffff; 
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.04), inset 0 10px 20px rgba(255, 255, 255, 0.8);
+}
+
+.glossy-icon {
+    /* Makes the dark icons look like polished plastic/glass */
+    background: linear-gradient(135deg, #343a40 0%, #1a1d20 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), inset 0 2px 5px rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+
+/* ==========================================================================
+   Navbar Left-to-Right Fade Effect
+   ========================================================================== */
+.navbar {
+    /* Fades from deep charcoal on the left to a softer slate/blue on the right */
+    background: linear-gradient(to right, #15171a 0%, #2b3441 100%) !important;
+    
+    /* Adds a tiny, almost invisible white line at the bottom for crisp separation */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    
+    /* Optional: A soft shadow so it floats above the hero section */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ==========================================================================
+   Footer Left-to-Right Fade Effect (Matches Navbar)
+   ========================================================================== */
+footer {
+    /* Fades from deep charcoal to slate/blue, exactly like the navbar */
+    background: linear-gradient(to right, #15171a 0%, #2b3441 100%) !important;
+    
+    /* Adds the crisp white line to the TOP to separate it from the page content */
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
 }

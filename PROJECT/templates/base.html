@@ -55,7 +55,7 @@
                         
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-user-circle me-1"></i> {{ current_user.username }}
+                              <i class="fas fa-user-circle me-1"></i> Welcome, {{ current_user.username | capitalize }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
@@ -95,7 +95,7 @@
             <p class="mb-1 text-light" style="opacity: 0.8;">A DBMS Mini-Project Developed By:</p>
             <h3 class="fw-bold mb-3">Vedant, Pawan & Mayur</h3>
             <hr class="border-secondary mx-auto" style="width: 50%;">
-            <small class="text-muted">&copy; 2026 HMS Database Project. Built with Flask & MySQL.</small>
+            <small class="mb-1 text-light" style="opacity: 0.8;">&copy; 2026 HMS Database Project. Built with Flask & MySQL.</small>
         </div>
     </footer>
     

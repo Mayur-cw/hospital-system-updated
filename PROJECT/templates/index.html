@@ -4,41 +4,6 @@
 Home | Hospital Management System
 {% endblock title %}
 
-{% block css %}
-<style>
-  /* Custom CSS for modern SaaS vibe */
-  .hero-section {
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.7) 0%, rgba(10, 88, 202, 0.8) 100%), url('static/bg1.jpg');
-    background-size: cover;
-    background-position: center;
-    color: white;
-    padding: 100px 0;
-    border-bottom-left-radius: 50px;
-    border-bottom-right-radius: 50px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  }
-  
-  .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-  
-  .hover-lift:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
-  }
-
-  .feature-icon {
-    width: 60px;
-    height: 60px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 15px;
-    font-size: 24px;
-    margin-bottom: 20px;
-  }
-</style>
-{% endblock css %}
 
 {% block body %}
 
@@ -77,7 +42,7 @@ Home | Hospital Management System
   </div>
 </section>
 
-<div class="container mb-5" style="margin-top: -60px; position: relative; z-index: 10;">
+<div class="container mb-5" style="margin-top: -125px; position: relative; z-index: 10;">
   <div class="row text-center justify-content-center">
     
     <div class="col-md-4 mb-4">
@@ -130,34 +95,34 @@ Home | Hospital Management System
   </div>
 </div>
 
-<div class="bg-light py-5 mb-5 rounded-4 shadow-sm container">
+<div class="py-5 mb-5 rounded-4 container glossy-panel">
   <div class="text-center mb-5">
-    <h3 class="fw-bold">Database Core Capabilities</h3>
+    <h3 class="fw-bold text-dark">Database Core Capabilities</h3>
     <p class="text-muted">Built with Flask, SQLAlchemy, and pure MySQL logic.</p>
   </div>
   
   <div class="row text-center px-4">
     <div class="col-md-4 mb-4">
-      <div class="feature-icon bg-dark text-white shadow">
+      <div class="feature-icon glossy-icon">
         <i class="fas fa-bolt"></i>
       </div>
-      <h5 class="fw-bold">Automated Triggers</h5>
-      <p class="text-muted small">Real-time audit logging using MySQL <code>AFTER INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code> triggers.</p>
+      <h5 class="fw-bold text-dark">Automated Triggers</h5>
+      <p class="text-muted small">Real-time audit logging using MySQL <code class="text-danger bg-white border px-1 rounded">AFTER INSERT</code>, <code class="text-danger bg-white border px-1 rounded">UPDATE</code>, and <code class="text-danger bg-white border px-1 rounded">DELETE</code> triggers.</p>
     </div>
     
     <div class="col-md-4 mb-4">
-      <div class="feature-icon bg-dark text-white shadow">
+      <div class="feature-icon glossy-icon">
         <i class="fas fa-shield-alt"></i>
       </div>
-      <h5 class="fw-bold">Role-Based Security</h5>
+      <h5 class="fw-bold text-dark">Role-Based Security</h5>
       <p class="text-muted small">Strict routing protocols separating Doctor and Patient privileges using Flask-Login.</p>
     </div>
     
     <div class="col-md-4 mb-4">
-      <div class="feature-icon bg-dark text-white shadow">
+      <div class="feature-icon glossy-icon">
         <i class="fas fa-network-wired"></i>
       </div>
-      <h5 class="fw-bold">Relational Integrity</h5>
+      <h5 class="fw-bold text-dark">Relational Integrity</h5>
       <p class="text-muted small">Optimized table schemas ensuring zero data redundancy and isolated department logic.</p>
     </div>
   </div>
