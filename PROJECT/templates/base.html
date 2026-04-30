@@ -44,9 +44,7 @@
                             
                         <!-- 👨‍⚕️ DOCTOR LINKS -->
                         {% elif current_user.usertype == "Doctor" %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="/doctors">Directory</a>
-                            </li>
+                            <!-- Removed the Directory link from here! -->
                             <li class="nav-item">
                                 <a class="nav-link" href="/upcoming_bookings">My Schedule</a>
                             </li>
@@ -73,9 +71,7 @@
                               <i class="fas fa-user-circle me-1 text-primary"></i> {{ current_user.username | capitalize }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="userDropdown">
-                                <!-- NEW PROFILE LINK -->
                                 <li><a class="dropdown-item" href="/profile"><i class="fas fa-user-cog me-2"></i>My Profile</a></li>
-                                
                                 <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-history me-2"></i>All History</a></li>
                                 <li><hr class="dropdown-divider border-secondary"></li>
                                 <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
@@ -96,7 +92,13 @@
                 </ul>
 
                 <form class="d-flex" action="/search" method="post">
-                    <input class="form-control me-2 glass-search" type="search" placeholder="Search Doctor/Dept" name="search" aria-label="Search" required>
+                    <!-- 🚨 NEW SMART SEARCH BAR -->
+                    {% if current_user.is_authenticated and current_user.usertype == 'Doctor' %}
+                        <input class="form-control me-2 glass-search" type="search" placeholder="Search Patient Name..." name="search" aria-label="Search" required>
+                    {% else %}
+                        <input class="form-control me-2 glass-search" type="search" placeholder="Search Doctor/Dept" name="search" aria-label="Search" required>
+                    {% endif %}
+                    
                     <button class="btn btn-primary rounded-circle shadow-sm" type="submit" style="width: 42px; height: 42px; padding: 0;">
                         <i class="fas fa-search"></i>
                     </button>

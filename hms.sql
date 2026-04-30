@@ -50,7 +50,7 @@ CREATE TABLE appointments (
   gender VARCHAR(50) NOT NULL,
   slot VARCHAR(50) NOT NULL,
   disease VARCHAR(50) NOT NULL,
-  time TIME NOT NULL,
+  time VARCHAR(50) NOT NULL,  -- <-- THIS IS THE CHANGED LINE
   date DATE NOT NULL,
   dept VARCHAR(50) NOT NULL,
   doctor VARCHAR(100) NOT NULL,

@@ -62,7 +62,6 @@ Book Appointment | Hospital Management System
                 <label for="name" class="form-label fw-bold text-dark">Full Name</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
-                  <!-- ADDED VALUE ATTRIBUTE HERE -->
                   <input type="text" class="form-control" id="name" name="name" value="{{ current_user.username }}" placeholder="Enter patient name" required>
                 </div>
               </div>
@@ -75,12 +74,11 @@ Book Appointment | Hospital Management System
               </div>
             </div>
 
-<div class="row mb-3">
+            <div class="row mb-3">
               <div class="col-md-6">
                 <label for="number" class="form-label fw-bold text-dark">Phone Number</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-phone text-muted"></i></span>
-                  <!-- ADDED VALUE AUTO-FILL -->
                   <input type="text" class="form-control" id="number" name="number" value="{{ current_user.phone if current_user.phone != None else '' }}" placeholder="10-digit number" pattern="\d{10}" title="Please enter exactly 10 digits" required>
                 </div>
               </div>
@@ -88,7 +86,6 @@ Book Appointment | Hospital Management System
                 <label for="gender" class="form-label fw-bold text-dark">Gender</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
-                  <!-- UPDATED DROPDOWN TO AUTO-SELECT IF DATA EXISTS -->
                   <select class="form-select" id="gender" name="gender" required>
                     <option value="" {% if not current_user.gender %}selected{% endif %} disabled hidden>Select Gender</option>
                     <option value="Male" {% if current_user.gender == 'Male' %}selected{% endif %}>Male</option>
@@ -174,7 +171,6 @@ Book Appointment | Hospital Management System
     const doctorDropdown = document.getElementById("doctor");
     const doctorOptions = doctorDropdown.querySelectorAll("option");
     
-    // Wipe the time slots if the user manually changes the department
     if (isManualChange) {
       doctorDropdown.disabled = false;
       doctorDropdown.value = "";
@@ -195,11 +191,10 @@ Book Appointment | Hospital Management System
     });
   }
 
-  // Run automatically on page load to handle URL pre-filling!
   document.addEventListener("DOMContentLoaded", function() {
     const deptDropdown = document.getElementById("dept");
     if (deptDropdown.value) {
-        filterDoctors(false); // Filter list but keep the pre-filled doctor!
+        filterDoctors(false); 
     }
   });
 </script>
@@ -215,7 +210,6 @@ Book Appointment | Hospital Management System
     const doctorStr = document.getElementById('doctor').value;
     const slotContainer = document.getElementById('slot-container');
 
-    // Only proceed if BOTH date and doctor are selected
     if (!dateStr || !doctorStr || doctorStr === "") {
         return;
     }
@@ -230,7 +224,15 @@ Book Appointment | Hospital Management System
     .then(response => response.json())
     .then(data => {
         const bookedTimes = data.booked_times;
-        slotContainer.innerHTML = ''; // Clear container
+        slotContainer.innerHTML = ''; 
+
+        // Get current time for comparison
+        const now = new Date();
+        const selectedDateStr = document.getElementById('date').value; 
+        
+        // Check if the user selected TODAY safely
+        const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const isToday = (selectedDateStr === todayStr);
 
         allSlots.forEach(slot => {
             const btn = document.createElement('button');
@@ -238,10 +240,32 @@ Book Appointment | Hospital Management System
             btn.className = 'btn btn-sm shadow-sm border ';
             btn.innerText = slot;
 
-            if (bookedTimes.includes(slot)) {
+            // --- TIME COMPARISON LOGIC ---
+            let isPastTime = false;
+            if (isToday) {
+                let [timePart, modifier] = slot.split(' ');
+                let [hours, minutes] = timePart.split(':');
+                hours = parseInt(hours, 10);
+                
+                if (hours === 12 && modifier === 'AM') hours = 0;
+                if (modifier === 'PM' && hours < 12) hours += 12;
+                
+                const slotDateTime = new Date();
+                slotDateTime.setHours(hours, parseInt(minutes, 10), 0, 0);
+                
+                if (slotDateTime < now) {
+                    isPastTime = true;
+                }
+            }
+
+            // Disable if booked OR past time today
+            if (bookedTimes.includes(slot) || isPastTime) {
                 btn.classList.add('btn-light', 'text-muted');
                 btn.disabled = true;
                 btn.style.textDecoration = 'line-through';
+                if (isPastTime && !bookedTimes.includes(slot)) {
+                    btn.title = "This time has already passed";
+                }
             } else {
                 btn.classList.add('btn-outline-primary', 'fw-bold');
                 btn.onclick = function() {
@@ -270,6 +294,14 @@ Book Appointment | Hospital Management System
     clickedBtn.classList.remove('btn-outline-primary');
     clickedBtn.classList.add('btn-primary', 'text-white');
   }
+</script>
+
+<script>
+  // Automatically restrict the date picker to Today and future dates
+  document.addEventListener("DOMContentLoaded", function() {
+    let today = new Date().toISOString().split('T')[0];
+    document.getElementById("date").setAttribute("min", today);
+  });
 </script>
 
 {% endblock body %}

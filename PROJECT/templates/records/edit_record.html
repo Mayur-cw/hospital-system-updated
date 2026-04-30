@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}
-Write Prescription | Hospital Management System
+Edit Prescription | Hospital Management System
 {% endblock title %}
 
 {% block body %}
@@ -10,22 +10,11 @@ Write Prescription | Hospital Management System
   <!-- Header -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-      <h3 class="fw-bold text-primary mb-1"><i class="fas fa-file-signature me-2"></i>Patient Chart & Prescription</h3>
-      <p class="text-muted small mb-0">Fill out the official medical record to mark this appointment as completed.</p>
+      <h3 class="fw-bold text-primary mb-1"><i class="fas fa-user-edit me-2"></i>Edit Patient Chart</h3>
+      <p class="text-muted small mb-0">Update the official medical record and prescription details.</p>
     </div>
-    <a href="/" class="btn btn-outline-secondary rounded-pill shadow-sm"><i class="fas fa-arrow-left me-2"></i>Back to Queue</a>
+    <a href="/past_records" class="btn btn-outline-secondary rounded-pill shadow-sm"><i class="fas fa-arrow-left me-2"></i>Back to History</a>
   </div>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
 
   <div class="row">
     
@@ -45,10 +34,6 @@ Write Prescription | Hospital Management System
           </div>
 
           <ul class="list-group list-group-flush rounded-3 shadow-sm border-0">
-            <li class="list-group-item d-flex justify-content-between align-items-center bg-white p-3">
-              <span class="text-muted small fw-bold text-uppercase"><i class="fas fa-venus-mars me-2"></i>Gender</span>
-              <span class="fw-bold">{{ appointment.gender }}</span>
-            </li>
             <li class="list-group-item d-flex justify-content-between align-items-center bg-white p-3">
               <span class="text-muted small fw-bold text-uppercase"><i class="fas fa-calendar-day me-2"></i>Date</span>
               <span class="fw-bold">{{ appointment.date }}</span>
@@ -72,29 +57,32 @@ Write Prescription | Hospital Management System
       <div class="card border-0 shadow-lg rounded-4">
         <div class="card-body p-5">
           
-          <form action="/add_record/{{ appointment.apt_id }}" method="POST">
+          <form action="/edit_record/{{ appointment.apt_id }}" method="POST">
             
             <div class="mb-4">
               <label for="diagnosis" class="form-label fw-bold text-dark fs-5"><i class="fas fa-stethoscope text-primary me-2"></i>Official Diagnosis <span class="text-danger">*</span></label>
-              <textarea class="form-control form-control-lg bg-light border-0 shadow-sm" id="diagnosis" name="diagnosis" rows="3" placeholder="Enter the final diagnosis (e.g., Acute Viral Pharyngitis)" required></textarea>
+              <!-- Pre-filled with record.diagnosis -->
+              <textarea class="form-control form-control-lg bg-light border-0 shadow-sm" id="diagnosis" name="diagnosis" rows="3" required>{{ record.diagnosis }}</textarea>
             </div>
 
             <div class="mb-4">
               <label for="prescription" class="form-label fw-bold text-dark fs-5"><i class="fas fa-pills text-success me-2"></i>Prescription & Medications <span class="text-danger">*</span></label>
-              <textarea class="form-control form-control-lg bg-light border-0 shadow-sm" id="prescription" name="prescription" rows="4" placeholder="List medications, dosage, and frequency (e.g., Amoxicillin 500mg, 1 tablet twice daily for 7 days)" required></textarea>
+              <!-- Pre-filled with record.prescription -->
+              <textarea class="form-control form-control-lg bg-light border-0 shadow-sm" id="prescription" name="prescription" rows="4" required>{{ record.prescription }}</textarea>
             </div>
 
             <div class="mb-5">
-              <label for="notes" class="form-label fw-bold text-dark fs-5"><i class="fas fa-clipboard text-warning me-2"></i>Additional Notes / Advice <span class="text-muted fs-6 fw-normal">(Optional)</span></label>
-              <textarea class="form-control bg-light border-0 shadow-sm" id="notes" name="notes" rows="2" placeholder="e.g., Drink plenty of fluids, rest, avoid cold beverages."></textarea>
+              <label for="notes" class="form-label fw-bold text-dark fs-5"><i class="fas fa-clipboard text-warning me-2"></i>Additional Notes / Advice</label>
+              <!-- Pre-filled with record.notes -->
+              <textarea class="form-control bg-light border-0 shadow-sm" id="notes" name="notes" rows="2">{{ record.notes }}</textarea>
             </div>
 
             <hr class="text-muted mb-4">
 
             <div class="d-flex justify-content-end gap-3">
-                <a href="/" class="btn btn-light btn-lg px-4 fw-bold">Cancel</a>
+                <a href="/past_records" class="btn btn-light btn-lg px-4 fw-bold">Cancel</a>
                 <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm fw-bold">
-                    <i class="fas fa-check-circle me-2"></i> Finalize & Mark Completed
+                    <i class="fas fa-save me-2"></i> Save Changes
                 </button>
             </div>
 

@@ -144,7 +144,6 @@ Edit Booking | Hospital Management System
     const doctorDropdown = document.getElementById("doctor");
     const doctorOptions = doctorDropdown.querySelectorAll("option");
     
-    // If the user manually changes the department, reset the doctor and time
     if (isManualChange) {
       doctorDropdown.disabled = false;
       doctorDropdown.value = "";
@@ -174,7 +173,7 @@ Edit Booking | Hospital Management System
     const dateStr = document.getElementById('date').value;
     const doctorStr = document.getElementById('doctor').value;
     const slotContainer = document.getElementById('slot-container');
-    const existingTime = document.getElementById('selected_time').value;
+    const existingTime = "{{ posts.time }}"; // Get the original time from the backend
 
     if (!dateStr || !doctorStr || doctorStr === "") {
         return;
@@ -182,14 +181,12 @@ Edit Booking | Hospital Management System
 
     slotContainer.innerHTML = '<span class="text-primary small"><i class="fas fa-spinner fa-spin me-1"></i> Loading availability...</span>';
 
-    // Fetch API: Pass the current_pid so the user's own slot isn't blocked!
     fetch('/get_booked_slots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             date: dateStr, 
             doctor: doctorStr,
-            // 🔄 UPDATED: posts.apt_id
             current_pid: "{{ posts.apt_id }}" 
         })
     })
@@ -198,21 +195,55 @@ Edit Booking | Hospital Management System
         const bookedTimes = data.booked_times;
         slotContainer.innerHTML = ''; 
 
+        // Get current time for comparison
+        const now = new Date();
+        const selectedDateStr = document.getElementById('date').value; 
+        
+        // Check if the user selected TODAY safely
+        const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const isToday = (selectedDateStr === todayStr);
+
         allSlots.forEach(slot => {
             const btn = document.createElement('button');
             btn.type = 'button'; 
             btn.className = 'btn btn-sm shadow-sm border ';
             btn.innerText = slot;
 
-            if (bookedTimes.includes(slot)) {
+            // --- TIME COMPARISON LOGIC ---
+            let isPastTime = false;
+            if (isToday) {
+                let [timePart, modifier] = slot.split(' ');
+                let [hours, minutes] = timePart.split(':');
+                hours = parseInt(hours, 10);
+                
+                if (hours === 12 && modifier === 'AM') hours = 0;
+                if (modifier === 'PM' && hours < 12) hours += 12;
+                
+                const slotDateTime = new Date();
+                slotDateTime.setHours(hours, parseInt(minutes, 10), 0, 0);
+                
+                if (slotDateTime < now) {
+                    isPastTime = true;
+                }
+            }
+
+            // SMART EDIT CHECK: Don't disable the slot if it is THEIR exact original slot on their original date
+            const isExistingSlot = (slot === existingTime && selectedDateStr === "{{ posts.date }}");
+
+            // Disable if booked OR (past time today AND it's not their existing slot)
+            if (bookedTimes.includes(slot) || (isPastTime && !isExistingSlot)) {
                 btn.classList.add('btn-light', 'text-muted');
                 btn.disabled = true;
                 btn.style.textDecoration = 'line-through';
+                
+                if (isPastTime && !bookedTimes.includes(slot) && !isExistingSlot) {
+                    btn.title = "This time has already passed";
+                }
             } else {
                 btn.classList.add('btn-outline-primary', 'fw-bold');
                 
                 // If this slot matches their currently saved time, highlight it automatically!
-                if (slot === existingTime) {
+                if (slot === document.getElementById('selected_time').value) {
                     btn.classList.remove('btn-outline-primary');
                     btn.classList.add('btn-primary', 'text-white');
                 }
@@ -248,6 +279,11 @@ Edit Booking | Hospital Management System
   document.addEventListener("DOMContentLoaded", function() {
     filterDoctors(false);
     checkAvailableSlots();
+    
+    // Automatically restrict the date picker to Today and future dates
+    let today = new Date().toISOString().split('T')[0];
+    document.getElementById("date").setAttribute("min", today);
   });
 </script>
+
 {% endblock body %}
