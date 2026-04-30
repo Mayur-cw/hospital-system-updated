@@ -18,7 +18,8 @@
             <strong>Reported Symptoms:</strong> {{ appointment.disease }}
           </div>
 
-          <form action="/add_record/{{ appointment.pid }}" method="POST">
+          <!-- 🔄 UPDATED: appointment.apt_id -->
+          <form action="/add_record/{{ appointment.apt_id }}" method="POST">
             <div class="mb-3">
               <label for="diagnosis" class="form-label fw-bold text-dark">Official Diagnosis</label>
               <textarea class="form-control" id="diagnosis" name="diagnosis" rows="2" placeholder="e.g., Acute Bronchitis" required></textarea>

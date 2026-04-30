@@ -1,6 +1,6 @@
 -- --------------------------------------------------------
 -- Hospital Management System (HMS) Database
--- MySQL Version
+-- MySQL Version - Finalized & Cleaned
 -- --------------------------------------------------------
 
 -- Create and select database
@@ -8,11 +8,13 @@ CREATE DATABASE IF NOT EXISTS hms;
 USE hms;
 
 -- --------------------------------------------------------
--- 1. DROP TABLES (if re-running)
+-- 1. DROP TABLES (Reverse Dependency Order)
 -- --------------------------------------------------------
+-- medical_records must be dropped before appointments due to the Foreign Key constraint
 
+DROP TABLE IF EXISTS medical_records;
 DROP TABLE IF EXISTS trigr;
-DROP TABLE IF EXISTS patients;
+DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS doctors;
 DROP TABLE IF EXISTS test;
 DROP TABLE IF EXISTS user;
@@ -20,6 +22,18 @@ DROP TABLE IF EXISTS user;
 -- --------------------------------------------------------
 -- 2. CREATE TABLES
 -- --------------------------------------------------------
+
+CREATE TABLE user (
+  id INT(11) NOT NULL AUTO_INCREMENT,
+  username VARCHAR(50) NOT NULL,
+  usertype VARCHAR(50) NOT NULL,
+  email VARCHAR(50) NOT NULL,
+  phone VARCHAR(12) DEFAULT NULL,
+  gender VARCHAR(20) DEFAULT NULL,
+  password VARCHAR(1000) NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY unique_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE doctors (
   did INT(11) NOT NULL AUTO_INCREMENT,
@@ -29,10 +43,8 @@ CREATE TABLE doctors (
   PRIMARY KEY (did)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- --------------------------------------------------------
-
-CREATE TABLE patients (
-  pid INT(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE appointments (
+  apt_id INT(11) NOT NULL AUTO_INCREMENT,
   email VARCHAR(50) NOT NULL,
   name VARCHAR(50) NOT NULL,
   gender VARCHAR(50) NOT NULL,
@@ -41,13 +53,31 @@ CREATE TABLE patients (
   time TIME NOT NULL,
   date DATE NOT NULL,
   dept VARCHAR(50) NOT NULL,
-  doctor VARCHAR(100) NOT NULL AFTER dept,
+  doctor VARCHAR(100) NOT NULL,
   number VARCHAR(12) NOT NULL,
-  PRIMARY KEY (pid)
+  PRIMARY KEY (apt_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE medical_records (
+  record_id INT(11) NOT NULL AUTO_INCREMENT,
+  apt_id INT(11) NOT NULL,
+  diagnosis TEXT NOT NULL,
+  prescription TEXT NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (record_id),
+  FOREIGN KEY (apt_id) REFERENCES appointments(apt_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- --------------------------------------------------------
+CREATE TABLE trigr (
+  tid INT(11) NOT NULL AUTO_INCREMENT,
+  apt_id INT(11) NOT NULL,
+  email VARCHAR(50) NOT NULL,
+  name VARCHAR(50) NOT NULL,
+  action VARCHAR(50) NOT NULL,
+  timestamp DATETIME NOT NULL,
+  PRIMARY KEY (tid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE test (
   id INT(11) NOT NULL AUTO_INCREMENT,
@@ -56,152 +86,95 @@ CREATE TABLE test (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- --------------------------------------------------------
-
-CREATE TABLE trigr (
-  tid INT(11) NOT NULL AUTO_INCREMENT,
-  pid INT(11) NOT NULL,
-  email VARCHAR(50) NOT NULL,
-  name VARCHAR(50) NOT NULL,
-  action VARCHAR(50) NOT NULL,
-  timestamp DATETIME NOT NULL,
-  PRIMARY KEY (tid)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
-
-CREATE TABLE user (
-  id INT(11) NOT NULL AUTO_INCREMENT,
-  username VARCHAR(50) NOT NULL,
-  usertype VARCHAR(50) NOT NULL,
-  email VARCHAR(50) NOT NULL,
-  phone VARCHAR(12) DEFAULT NULL,
-  gender VARCHAR(20) DEFAULT NULL;
-  password VARCHAR(1000) NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY unique_email (email)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
+-- 3. INSERT REVISED SAMPLE DATA (April - May 2026)
 -- --------------------------------------------------------
 
-CREATE TABLE medical_records (
-  record_id INT NOT NULL AUTO_INCREMENT,
-  pid BIGINT NOT NULL,
-  diagnosis TEXT NOT NULL,
-  prescription TEXT NOT NULL,
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (record_id),
-  FOREIGN KEY (pid) REFERENCES patients(pid) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
--- 3. INSERT DATA
--- --------------------------------------------------------
-
+-- Insert Doctors Directory
 INSERT INTO doctors (did, email, doctorname, dept) VALUES
-(1, 'anees@gmail.com',      'anees',          'Cardiologists'),
-(2, 'amrutha@gmail.com',    'amrutha bhatta', 'Dermatologists'),
-(3, 'aadithyaa@gmail.com',  'aadithyaa',      'Anesthesiologists'),
-(4, 'anees@gmail',          'anees',          'Endocrinologists'),
-(5, 'aneeqah@gmail.com',    'aneekha',        'corona');
+(1, 'anushka@gmail.com',    'Anushka',        'Cardiologists'),
+(2, 'amruta@gmail.com',     'Amruta',         'Dermatologists'),
+(3, 'aaditya@gmail.com',    'Aaditya',        'Anesthesiologists'),
+(4, 'mangesh@gmail.com',    'Mangesh Wagh',   'Endocrinologists'),
+(5, 'pranjal@gmail.com',    'pranjal',        'corona');
+
+-- Updated Appointments with Indian Names and 2026 Dates
+INSERT INTO appointments (apt_id, email, name, gender, slot, disease, time, date, dept, doctor, number) VALUES
+(1,  'arjun.sharma@gmail.com',   'Arjun Sharma',     'Male',   'morning', 'Fever',      '10:30:00', '2026-04-25', 'Cardiologists',     'Anushka',        '9850012345'),
+(2,  'priya.patil@gmail.com',    'Priya Patil',      'Female', 'evening', 'Skin Rash',  '04:00:00', '2026-04-27', 'Dermatologists',    'Amruta',         '9822012345'),
+(3,  'rahul.deshmukh@gmail.com', 'Rahul Deshmukh',   'Male',   'morning', 'Back Pain',  '11:00:00', '2026-04-29', 'Anesthesiologists', 'Aaditya',        '9970054321'),
+(4,  'sneha.kulkarni@gmail.com', 'Sneha Kulkarni',   'Female', 'evening', 'Diabetes',   '03:30:00', '2026-05-01', 'Endocrinologists',  'Mangesh Wagh',   '9881165432'),
+(5,  'amit.verma@gmail.com',     'Amit Verma',       'Male',   'morning', 'Chest Pain', '10:00:00', '2026-05-04', 'Cardiologists',     'Anushka', '9123456789'),
+(6,  'ananya.iyer@gmail.com',    'Ananya Iyer',      'Female', 'evening', 'Migraine',   '04:30:00', '2026-05-06', 'Anesthesiologists', 'Aaditya',        '9011022334'),
+(7,  'vikram.singh@gmail.com',   'Vikram Singh',     'Male',   'morning', 'Thyroid',    '11:30:00', '2026-05-08', 'Endocrinologists',  'Mangesh Wagh',   '9422055667');
 
 -- --------------------------------------------------------
 
-INSERT INTO patients (pid, email, name, gender, slot, disease, time, date, dept, number) VALUES
-(2,  'anees1@gmail.com',         'anees1 rehman khan', 'Male1',  'evening1', 'cold1', '21:20:00', '2020-02-02', 'ortho11predict',    '9874561110'),
-(5,  'patient@gmail.com',        'patien',             'Male',   'morning',  'fevr',  '18:06:00', '2020-11-18', 'Cardiologists',     '9874563210'),
-(7,  'patient@gmail.com',        'anees',              'Male',   'evening',  'cold',  '22:18:00', '2020-11-05', 'Dermatologists',    '9874563210'),
-(8,  'patient@gmail.com',        'anees',              'Male',   'evening',  'cold',  '22:18:00', '2020-11-05', 'Dermatologists',    '9874563210'),
-(9,  'aneesurrehman423@gmail.com','anees',             'Male',   'morning',  'cold',  '17:27:00', '2020-11-26', 'Anesthesiologists', '9874563210'),
-(10, 'anees@gmail.com',          'anees',              'Male',   'evening',  'fever', '16:25:00', '2020-12-09', 'Cardiologists',     '9874589654'),
-(15, 'khushi@gmail.com',         'khushi',             'Female', 'morning',  'corona','20:42:00', '2021-01-23', 'Anesthesiologists', '9874563210'),
-(16, 'khushi@gmail.com',         'khushi',             'Female', 'evening',  'fever', '15:46:00', '2021-01-31', 'Endocrinologists',  '9874587496'),
-(17, 'aneeqah@gmail.com',        'aneeqah',            'Female', 'evening',  'fever', '15:48:00', '2021-01-23', 'Endocrinologists',  '9874563210');
-
--- --------------------------------------------------------
-
+-- Insert Test Connection Data
 INSERT INTO test (id, name, email) VALUES
 (1, 'ANEES', 'ARK@GMAIL.COM'),
 (2, 'test',  'test@gmail.com');
-
 -- --------------------------------------------------------
 
-INSERT INTO trigr (tid, pid, email, name, action, timestamp) VALUES
-(1,  12, 'anees@gmail.com',    'ANEES',   'PATIENT INSERTED', '2020-12-02 16:35:10'),
-(2,  11, 'anees@gmail.com',    'anees',   'PATIENT INSERTED', '2020-12-02 16:37:34'),
-(3,  10, 'anees@gmail.com',    'anees',   'PATIENT UPDATED',  '2020-12-02 16:38:27'),
-(4,  11, 'anees@gmail.com',    'anees',   'PATIENT UPDATED',  '2020-12-02 16:38:33'),
-(5,  12, 'anees@gmail.com',    'ANEES',   'Patient Deleted',  '2020-12-02 16:40:40'),
-(6,  11, 'anees@gmail.com',    'anees',   'PATIENT DELETED',  '2020-12-02 16:41:10'),
-(7,  13, 'testing@gmail.com',  'testing', 'PATIENT INSERTED', '2020-12-02 16:50:21'),
-(8,  13, 'testing@gmail.com',  'testing', 'PATIENT UPDATED',  '2020-12-02 16:50:32'),
-(9,  13, 'testing@gmail.com',  'testing', 'PATIENT DELETED',  '2020-12-02 16:50:57'),
-(10, 14, 'aneeqah@gmail.com',  'aneeqah', 'PATIENT INSERTED', '2021-01-22 15:18:09'),
-(11, 14, 'aneeqah@gmail.com',  'aneeqah', 'PATIENT UPDATED',  '2021-01-22 15:18:29'),
-(12, 14, 'aneeqah@gmail.com',  'aneeqah', 'PATIENT DELETED',  '2021-01-22 15:41:48'),
-(13, 15, 'khushi@gmail.com',   'khushi',  'PATIENT INSERTED', '2021-01-22 15:43:02'),
-(14, 15, 'khushi@gmail.com',   'khushi',  'PATIENT UPDATED',  '2021-01-22 15:43:11'),
-(15, 16, 'khushi@gmail.com',   'khushi',  'PATIENT INSERTED', '2021-01-22 15:43:37'),
-(16, 16, 'khushi@gmail.com',   'khushi',  'PATIENT UPDATED',  '2021-01-22 15:43:49'),
-(17, 17, 'aneeqah@gmail.com',  'aneeqah', 'PATIENT INSERTED', '2021-01-22 15:44:41'),
-(18, 17, 'aneeqah@gmail.com',  'aneeqah', 'PATIENT UPDATED',  '2021-01-22 15:44:52'),
-(19, 17, 'aneeqah@gmail.com',  'aneeqah', 'PATIENT UPDATED',  '2021-01-22 15:44:59');
+-- Updated Sample Audit Logs (Matching the 2026 events)
+INSERT INTO trigr (tid, apt_id, email, name, action, timestamp) VALUES
+(1, 1, 'arjun.sharma@gmail.com',   'Arjun Sharma',   'APPOINTMENT BOOKED', '2026-04-20 10:15:00'),
+(2, 2, 'priya.patil@gmail.com',    'Priya Patil',    'APPOINTMENT BOOKED', '2026-04-21 14:30:00'),
+(3, 3, 'rahul.deshmukh@gmail.com', 'Rahul Deshmukh', 'APPOINTMENT BOOKED', '2026-04-22 09:00:00'),
+(4, 4, 'sneha.kulkarni@gmail.com', 'Sneha Kulkarni', 'APPOINTMENT BOOKED', '2026-04-23 16:45:00'),
+(5, 5, 'amit.verma@gmail.com',     'Amit Verma',     'APPOINTMENT BOOKED', '2026-04-24 11:20:00'),
+(6, 6, 'ananya.iyer@gmail.com',    'Ananya Iyer',    'APPOINTMENT BOOKED', '2026-04-25 13:10:00'),
+(7, 7, 'vikram.singh@gmail.com',   'Vikram Singh',   'APPOINTMENT BOOKED', '2026-04-26 08:55:00');
 
 -- --------------------------------------------------------
-
-INSERT INTO user (id, username, usertype, email, password) VALUES
-(13, 'anees',   'Doctor',  'anees@gmail.com',   'pbkdf2:sha256:150000$xAKZCiJG$4c7a7e704708f86659d730565ff92e8327b01be5c49a6b1ef8afdf1c531fa5c3'),
-(14, 'aneeqah', 'Patient', 'aneeqah@gmail.com', 'pbkdf2:sha256:150000$Yf51ilDC$028cff81a536ed9d477f9e45efcd9e53a9717d0ab5171d75334c397716d581b8'),
-(15, 'khushi',  'Patient', 'khushi@gmail.com',  'pbkdf2:sha256:150000$BeSHeRKV$a8b27379ce9b2499d4caef21d9d387260b3e4ba9f7311168b6e180a00db91f22');
-
--- --------------------------------------------------------
--- 4. TRIGGERS
+-- 4. MYSQL TRIGGERS
 -- --------------------------------------------------------
 
--- Trigger: Log every new patient INSERT
+-- Trigger: Log every new appointment INSERT
 DELIMITER $$
-CREATE TRIGGER patientinsertion
-AFTER INSERT ON patients
+CREATE TRIGGER appointment_insertion
+AFTER INSERT ON appointments
 FOR EACH ROW
 BEGIN
-  INSERT INTO trigr (pid, email, name, action, timestamp)
-  VALUES (NEW.pid, NEW.email, NEW.name, 'PATIENT INSERTED', NOW());
+  INSERT INTO trigr (apt_id, email, name, action, timestamp)
+  VALUES (NEW.apt_id, NEW.email, NEW.name, 'APPOINTMENT BOOKED', NOW());
 END$$
 DELIMITER ;
 
 -- --------------------------------------------------------
 
--- Trigger: Log every patient UPDATE
+-- Trigger: Log every appointment UPDATE
 DELIMITER $$
-CREATE TRIGGER PatientUpdate
-AFTER UPDATE ON patients
+CREATE TRIGGER appointment_update
+AFTER UPDATE ON appointments
 FOR EACH ROW
 BEGIN
-  INSERT INTO trigr (pid, email, name, action, timestamp)
-  VALUES (NEW.pid, NEW.email, NEW.name, 'PATIENT UPDATED', NOW());
+  INSERT INTO trigr (apt_id, email, name, action, timestamp)
+  VALUES (NEW.apt_id, NEW.email, NEW.name, 'APPOINTMENT UPDATED', NOW());
 END$$
 DELIMITER ;
 
 -- --------------------------------------------------------
 
--- Trigger: Log every patient DELETE (uses OLD since row is being removed)
+-- Trigger: Log every appointment DELETE
 DELIMITER $$
-CREATE TRIGGER PatientDelete
-BEFORE DELETE ON patients
+CREATE TRIGGER appointment_delete
+BEFORE DELETE ON appointments
 FOR EACH ROW
 BEGIN
-  INSERT INTO trigr (pid, email, name, action, timestamp)
-  VALUES (OLD.pid, OLD.email, OLD.name, 'PATIENT DELETED', NOW());
+  INSERT INTO trigr (apt_id, email, name, action, timestamp)
+  VALUES (OLD.apt_id, OLD.email, OLD.name, 'APPOINTMENT CANCELLED', NOW());
 END$$
 DELIMITER ;
 
 -- --------------------------------------------------------
--- 5. SET AUTO_INCREMENT values
+-- 5. SET AUTO_INCREMENT VALUES
 -- --------------------------------------------------------
 
 ALTER TABLE doctors  AUTO_INCREMENT = 6;
-ALTER TABLE patients AUTO_INCREMENT = 18;
-ALTER TABLE test     AUTO_INCREMENT = 12;
+ALTER TABLE appointments AUTO_INCREMENT = 18;
+ALTER TABLE test     AUTO_INCREMENT = 3;
 ALTER TABLE trigr    AUTO_INCREMENT = 20;
 ALTER TABLE user     AUTO_INCREMENT = 16;
+ALTER TABLE medical_records AUTO_INCREMENT = 1;

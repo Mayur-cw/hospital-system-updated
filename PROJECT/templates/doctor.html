@@ -18,55 +18,6 @@ Doctors Directory | Hospital Management System
     {% endif %}
   {% endwith %}
 
-  {% if current_user.usertype == "Doctor" %}
-  <div class="row justify-content-center mb-5">
-    <div class="col-lg-8">
-      <div class="card shadow border-0">
-        <div class="card-header bg-dark text-white text-center py-3">
-          <h4 class="mb-0 fw-bold"><i class="fas fa-user-md me-2"></i>Doctor Registration</h4>
-        </div>
-        
-        <div class="card-body p-4 bg-light">
-          <p class="text-muted text-center mb-4">Please enter your professional details to be listed in the hospital directory.</p>
-          
-          <form action="/doctors" method="POST">
-            <div class="mb-3">
-              <label for="email" class="form-label fw-bold text-dark">Email Address</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fas fa-envelope text-muted"></i></span>
-                <input type="email" class="form-control bg-light" id="email" name="email" value="{{ current_user.email }}" readonly required>
-              </div>
-              <small class="text-muted">Your email is tied to your login account and cannot be changed here.</small>
-            </div>
-
-            <div class="mb-3">
-              <label for="doctorname" class="form-label fw-bold text-dark">Full Name</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
-                <input type="text" class="form-control" id="doctorname" name="doctorname" placeholder="e.g., Dr. John Doe" required>
-              </div>
-            </div>
-
-            <div class="mb-4">
-              <label for="dept" class="form-label fw-bold text-dark">Department / Specialization</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
-                <input type="text" class="form-control" id="dept" name="dept" placeholder="e.g., Cardiology, Pediatrics" required>
-              </div>
-            </div>
-
-            <div class="d-grid">
-              <button type="submit" class="btn btn-primary btn-lg shadow-sm fw-bold">
-                <i class="fas fa-save me-2"></i> Save Profile Details
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
   <div class="text-center mb-5">
     <h2 class="fw-bold text-dark">Our Specialists</h2>
     <p class="text-muted">Browse our verified roster of medical professionals across all departments.</p>

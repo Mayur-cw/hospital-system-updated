@@ -31,7 +31,7 @@ Bookings | Hospital Management System
         <table class="table table-striped table-hover align-middle mb-0">
           <thead class="table-dark">
             <tr>
-              <th scope="col">PID</th>
+              <th scope="col">Apt ID</th>
               <th scope="col">Email</th>
               <th scope="col">Name</th>
               <th scope="col">Gender</th>
@@ -51,7 +51,7 @@ Bookings | Hospital Management System
             
             {% for post in query %}
               <tr>
-                <th scope="row" class="ps-3">{{ post.pid }}</th>
+                <th scope="row" class="ps-3">{{ post.apt_id }}</th>
                 <td>{{ post.email }}</td>
                 <td>{{ post.name }}</td>
                 <td>{{ post.gender }}</td>
@@ -67,22 +67,22 @@ Bookings | Hospital Management System
                     
                     {% if is_past_record %}
                         <!-- Buttons for PAST RECORDS -->
-                        <a href="/view_record/{{ post.pid }}" class="btn btn-sm btn-outline-info" title="View Medical Record">
+                        <a href="/view_record/{{ post.apt_id }}" class="btn btn-sm btn-outline-info" title="View Medical Record">
                             <i class="fas fa-file-medical"></i> View
                         </a>
                         {% if current_user.usertype == "Doctor" %}
-                        <a href="/add_record/{{ post.pid }}" class="btn btn-sm btn-outline-success" title="Add Prescription">
+                        <a href="/add_record/{{ post.apt_id }}" class="btn btn-sm btn-outline-success" title="Add Prescription">
                             <i class="fas fa-plus-circle"></i> Prescribe
                         </a>
                         {% endif %}
 
                     {% else %}
                         <!-- Buttons for UPCOMING BOOKINGS / DASHBOARD -->
-                        <a href="/edit/{{ post.pid }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                        <a href="/edit/{{ post.apt_id }}" class="btn btn-sm btn-outline-primary" title="Edit">
                           <i class="fas fa-edit"></i> Edit
                         </a>
                         
-                        <form action="/delete/{{ post.pid }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this booking? This action cannot be undone.');">
+                        <form action="/delete/{{ post.apt_id }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this booking? This action cannot be undone.');">
                           <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
                             <i class="fas fa-trash-alt"></i> Delete
                           </button>

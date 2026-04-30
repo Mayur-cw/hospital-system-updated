@@ -26,9 +26,9 @@ class User(UserMixin, db.Model):
     gender   = db.Column(db.String(20), nullable=True)  
 
 
-class Patients(db.Model):
-    __tablename__ = 'patients'
-    pid     = db.Column(db.Integer, primary_key=True)
+class Appointments(db.Model):
+    __tablename__ = 'appointments'
+    apt_id  = db.Column(db.Integer, primary_key=True)
     email   = db.Column(db.String(50), nullable=False)
     name    = db.Column(db.String(50), nullable=False)
     gender  = db.Column(db.String(50), nullable=False)
@@ -43,7 +43,7 @@ class Patients(db.Model):
 class MedicalRecord(db.Model):
     __tablename__ = 'medical_records'
     record_id    = db.Column(db.Integer, primary_key=True)
-    pid          = db.Column(db.Integer, db.ForeignKey('patients.pid', ondelete='CASCADE'), nullable=False)
+    apt_id       = db.Column(db.Integer, db.ForeignKey('appointments.apt_id', ondelete='CASCADE'), nullable=False)
     diagnosis    = db.Column(db.Text, nullable=False)
     prescription = db.Column(db.Text, nullable=False)
     notes        = db.Column(db.Text)
@@ -60,7 +60,7 @@ class Doctors(db.Model):
 class Trigr(db.Model):
     __tablename__ = 'trigr'
     tid       = db.Column(db.Integer, primary_key=True)
-    pid       = db.Column(db.Integer, nullable=False)
+    apt_id    = db.Column(db.Integer, nullable=False)
     email     = db.Column(db.String(50), nullable=False)
     name      = db.Column(db.String(50), nullable=False)
     action    = db.Column(db.String(50), nullable=False)

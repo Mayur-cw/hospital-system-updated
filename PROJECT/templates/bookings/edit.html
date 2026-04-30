@@ -26,9 +26,10 @@ Edit Booking | Hospital Management System
         </div>
         
         <div class="card-body p-4 bg-light">
-          <form action="/edit/{{ posts.pid }}" method="POST">
+          <!-- 🔄 UPDATED: posts.apt_id -->
+          <form action="/edit/{{ posts.apt_id }}" method="POST">
             
-<input type="hidden" name="slot" value="{{ posts.slot }}">
+            <input type="hidden" name="slot" value="{{ posts.slot }}">
 
             <div class="row mb-3">
               <div class="col-md-6">
@@ -188,7 +189,8 @@ Edit Booking | Hospital Management System
         body: JSON.stringify({ 
             date: dateStr, 
             doctor: doctorStr,
-            current_pid: "{{ posts.pid }}" 
+            // 🔄 UPDATED: posts.apt_id
+            current_pid: "{{ posts.apt_id }}" 
         })
     })
     .then(response => response.json())
