@@ -73,6 +73,9 @@
                               <i class="fas fa-user-circle me-1 text-primary"></i> {{ current_user.username | capitalize }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="userDropdown">
+                                <!-- NEW PROFILE LINK -->
+                                <li><a class="dropdown-item" href="/profile"><i class="fas fa-user-cog me-2"></i>My Profile</a></li>
+                                
                                 <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-history me-2"></i>All History</a></li>
                                 <li><hr class="dropdown-divider border-secondary"></li>
                                 <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>

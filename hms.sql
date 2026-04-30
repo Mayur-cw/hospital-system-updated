@@ -75,6 +75,8 @@ CREATE TABLE user (
   username VARCHAR(50) NOT NULL,
   usertype VARCHAR(50) NOT NULL,
   email VARCHAR(50) NOT NULL,
+  phone VARCHAR(12) DEFAULT NULL,
+  gender VARCHAR(20) DEFAULT NULL;
   password VARCHAR(1000) NOT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY unique_email (email)

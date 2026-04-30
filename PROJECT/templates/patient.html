@@ -62,7 +62,8 @@ Book Appointment | Hospital Management System
                 <label for="name" class="form-label fw-bold text-dark">Full Name</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
-                  <input type="text" class="form-control" id="name" name="name" placeholder="Enter patient name" required>
+                  <!-- ADDED VALUE ATTRIBUTE HERE -->
+                  <input type="text" class="form-control" id="name" name="name" value="{{ current_user.username }}" placeholder="Enter patient name" required>
                 </div>
               </div>
               <div class="col-md-6 mt-3 mt-md-0">
@@ -74,23 +75,25 @@ Book Appointment | Hospital Management System
               </div>
             </div>
 
-            <div class="row mb-3">
+<div class="row mb-3">
               <div class="col-md-6">
                 <label for="number" class="form-label fw-bold text-dark">Phone Number</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-phone text-muted"></i></span>
-                  <input type="text" class="form-control" id="number" name="number" placeholder="10-digit number" pattern="\d{10}" title="Please enter exactly 10 digits" required>
+                  <!-- ADDED VALUE AUTO-FILL -->
+                  <input type="text" class="form-control" id="number" name="number" value="{{ current_user.phone if current_user.phone != None else '' }}" placeholder="10-digit number" pattern="\d{10}" title="Please enter exactly 10 digits" required>
                 </div>
               </div>
               <div class="col-md-6 mt-3 mt-md-0">
                 <label for="gender" class="form-label fw-bold text-dark">Gender</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
+                  <!-- UPDATED DROPDOWN TO AUTO-SELECT IF DATA EXISTS -->
                   <select class="form-select" id="gender" name="gender" required>
-                    <option value="" selected disabled hidden>Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Others">Others</option>
+                    <option value="" {% if not current_user.gender %}selected{% endif %} disabled hidden>Select Gender</option>
+                    <option value="Male" {% if current_user.gender == 'Male' %}selected{% endif %}>Male</option>
+                    <option value="Female" {% if current_user.gender == 'Female' %}selected{% endif %}>Female</option>
+                    <option value="Others" {% if current_user.gender == 'Others' %}selected{% endif %}>Others</option>
                   </select>
                 </div>
               </div>

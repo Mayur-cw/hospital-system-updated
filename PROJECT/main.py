@@ -58,6 +58,8 @@ class User(UserMixin, db.Model):
     usertype = db.Column(db.String(50), nullable=False)
     email    = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(1000), nullable=False)
+    phone    = db.Column(db.String(12), nullable=True)  # NEW
+    gender   = db.Column(db.String(20), nullable=True)  # NEW
 
 
 class Patients(db.Model):
@@ -342,6 +344,49 @@ def delete(pid):
     flash("Booking deleted successfully.", "danger")
     return redirect(url_for('upcoming_bookings'))
 
+
+# ── User Profile ──────────────────────────────
+
+# ── User Profile ──────────────────────────────
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if request.method == 'POST':
+        new_username = request.form.get('username', '').strip()
+        new_email = request.form.get('email', '').strip()
+        new_password = request.form.get('password', '').strip()
+        new_phone = request.form.get('phone', '').strip()     # NEW
+        new_gender = request.form.get('gender', '').strip()   # NEW
+
+        # Fetch the current user object from the database
+        user = User.query.get(current_user.id)
+
+        # If they are changing their email, ensure the new email isn't already taken
+        if new_email != current_user.email:
+            existing_user = User.query.filter_by(email=new_email).first()
+            if existing_user:
+                flash("That email address is already in use by another account.", "danger")
+                return redirect(url_for('profile'))
+            user.email = new_email
+
+        # Update standard fields
+        if new_username:
+            user.username = new_username
+            
+        # Update new fields
+        user.phone = new_phone
+        user.gender = new_gender
+
+        # If they typed a new password, hash it and update
+        if new_password:
+            user.password = generate_password_hash(new_password)
+
+        db.session.commit()
+        flash("Your profile details have been updated successfully!", "success")
+        return redirect(url_for('profile'))
+
+    return render_template('profile.html')
 
 # ── Signup ────────────────────────────────────
 

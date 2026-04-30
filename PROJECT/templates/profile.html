@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}
+My Profile | Hospital Management System
+{% endblock title %}
+
+{% block body %}
+<div class="container mt-5 mb-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="card shadow border-0 rounded-4">
+        <div class="card-header bg-dark text-white py-3 text-center rounded-top-4">
+          <h4 class="mb-0 fw-bold"><i class="fas fa-user-cog me-2"></i>Account Settings</h4>
+        </div>
+        
+        <div class="card-body p-5 bg-light">
+          
+          <div class="text-center mb-4">
+            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+              <i class="fas fa-user fa-3x"></i>
+            </div>
+            <h5 class="fw-bold text-dark">{{ current_user.username | capitalize }}</h5>
+            <span class="badge bg-secondary">{{ current_user.usertype }} Account</span>
+          </div>
+
+          <form action="/profile" method="POST">
+            
+            <div class="mb-3">
+              <label for="username" class="form-label fw-bold text-dark">Username</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
+                <input type="text" class="form-control" id="username" name="username" value="{{ current_user.username }}" required>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label fw-bold text-dark">Email Address</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="fas fa-envelope text-muted"></i></span>
+                <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+              </div>
+            </div>
+
+            <!-- NEW: Phone Number -->
+            <div class="mb-3">
+              <label for="phone" class="form-label fw-bold text-dark">Phone Number</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="fas fa-phone text-muted"></i></span>
+                <input type="text" class="form-control" id="phone" name="phone" value="{{ current_user.phone if current_user.phone != None else '' }}" pattern="\d{10}" title="Please enter exactly 10 digits" placeholder="10-digit mobile number">
+              </div>
+            </div>
+
+            <!-- NEW: Gender -->
+            <div class="mb-4">
+              <label for="gender" class="form-label fw-bold text-dark">Gender</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
+                <select class="form-select" id="gender" name="gender">
+                  <option value="" {% if not current_user.gender %}selected{% endif %} disabled hidden>Select Gender</option>
+                  <option value="Male" {% if current_user.gender == 'Male' %}selected{% endif %}>Male</option>
+                  <option value="Female" {% if current_user.gender == 'Female' %}selected{% endif %}>Female</option>
+                  <option value="Others" {% if current_user.gender == 'Others' %}selected{% endif %}>Others</option>
+                </select>
+              </div>
+            </div>
+
+            <hr class="border-secondary opacity-25 mb-4">
+            
+            <h6 class="fw-bold text-dark mb-3"><i class="fas fa-lock text-primary me-2"></i>Security</h6>
+
+            <div class="mb-4">
+              <label for="password" class="form-label fw-bold text-dark">New Password <span class="text-muted fw-normal small">(Leave blank to keep current password)</span></label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="fas fa-key text-muted"></i></span>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Enter new password">
+              </div>
+            </div>
+
+            <div class="d-grid mt-2">
+              <button type="submit" class="btn btn-primary btn-lg shadow-sm fw-bold">
+                <i class="fas fa-save me-2"></i> Save Changes
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock body %}
