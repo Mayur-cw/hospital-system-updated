@@ -31,11 +31,12 @@ Home | Hospital Management System
         <div class="d-flex justify-content-center gap-3">
           {% if current_user.is_authenticated %}
             <a href="/patients" class="btn btn-light btn-lg text-primary fw-bold px-4 rounded-pill shadow">Book Appointment</a>
-            <a href="/bookings" class="btn btn-outline-light btn-lg px-4 rounded-pill">View My Dashboard</a>
+            <a href="/upcoming_bookings" class="btn btn-outline-light btn-lg px-4 rounded-pill"><i class="fas fa-calendar-check me-2"></i>Upcoming Appointments</a>
           {% else %}
             <a href="/signup" class="btn btn-light btn-lg text-primary fw-bold px-4 rounded-pill shadow">Create Account</a>
             <a href="/login" class="btn btn-outline-light btn-lg px-4 rounded-pill">Staff Login</a>
           {% endif %}
+        </div>
         </div>
       </div>
     </div>
@@ -76,18 +77,18 @@ Home | Hospital Management System
     </div>
 
     <div class="col-md-4 mb-4">
-      <div class="card h-100 shadow border-0 rounded-4 hover-lift bg-white">
-        <div class="card-body p-4">
-          <div class="bg-info bg-opacity-10 text-info rounded-circle d-inline-flex p-3 mb-3">
-            <i class="fas fa-clipboard-list fa-2x"></i>
-          </div>
-          <h4 class="card-title fw-bold">Record Management</h4>
-          <p class="card-text text-muted mb-4">Securely access, edit, or delete your booking history with role-based permissions.</p>
-          {% if current_user.is_authenticated %}
-            <a href="/bookings" class="btn btn-outline-info w-100 rounded-pill fw-bold">Manage Records</a>
-          {% else %}
-            <a href="/login" class="btn btn-outline-info w-100 rounded-pill fw-bold">Login to View</a>
-          {% endif %}
+  <div class="card h-100 shadow border-0 rounded-4 hover-lift bg-white">
+    <div class="card-body p-4">
+      <div class="bg-info bg-opacity-10 text-info rounded-circle d-inline-flex p-3 mb-3">
+        <i class="fas fa-notes-medical fa-2x"></i>
+      </div>
+      <h4 class="card-title fw-bold">Past Records</h4>
+      <p class="card-text text-muted mb-4">View your previous completed bookings and doctor prescriptions.</p>
+      {% if current_user.is_authenticated %}
+        <a href="/past_records" class="btn btn-outline-info w-100 rounded-pill fw-bold">View Past Records</a>
+      {% else %}
+        <a href="/login" class="btn btn-outline-info w-100 rounded-pill fw-bold">Login to View</a>
+      {% endif %}
         </div>
       </div>
     </div>

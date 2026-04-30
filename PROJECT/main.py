@@ -1,3 +1,4 @@
+from datetime import date
 from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
@@ -202,7 +203,8 @@ def patient():
             flash(f"Slot Unavailable: Dr. {doctor.capitalize()} is already booked at {time}. Please choose another slot.", "warning")
             return redirect(url_for('patient'))
 
-        # ✅ Save the booking
+
+        # ✅ Save the booking (Inside the /patients POST method)
         new_patient = Patients(
             email=email, name=name, gender=gender,
             slot=slot, disease=disease, time=time,
@@ -210,8 +212,10 @@ def patient():
         )
         db.session.add(new_patient)
         db.session.commit()
-        flash("Booking confirmed successfully!", "success")
-        return redirect(url_for('bookings'))
+        
+        # We don't need the flash message here anymore since the whole page is a success message!
+        # Redirect to the new success page, passing the newly generated PID
+        return redirect(url_for('booking_success', pid=new_patient.pid))
 
     # 🛑 NEW: Catch URL parameters for pre-filling!
     pre_dept = request.args.get('dept', '')
@@ -221,29 +225,58 @@ def patient():
     return render_template('patient.html', doct=doct, pre_dept=pre_dept, pre_doc=pre_doc)
 
 
+# ── Booking Success Page ─────────────────────
+
+@app.route('/booking_success/<int:pid>')
+@login_required
+def booking_success(pid):
+    # Fetch the exact appointment that was just booked
+    appointment = Patients.query.get_or_404(pid)
+    
+    # Security check: Make sure a user can't type in a random PID and see someone else's booking
+    if current_user.usertype != "Doctor" and appointment.email != current_user.email:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('index'))
+        
+    return render_template('booking_success.html', appointment=appointment)
+
+
 # ── Bookings ─────────────────────────────────
 
-@app.route('/bookings')
+# 1. View My Dashboard (All History)
+@app.route('/dashboard')
 @login_required
-def bookings():
+def dashboard():
     if current_user.usertype == "Doctor":
-        # 1. Look up the doctor's official profile using their secure email
-        doc_profile = Doctors.query.filter_by(email=current_user.email).first()
-        
-        if doc_profile:
-            # 2. If profile exists, fetch patients using their exact official doctorname
-            query = Patients.query.filter_by(doctor=doc_profile.doctorname).all()
-        else:
-            # 3. Failsafe: If they haven't registered in the directory yet
-            query = []
-            flash("Please set up your Doctor Profile in the Directory to receive appointments.", "info")
-            
+        query = Patients.query.filter_by(doctor=current_user.username).order_by(Patients.date.desc()).all()
     else:
-        # PATIENTS: Only see their own booking history
-        query = Patients.query.filter_by(email=current_user.email).all()
+        query = Patients.query.filter_by(email=current_user.email).order_by(Patients.date.desc()).all()
+    
+    return render_template('booking.html', query=query, page_title="Complete Booking History")
 
-    return render_template('booking.html', query=query)
+# 2. My Bookings (Upcoming Only)
+@app.route('/upcoming_bookings')
+@login_required
+def upcoming_bookings():
+    today = date.today()
+    if current_user.usertype == "Doctor":
+        query = Patients.query.filter(Patients.doctor == current_user.username, Patients.date >= today).order_by(Patients.date.asc()).all()
+    else:
+        query = Patients.query.filter(Patients.email == current_user.email, Patients.date >= today).order_by(Patients.date.asc()).all()
+    
+    return render_template('booking.html', query=query, page_title="Upcoming Appointments")
 
+# 3. Past Records (Past Only + Prescriptions)
+@app.route('/past_records')
+@login_required
+def past_records():
+    today = date.today()
+    if current_user.usertype == "Doctor":
+        query = Patients.query.filter(Patients.doctor == current_user.username, Patients.date < today).order_by(Patients.date.desc()).all()
+    else:
+        query = Patients.query.filter(Patients.email == current_user.email, Patients.date < today).order_by(Patients.date.desc()).all()
+    
+    return render_template('booking.html', query=query, page_title="Past Records & Prescriptions")
 
 # ── Edit Booking ─────────────────────────────
 
@@ -255,7 +288,7 @@ def edit(pid):
 
     if current_user.usertype != "Doctor" and post.email != current_user.email:
         flash("Unauthorized access.", "danger")
-        return redirect(url_for('bookings'))
+        return redirect(url_for('upcoming_bookings'))
 
     if request.method == "POST":
         new_email   = request.form.get('email', '').strip()
@@ -288,7 +321,7 @@ def edit(pid):
 
         db.session.commit()
         flash("Booking updated successfully.", "success")
-        return redirect(url_for('bookings'))
+        return redirect(url_for('upcoming_bookings'))
 
     return render_template('edit.html', posts=post, doct=doct)
 
@@ -302,12 +335,12 @@ def delete(pid):
 
     if current_user.usertype != "Doctor" and patient.email != current_user.email:
         flash("Unauthorized access.", "danger")
-        return redirect(url_for('bookings'))
+        return redirect(url_for('upcoming_bookings'))
 
     db.session.delete(patient)
     db.session.commit()
     flash("Booking deleted successfully.", "danger")
-    return redirect(url_for('bookings'))
+    return redirect(url_for('upcoming_bookings'))
 
 
 # ── Signup ────────────────────────────────────
