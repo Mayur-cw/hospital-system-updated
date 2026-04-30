@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/Users/mayur/Sab_Kaam_ka/PRO/hospital system updated/venv"
+VIRTUAL_ENV="/Users/mayur/Sab_Kaam_ka/PRO/Hospital Management System/venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
