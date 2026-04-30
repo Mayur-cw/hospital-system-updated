@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session, redirect, url_for, flash
+from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     UserMixin, LoginManager, login_user,
@@ -6,7 +6,6 @@ from flask_login import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
-from datetime import datetime, timedelta
 
 # ─────────────────────────────────────────────
 # App Configuration
@@ -72,8 +71,6 @@ class Patients(db.Model):
     date    = db.Column(db.String(50), nullable=False)
     dept    = db.Column(db.String(50), nullable=False)
     number  = db.Column(db.String(12), nullable=False)
-    
-    # ADD THIS LINE: Tells Python this column exists in the database
     doctor  = db.Column(db.String(50), nullable=False)
 
 
@@ -99,39 +96,18 @@ class Trigr(db.Model):
 # Helper Functions
 # ─────────────────────────────────────────────
 
-def has_time_conflict(requested_date, requested_time, target_doctor, current_pid=None):
+def is_slot_booked(requested_date, requested_time, target_doctor, current_pid=None):
     """
-    Checks if the requested time is within 10 minutes of an existing appointment 
-    for the specific doctor on the specific date.
+    Checks if the specific time slot is already booked for the doctor on the given date.
     """
-    try:
-        # Convert HTML5 time string (e.g., "15:12") into a Python datetime object
-        req_time = datetime.strptime(requested_time, '%H:%M')
-    except ValueError:
-        return False  # Failsafe if time format is unexpected
-
-    # Fetch all appointments for this doctor on this specific date
-    existing_appts = Patients.query.filter_by(date=requested_date, doctor=target_doctor)
+    query = Patients.query.filter_by(date=requested_date, time=requested_time, doctor=target_doctor)
     
-    # If we are editing an appointment, we MUST ignore the current appointment's PID 
-    # so we don't accidentally block the user from editing their own slot!
+    # If we are editing an appointment, ignore the current appointment's PID 
     if current_pid:
-        existing_appts = existing_appts.filter(Patients.pid != current_pid)
+        query = query.filter(Patients.pid != current_pid)
 
-    for appt in existing_appts.all():
-        try:
-            exist_time = datetime.strptime(appt.time, '%H:%M')
-            
-            # Calculate the absolute difference between the two times
-            diff = abs(req_time - exist_time)
-            
-            # If the difference is less than 10 minutes, trigger a conflict!
-            if diff < timedelta(minutes=10):
-                return True
-        except ValueError:
-            continue
-            
-    return False
+    return query.first() is not None
+
 
 # ─────────────────────────────────────────────
 # Routes
@@ -147,7 +123,6 @@ def index():
 @app.route('/doctors', methods=['POST', 'GET'])
 @login_required
 def doctors():
-    # Fetch all doctors from the database to display in the directory
     all_doctors = Doctors.query.all()
 
     if request.method == "POST":
@@ -164,11 +139,36 @@ def doctors():
         db.session.commit()
         flash("Doctor information saved successfully.", "success")
         
-        # Re-fetch the list so the newly added doctor shows up immediately
         all_doctors = Doctors.query.all()
 
     return render_template('doctor.html', all_doctors=all_doctors)
 
+
+# ── API: Get Booked Slots ────────────────────
+
+@app.route('/get_booked_slots', methods=['POST'])
+@login_required
+def get_booked_slots():
+    data = request.get_json()
+    req_date = data.get('date')
+    req_doctor = data.get('doctor')
+    
+    # NEW: Catch the PID if we are editing an appointment
+    current_pid = data.get('current_pid') 
+
+    if not req_date or not req_doctor:
+        return jsonify({'booked_times': []})
+
+    query = Patients.query.filter_by(date=req_date, doctor=req_doctor)
+    
+    # NEW: If editing, ignore the current appointment's time slot so it doesn't show as blocked!
+    if current_pid:
+        query = query.filter(Patients.pid != current_pid)
+
+    bookings = query.all()
+    booked_times = [booking.time for booking in bookings]
+
+    return jsonify({'booked_times': booked_times})
 
 # ── Patients ─────────────────────────────────
 
@@ -189,7 +189,6 @@ def patient():
         number  = request.form.get('number', '').strip()
         doctor  = request.form.get('doctor', '').strip()
 
-        # Validation
         if not all([email, name, gender, slot, disease, time, date, dept, number, doctor]):
             flash("All fields are required.", "danger")
             return render_template('patient.html', doct=doct)
@@ -198,12 +197,12 @@ def patient():
             flash("Please enter a valid 10-digit phone number.", "danger")
             return render_template('patient.html', doct=doct)
 
-# 🛑 CONFLICT CHECK: +/- 30 Minute Buffer Rule
-        if has_time_conflict(date, time, doctor):
-            flash(f"Slot Unavailable: Dr. {doctor.capitalize()} has another appointment within 30 minutes of {time}. Please ensure a 30-minute gap.", "warning")
+        # 🛑 CONFLICT CHECK: Exact Match
+        if is_slot_booked(date, time, doctor):
+            flash(f"Slot Unavailable: Dr. {doctor.capitalize()} is already booked at {time}. Please choose another slot.", "warning")
             return redirect(url_for('patient'))
 
-        # ✅ If no conflict, save the booking
+        # ✅ Save the booking
         new_patient = Patients(
             email=email, name=name, gender=gender,
             slot=slot, disease=disease, time=time,
@@ -214,7 +213,12 @@ def patient():
         flash("Booking confirmed successfully!", "success")
         return redirect(url_for('bookings'))
 
-    return render_template('patient.html', doct=doct)
+    # 🛑 NEW: Catch URL parameters for pre-filling!
+    pre_dept = request.args.get('dept', '')
+    pre_doc = request.args.get('doctor', '')
+
+    # Pass the pre-filled data into the template
+    return render_template('patient.html', doct=doct, pre_dept=pre_dept, pre_doc=pre_doc)
 
 
 # ── Bookings ─────────────────────────────────
@@ -223,13 +227,21 @@ def patient():
 @login_required
 def bookings():
     if current_user.usertype == "Doctor":
-        # DOCTORS: Only see patients booked under their specific name
-        query = Patients.query.filter_by(doctor=current_user.username).all()
+        # 1. Look up the doctor's official profile using their secure email
+        doc_profile = Doctors.query.filter_by(email=current_user.email).first()
+        
+        if doc_profile:
+            # 2. If profile exists, fetch patients using their exact official doctorname
+            query = Patients.query.filter_by(doctor=doc_profile.doctorname).all()
+        else:
+            # 3. Failsafe: If they haven't registered in the directory yet
+            query = []
+            flash("Please set up your Doctor Profile in the Directory to receive appointments.", "info")
+            
     else:
         # PATIENTS: Only see their own booking history
         query = Patients.query.filter_by(email=current_user.email).all()
 
-    # Note: Ensure the template name here matches your actual file (booking.html vs bookings.html)
     return render_template('booking.html', query=query)
 
 
@@ -239,11 +251,8 @@ def bookings():
 @login_required
 def edit(pid):
     post = Patients.query.get_or_404(pid)
-    
-    # 1. Fetch all doctors so we can populate the dropdowns
     doct = Doctors.query.all()
 
-    # Prevent patients from editing others' bookings
     if current_user.usertype != "Doctor" and post.email != current_user.email:
         flash("Unauthorized access.", "danger")
         return redirect(url_for('bookings'))
@@ -260,12 +269,12 @@ def edit(pid):
         new_number  = request.form.get('number', '').strip()
         new_doctor  = request.form.get('doctor', '').strip()
 
-        # 🛑 CONFLICT CHECK: Block illegal edits!
-        if has_time_conflict(new_date, new_time, new_doctor, current_pid=pid):
-            flash(f"Update Failed: Dr. {new_doctor.capitalize()} has another appointment within 30 minutes of {new_time}.", "danger")
+        # 🛑 CONFLICT CHECK: Block illegal edits
+        if is_slot_booked(new_date, new_time, new_doctor, current_pid=pid):
+            flash(f"Update Failed: Dr. {new_doctor.capitalize()} is already booked at {new_time}.", "danger")
             return redirect(url_for('edit', pid=pid))
 
-        # ✅ If no conflict, apply the updates
+        # ✅ Apply updates
         post.email   = new_email
         post.name    = new_name
         post.gender  = new_gender
@@ -281,18 +290,16 @@ def edit(pid):
         flash("Booking updated successfully.", "success")
         return redirect(url_for('bookings'))
 
-    # 3. Pass the 'doct' list into the template
     return render_template('edit.html', posts=post, doct=doct)
 
 
 # ── Delete Booking ────────────────────────────
 
-@app.route('/delete/<int:pid>', methods=['POST'])  # POST only — never DELETE via GET
+@app.route('/delete/<int:pid>', methods=['POST'])
 @login_required
 def delete(pid):
     patient = Patients.query.get_or_404(pid)
 
-    # Prevent patients from deleting others' bookings
     if current_user.usertype != "Doctor" and patient.email != current_user.email:
         flash("Unauthorized access.", "danger")
         return redirect(url_for('bookings'))
@@ -324,7 +331,6 @@ def signup():
             flash("An account with this email already exists.", "warning")
             return render_template('signup.html')
 
-        # Hash password before storing — NEVER store plain text
         hashed_password = generate_password_hash(password)
         new_user = User(
             username=username,
@@ -353,7 +359,6 @@ def login():
 
         user = User.query.filter_by(email=email).first()
 
-        # check_password_hash compares safely against hashed password
         if user and check_password_hash(user.password, password):
             login_user(user)
             flash("Login successful!", "success")
@@ -387,7 +392,6 @@ def search():
             flash("Please enter a search term.", "warning")
             return render_template('index.html')
 
-        # Search by name OR department
         doctor = Doctors.query.filter(
             (Doctors.doctorname == query_str) |
             (Doctors.dept == query_str)
@@ -426,9 +430,4 @@ def test():
 # ─────────────────────────────────────────────
 
 if __name__ == '__main__':
-    # debug=True only for development; set to False in production
     app.run(debug=os.environ.get('FLASK_DEBUG', 'true').lower() == 'true')
-
-
-
-

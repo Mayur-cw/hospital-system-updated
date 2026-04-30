@@ -93,7 +93,7 @@ Doctors Directory | Hospital Management System
           
           {% if current_user.usertype != "Doctor" %}
           <div class="card-footer bg-transparent border-0 text-center pb-4 pt-0">
-            <a href="/patients" class="btn btn-outline-primary btn-sm rounded-pill fw-bold px-4">Book Appointment</a>
+            <a href="/patients?dept={{ doc.dept }}&doctor={{ doc.doctorname }}" class="btn btn-outline-primary btn-sm rounded-pill fw-bold px-4">Book Appointment</a>
           </div>
           {% endif %}
           

@@ -83,60 +83,6 @@ Book Appointment | Hospital Management System
                 </div>
               </div>
               <div class="col-md-6 mt-3 mt-md-0">
-                <label for="disease" class="form-label fw-bold text-dark">Disease / Symptoms</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-notes-medical text-muted"></i></span>
-                  <input type="text" class="form-control" id="disease" name="disease" placeholder="e.g., Fever, Cold" required>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="date" class="form-label fw-bold text-dark">Preferred Date</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-calendar-day text-muted"></i></span>
-                  <input type="date" class="form-control" id="date" name="date" required>
-                </div>
-              </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label for="time" class="form-label fw-bold text-dark">Preferred Time</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-clock text-muted"></i></span>
-                  <input type="time" class="form-control" id="time" name="time" required>
-                </div>
-              </div>
-            </div>
-
-<div class="row mb-3">
-              <div class="col-md-6">
-                <label for="dept" class="form-label fw-bold text-dark">Department</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
-                  <select class="form-select" id="dept" name="dept" required onchange="filterDoctors()">
-                    <option value="" selected disabled hidden>Select Department</option>
-                    {% for d in doct %}
-                      <option value="{{ d.dept }}">{{ d.dept | capitalize }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label for="doctor" class="form-label fw-bold text-dark">Select Doctor</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-user-md text-muted"></i></span>
-                  <select class="form-select" id="doctor" name="doctor" required disabled>
-                    <option value="" selected disabled hidden>Choose a Specialist</option>
-                    {% for d in doct %}
-                      <option value="{{ d.doctorname }}" data-dept="{{ d.dept }}">Dr. {{ d.doctorname | capitalize }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mb-4">
-              <div class="col-md-12">
                 <label for="gender" class="form-label fw-bold text-dark">Gender</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
@@ -146,6 +92,60 @@ Book Appointment | Hospital Management System
                     <option value="Female">Female</option>
                     <option value="Others">Others</option>
                   </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="dept" class="form-label fw-bold text-dark">Department</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
+                  <select class="form-select" id="dept" name="dept" required onchange="filterDoctors(true)">
+                    <option value="" {% if not pre_dept %}selected{% endif %} disabled hidden>Select Department</option>
+                    {% for d in doct %}
+                      <option value="{{ d.dept }}" {% if pre_dept == d.dept %}selected{% endif %}>{{ d.dept | capitalize }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label for="doctor" class="form-label fw-bold text-dark">Select Doctor</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-user-md text-muted"></i></span>
+                  <select class="form-select" id="doctor" name="doctor" required {% if not pre_dept %}disabled{% endif %} onchange="checkAvailableSlots()">
+                    <option value="" {% if not pre_doc %}selected{% endif %} disabled hidden>Choose a Specialist</option>
+                    {% for d in doct %}
+                      <option value="{{ d.doctorname }}" data-dept="{{ d.dept }}" {% if pre_doc == d.doctorname %}selected{% endif %}>Dr. {{ d.doctorname | capitalize }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="date" class="form-label fw-bold text-dark">Preferred Date</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-calendar-alt text-muted"></i></span>
+                  <input type="date" class="form-control" id="date" name="date" required onchange="checkAvailableSlots()">
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label class="form-label fw-bold text-dark">Available Time Slots</label>
+                <input type="hidden" id="selected_time" name="time" required>
+                <div id="slot-container" class="d-flex flex-wrap gap-2 pt-1">
+                  <span class="text-muted small"><i class="fas fa-info-circle me-1"></i>Please select a Doctor and Date first.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-12">
+                <label for="disease" class="form-label fw-bold text-dark">Disease name / Symptoms overview</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-notes-medical text-muted"></i></span>
+                  <input type="text" class="form-control" id="disease" name="disease" placeholder="e.g., Fever, Cold" required>
                 </div>
               </div>
             </div>
@@ -166,36 +166,106 @@ Book Appointment | Hospital Management System
 </div>
 
 <script>
-  function filterDoctors() {
-    // 1. Get the currently selected department
+  function filterDoctors(isManualChange = false) {
     const selectedDept = document.getElementById("dept").value;
-    
-    // 2. Get the doctor dropdown and all its options
     const doctorDropdown = document.getElementById("doctor");
     const doctorOptions = doctorDropdown.querySelectorAll("option");
     
-    // 3. Enable the doctor dropdown now that a department is chosen
-    doctorDropdown.disabled = false;
+    // Wipe the time slots if the user manually changes the department
+    if (isManualChange) {
+      doctorDropdown.disabled = false;
+      doctorDropdown.value = "";
+      document.getElementById('slot-container').innerHTML = '<span class="text-muted small"><i class="fas fa-info-circle me-1"></i>Please select a Doctor and Date first.</span>';
+      document.getElementById('selected_time').value = "";
+    }
     
-    // 4. Reset the doctor dropdown to the default placeholder
-    doctorDropdown.value = "";
-    
-    // 5. Loop through every doctor option
     doctorOptions.forEach(option => {
-      // Always show the default "Choose a Specialist" option
       if (option.value === "") {
         option.style.display = "block";
         return;
       }
-      
-      // If the doctor's hidden data-dept matches the selected department, show them!
-      // Otherwise, hide them.
       if (option.getAttribute("data-dept") === selectedDept) {
         option.style.display = "block";
       } else {
         option.style.display = "none";
       }
     });
+  }
+
+  // Run automatically on page load to handle URL pre-filling!
+  document.addEventListener("DOMContentLoaded", function() {
+    const deptDropdown = document.getElementById("dept");
+    if (deptDropdown.value) {
+        filterDoctors(false); // Filter list but keep the pre-filled doctor!
+    }
+  });
+</script>
+
+<script>
+  const allSlots = [
+    "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM",
+    "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
+  ];
+
+  function checkAvailableSlots() {
+    const dateStr = document.getElementById('date').value;
+    const doctorStr = document.getElementById('doctor').value;
+    const slotContainer = document.getElementById('slot-container');
+
+    // Only proceed if BOTH date and doctor are selected
+    if (!dateStr || !doctorStr || doctorStr === "") {
+        return;
+    }
+
+    slotContainer.innerHTML = '<span class="text-primary small"><i class="fas fa-spinner fa-spin me-1"></i> Checking availability...</span>';
+
+    fetch('/get_booked_slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dateStr, doctor: doctorStr })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const bookedTimes = data.booked_times;
+        slotContainer.innerHTML = ''; // Clear container
+
+        allSlots.forEach(slot => {
+            const btn = document.createElement('button');
+            btn.type = 'button'; 
+            btn.className = 'btn btn-sm shadow-sm border ';
+            btn.innerText = slot;
+
+            if (bookedTimes.includes(slot)) {
+                btn.classList.add('btn-light', 'text-muted');
+                btn.disabled = true;
+                btn.style.textDecoration = 'line-through';
+            } else {
+                btn.classList.add('btn-outline-primary', 'fw-bold');
+                btn.onclick = function() {
+                    selectSlot(btn, slot);
+                };
+            }
+            slotContainer.appendChild(btn);
+        });
+    })
+    .catch(error => {
+        slotContainer.innerHTML = '<span class="text-danger small">Error loading slots.</span>';
+    });
+  }
+
+  function selectSlot(clickedBtn, timeValue) {
+    document.getElementById('selected_time').value = timeValue;
+
+    const allBtns = document.getElementById('slot-container').querySelectorAll('button');
+    allBtns.forEach(b => {
+        if (!b.disabled) {
+            b.classList.remove('btn-primary', 'text-white');
+            b.classList.add('btn-outline-primary');
+        }
+    });
+
+    clickedBtn.classList.remove('btn-outline-primary');
+    clickedBtn.classList.add('btn-primary', 'text-white');
   }
 </script>
 

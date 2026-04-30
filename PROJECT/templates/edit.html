@@ -6,10 +6,9 @@ Edit Booking | Hospital Management System
 
 {% block body %}
 <div class="container mt-5 mb-5">
-
   <div class="row justify-content-center">
-    <div class="col-lg-8 col-md-10">
-      
+    <div class="col-lg-8">
+
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
@@ -21,18 +20,15 @@ Edit Booking | Hospital Management System
         {% endif %}
       {% endwith %}
 
-      <div class="card shadow border-0 mt-3">
-        
-        <div class="card-header bg-warning text-dark text-center py-3">
+      <div class="card shadow border-0">
+        <div class="card-header bg-warning text-dark py-3 text-center">
           <h4 class="mb-0 fw-bold"><i class="fas fa-edit me-2"></i>Update Booking Details</h4>
         </div>
         
         <div class="card-body p-4 bg-light">
-          <p class="text-muted text-center mb-4">Modify the patient appointment details below. Make sure all fields are accurate.</p>
-          
           <form action="/edit/{{ posts.pid }}" method="POST">
             
-            <input type="hidden" name="slot" value="{{ posts.slot }}">
+<input type="hidden" name="slot" value="{{ posts.slot }}">
 
             <div class="row mb-3">
               <div class="col-md-6">
@@ -46,7 +42,7 @@ Edit Booking | Hospital Management System
                 <label for="email" class="form-label fw-bold text-dark">Email Address</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-envelope text-muted"></i></span>
-                  <input type="email" class="form-control" id="email" name="email" value="{{ posts.email }}" required>
+                  <input type="email" class="form-control bg-light" id="email" name="email" value="{{ posts.email }}" readonly required>
                 </div>
               </div>
             </div>
@@ -60,60 +56,6 @@ Edit Booking | Hospital Management System
                 </div>
               </div>
               <div class="col-md-6 mt-3 mt-md-0">
-                <label for="disease" class="form-label fw-bold text-dark">Disease / Symptoms</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-notes-medical text-muted"></i></span>
-                  <input type="text" class="form-control" id="disease" name="disease" value="{{ posts.disease }}" required>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="date" class="form-label fw-bold text-dark">Appointment Date</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-calendar-day text-muted"></i></span>
-                  <input type="date" class="form-control" id="date" name="date" value="{{ posts.date }}" required>
-                </div>
-              </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label for="time" class="form-label fw-bold text-dark">Appointment Time</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-clock text-muted"></i></span>
-                  <input type="time" class="form-control" id="time" name="time" value="{{ posts.time }}" required>
-                </div>
-              </div>
-            </div>
-
-<div class="row mb-3">
-              <div class="col-md-6">
-                <label for="dept" class="form-label fw-bold text-dark">Department</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
-                  <select class="form-select" id="dept" name="dept" required onchange="filterDoctors(true)">
-                    {% for d in doct %}
-                      <option value="{{ d.dept }}" {% if posts.dept == d.dept %}selected{% endif %}>{{ d.dept | capitalize }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-              
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label for="doctor" class="form-label fw-bold text-dark">Select Doctor</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-user-md text-muted"></i></span>
-                  <select class="form-select" id="doctor" name="doctor" required>
-                    <option value="" disabled hidden>Choose a Specialist</option>
-                    {% for d in doct %}
-                      <option value="{{ d.doctorname }}" data-dept="{{ d.dept }}" {% if posts.doctor == d.doctorname %}selected{% endif %}>Dr. {{ d.doctorname | capitalize }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mb-4 justify-content-center">
-              <div class="col-md-6">
                 <label for="gender" class="form-label fw-bold text-dark">Gender</label>
                 <div class="input-group">
                   <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
@@ -123,6 +65,60 @@ Edit Booking | Hospital Management System
                     <option value="Female">Female</option>
                     <option value="Others">Others</option>
                   </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="dept" class="form-label fw-bold text-dark">Department</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
+                  <select class="form-select" id="dept" name="dept" required onchange="filterDoctors(true)">
+                    <option value="" disabled hidden>Select Department</option>
+                    {% for d in doct %}
+                      <option value="{{ d.dept }}" {% if posts.dept == d.dept %}selected{% endif %}>{{ d.dept | capitalize }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label for="doctor" class="form-label fw-bold text-dark">Select Doctor</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-user-md text-muted"></i></span>
+                  <select class="form-select" id="doctor" name="doctor" required onchange="checkAvailableSlots()">
+                    <option value="" disabled hidden>Choose a Specialist</option>
+                    {% for d in doct %}
+                      <option value="{{ d.doctorname }}" data-dept="{{ d.dept }}" {% if posts.doctor == d.doctorname %}selected{% endif %}>Dr. {{ d.doctorname | capitalize }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="date" class="form-label fw-bold text-dark">Appointment Date</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-calendar-alt text-muted"></i></span>
+                  <input type="date" class="form-control" id="date" name="date" value="{{ posts.date }}" required onchange="checkAvailableSlots()">
+                </div>
+              </div>
+              <div class="col-md-6 mt-3 mt-md-0">
+                <label class="form-label fw-bold text-dark">Appointment Time</label>
+                <input type="hidden" id="selected_time" name="time" value="{{ posts.time }}" required>
+                <div id="slot-container" class="d-flex flex-wrap gap-2 pt-1">
+                  <span class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i>Loading your slot...</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-12">
+                <label for="disease" class="form-label fw-bold text-dark">Disease name / Symptoms overview</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="fas fa-notes-medical text-muted"></i></span>
+                  <input type="text" class="form-control" id="disease" name="disease" value="{{ posts.disease }}" required>
                 </div>
               </div>
             </div>
@@ -139,30 +135,27 @@ Edit Booking | Hospital Management System
 
     </div>
   </div>
-
 </div>
 
 <script>
-  // ADDED: isManualChange parameter (defaults to false for page load)
   function filterDoctors(isManualChange = false) {
     const selectedDept = document.getElementById("dept").value;
     const doctorDropdown = document.getElementById("doctor");
     const doctorOptions = doctorDropdown.querySelectorAll("option");
     
-    // If the user actively clicked a new department, wipe the old doctor selection!
+    // If the user manually changes the department, reset the doctor and time
     if (isManualChange) {
+      doctorDropdown.disabled = false;
       doctorDropdown.value = "";
+      document.getElementById('slot-container').innerHTML = '<span class="text-muted small"><i class="fas fa-info-circle me-1"></i>Please select a Doctor and Date first.</span>';
+      document.getElementById('selected_time').value = "";
     }
     
-    // Loop through every doctor option
     doctorOptions.forEach(option => {
-      // Always keep the blank placeholder option visible
       if (option.value === "") {
-         option.style.display = "block";
-         return;
+        option.style.display = "block";
+        return;
       }
-
-      // Show/hide based on department
       if (option.getAttribute("data-dept") === selectedDept) {
         option.style.display = "block";
       } else {
@@ -171,10 +164,88 @@ Edit Booking | Hospital Management System
     });
   }
 
-  // Run on page load WITHOUT resetting the existing doctor (isManualChange = false)
+  const allSlots = [
+    "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM",
+    "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
+  ];
+
+  function checkAvailableSlots() {
+    const dateStr = document.getElementById('date').value;
+    const doctorStr = document.getElementById('doctor').value;
+    const slotContainer = document.getElementById('slot-container');
+    const existingTime = document.getElementById('selected_time').value;
+
+    if (!dateStr || !doctorStr || doctorStr === "") {
+        return;
+    }
+
+    slotContainer.innerHTML = '<span class="text-primary small"><i class="fas fa-spinner fa-spin me-1"></i> Loading availability...</span>';
+
+    // Fetch API: Pass the current_pid so the user's own slot isn't blocked!
+    fetch('/get_booked_slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            date: dateStr, 
+            doctor: doctorStr,
+            current_pid: "{{ posts.pid }}" 
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const bookedTimes = data.booked_times;
+        slotContainer.innerHTML = ''; 
+
+        allSlots.forEach(slot => {
+            const btn = document.createElement('button');
+            btn.type = 'button'; 
+            btn.className = 'btn btn-sm shadow-sm border ';
+            btn.innerText = slot;
+
+            if (bookedTimes.includes(slot)) {
+                btn.classList.add('btn-light', 'text-muted');
+                btn.disabled = true;
+                btn.style.textDecoration = 'line-through';
+            } else {
+                btn.classList.add('btn-outline-primary', 'fw-bold');
+                
+                // If this slot matches their currently saved time, highlight it automatically!
+                if (slot === existingTime) {
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-primary', 'text-white');
+                }
+                
+                btn.onclick = function() {
+                    selectSlot(btn, slot);
+                };
+            }
+            slotContainer.appendChild(btn);
+        });
+    })
+    .catch(error => {
+        slotContainer.innerHTML = '<span class="text-danger small">Error loading slots.</span>';
+    });
+  }
+
+  function selectSlot(clickedBtn, timeValue) {
+    document.getElementById('selected_time').value = timeValue;
+
+    const allBtns = document.getElementById('slot-container').querySelectorAll('button');
+    allBtns.forEach(b => {
+        if (!b.disabled) {
+            b.classList.remove('btn-primary', 'text-white');
+            b.classList.add('btn-outline-primary');
+        }
+    });
+
+    clickedBtn.classList.remove('btn-outline-primary');
+    clickedBtn.classList.add('btn-primary', 'text-white');
+  }
+
+  // Trigger everything immediately when the edit page loads!
   document.addEventListener("DOMContentLoaded", function() {
     filterDoctors(false);
+    checkAvailableSlots();
   });
 </script>
-
 {% endblock body %}
