@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Add Medical Record | HMS{% endblock title %}
+
+{% block body %}
+<div class="container mt-5 mb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow border-0 rounded-4">
+        <div class="card-header bg-success text-white py-3 text-center rounded-top-4">
+          <h4 class="mb-0 fw-bold"><i class="fas fa-notes-medical me-2"></i>Patient Diagnosis & Prescription</h4>
+        </div>
+        
+        <div class="card-body p-4 bg-light">
+          <!-- Quick Patient Info Summary -->
+          <div class="alert alert-info border-0 shadow-sm mb-4">
+            <strong>Patient:</strong> {{ appointment.name }} ({{ appointment.gender }})<br>
+            <strong>Date Visited:</strong> {{ appointment.date }} at {{ appointment.time }}<br>
+            <strong>Reported Symptoms:</strong> {{ appointment.disease }}
+          </div>
+
+          <form action="/add_record/{{ appointment.pid }}" method="POST">
+            <div class="mb-3">
+              <label for="diagnosis" class="form-label fw-bold text-dark">Official Diagnosis</label>
+              <textarea class="form-control" id="diagnosis" name="diagnosis" rows="2" placeholder="e.g., Acute Bronchitis" required></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="prescription" class="form-label fw-bold text-dark">Prescription / Medications</label>
+              <textarea class="form-control" id="prescription" name="prescription" rows="4" placeholder="e.g., Amoxicillin 500mg, 2x daily for 7 days" required></textarea>
+            </div>
+            
+            <div class="mb-4">
+              <label for="notes" class="form-label fw-bold text-dark">Additional Notes (Optional)</label>
+              <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="e.g., Rest and drink plenty of fluids."></textarea>
+            </div>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-success btn-lg shadow-sm fw-bold">
+                <i class="fas fa-save me-2"></i> Finalize Medical Record
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock body %}

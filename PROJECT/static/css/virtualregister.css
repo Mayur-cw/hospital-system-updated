@@ -58,7 +58,7 @@ body {
    ========================================================================== */
 .hero-section {
     /* Updated to the newest transparency, correct image, and 60px top padding */
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.45) 0%, rgba(10, 88, 202, 0.6) 100%), url('/static/bg1.jpg');
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.45) 0%, rgba(10, 88, 202, 0.6) 100%), url('/static/images/bg1.jpg');
     background-size: cover;
     background-position: center;
     color: white;

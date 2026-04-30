@@ -65,15 +65,29 @@ Bookings | Hospital Management System
                 <td class="text-center">
                   <div class="d-flex justify-content-center gap-2">
                     
-                    <a href="/edit/{{ post.pid }}" class="btn btn-sm btn-outline-primary" title="Edit">
-                      <i class="fas fa-edit"></i> Edit
-                    </a>
-                    
-                    <form action="/delete/{{ post.pid }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this booking? This action cannot be undone.');">
-                      <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                        <i class="fas fa-trash-alt"></i> Delete
-                      </button>
-                    </form>
+                    {% if is_past_record %}
+                        <!-- Buttons for PAST RECORDS -->
+                        <a href="/view_record/{{ post.pid }}" class="btn btn-sm btn-outline-info" title="View Medical Record">
+                            <i class="fas fa-file-medical"></i> View
+                        </a>
+                        {% if current_user.usertype == "Doctor" %}
+                        <a href="/add_record/{{ post.pid }}" class="btn btn-sm btn-outline-success" title="Add Prescription">
+                            <i class="fas fa-plus-circle"></i> Prescribe
+                        </a>
+                        {% endif %}
+
+                    {% else %}
+                        <!-- Buttons for UPCOMING BOOKINGS / DASHBOARD -->
+                        <a href="/edit/{{ post.pid }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                          <i class="fas fa-edit"></i> Edit
+                        </a>
+                        
+                        <form action="/delete/{{ post.pid }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this booking? This action cannot be undone.');">
+                          <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                            <i class="fas fa-trash-alt"></i> Delete
+                          </button>
+                        </form>
+                    {% endif %}
 
                   </div>
                 </td>

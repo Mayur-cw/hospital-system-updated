@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}View Medical Record | HMS{% endblock title %}
+
+{% block body %}
+<div class="container mt-5 mb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+        
+        <!-- Header -->
+        <div class="bg-dark text-white p-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0"><i class="fas fa-file-medical-alt text-info me-2"></i>Medical Record</h3>
+                <small class="text-light opacity-75">Generated on: {{ record.created_at.strftime('%Y-%m-%d') }}</small>
+            </div>
+            <div class="text-end">
+                <h5 class="mb-0 text-info">Dr. {{ appointment.doctor | capitalize }}</h5>
+                <small>{{ appointment.dept }}</small>
+            </div>
+        </div>
+        
+        <div class="card-body p-5 bg-white">
+            <!-- Patient Details Row -->
+            <div class="row border-bottom pb-4 mb-4">
+                <div class="col-sm-6">
+                    <p class="text-muted mb-1 text-uppercase small fw-bold">Patient Name</p>
+                    <h5 class="fw-bold text-dark">{{ appointment.name }}</h5>
+                </div>
+                <div class="col-sm-3">
+                    <p class="text-muted mb-1 text-uppercase small fw-bold">Gender</p>
+                    <h5 class="fw-bold text-dark">{{ appointment.gender }}</h5>
+                </div>
+                <div class="col-sm-3">
+                    <p class="text-muted mb-1 text-uppercase small fw-bold">Date of Visit</p>
+                    <h5 class="fw-bold text-dark">{{ appointment.date }}</h5>
+                </div>
+            </div>
+
+            <!-- Medical Data -->
+            <div class="mb-4">
+                <h5 class="text-primary fw-bold border-start border-4 border-primary ps-2 mb-3">Diagnosis</h5>
+                <p class="fs-5 text-dark bg-light p-3 rounded-3">{{ record.diagnosis }}</p>
+            </div>
+
+            <div class="mb-4">
+                <h5 class="text-success fw-bold border-start border-4 border-success ps-2 mb-3">Prescription</h5>
+                <p class="fs-5 text-dark bg-light p-3 rounded-3" style="white-space: pre-wrap;">{{ record.prescription }}</p>
+            </div>
+
+            {% if record.notes %}
+            <div class="mb-4">
+                <h5 class="text-warning fw-bold border-start border-4 border-warning ps-2 mb-3">Doctor's Notes</h5>
+                <p class="text-dark bg-light p-3 rounded-3">{{ record.notes }}</p>
+            </div>
+            {% endif %}
+
+            <div class="text-center mt-5">
+                <a href="/past_records" class="btn btn-outline-dark px-4 rounded-pill fw-bold">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Records
+                </a>
+                <button onclick="window.print()" class="btn btn-primary px-4 rounded-pill fw-bold ms-2">
+                    <i class="fas fa-print me-2"></i>Print Record
+                </button>
+            </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock body %}

@@ -83,6 +83,19 @@ CREATE TABLE user (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
+
+CREATE TABLE medical_records (
+  record_id INT NOT NULL AUTO_INCREMENT,
+  pid BIGINT NOT NULL,
+  diagnosis TEXT NOT NULL,
+  prescription TEXT NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (record_id),
+  FOREIGN KEY (pid) REFERENCES patients(pid) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
 -- 3. INSERT DATA
 -- --------------------------------------------------------
 
