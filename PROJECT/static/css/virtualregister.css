@@ -161,3 +161,14 @@ footer {
     /* Adds the crisp white line to the TOP to separate it from the page content */
     border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
+
+
+
+/* Smooth fade in for table rows when filtering */
+    .fade-in-row {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }

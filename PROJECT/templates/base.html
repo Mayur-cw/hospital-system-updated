@@ -44,7 +44,6 @@
                             
                         <!-- 👨‍⚕️ DOCTOR LINKS -->
                         {% elif current_user.usertype == "Doctor" %}
-                            <!-- Removed the Directory link from here! -->
                             <li class="nav-item">
                                 <a class="nav-link" href="/upcoming_bookings">My Schedule</a>
                             </li>
@@ -72,7 +71,10 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item" href="/profile"><i class="fas fa-user-cog me-2"></i>My Profile</a></li>
-                                <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-history me-2"></i>All History</a></li>
+    
+                                <!-- 🚨 CHANGED: 'All History' is now 'Appointment Log' -->
+                                <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-clipboard-list me-2"></i>Appointment Log</a></li>
+    
                                 <li><hr class="dropdown-divider border-secondary"></li>
                                 <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                             </ul>
@@ -121,6 +123,117 @@
             <small class="mb-1 text-light" style="opacity: 0.8;">&copy; 2026 HMS Database Project. Built with Flask & MySQL.</small>
         </div>
     </footer>
+
+    <!-- ========================================== -->
+    <!-- 🍞 GLOBAL TOAST NOTIFICATION ENGINE 🍞     -->
+    <!-- ========================================== -->
+    <style>
+        /* 1. The Container - Fixed to the Top Right */
+        .toast-container {
+            position: fixed;
+            top: 80px; /* Sits cleanly below the navbar */
+            right: 20px;
+            z-index: 9999; 
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            pointer-events: none; 
+        }
+
+        /* 2. The Toast Card */
+        .toast-alert {
+            pointer-events: auto; 
+            min-width: 320px;
+            max-width: 450px;
+            background-color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+            border: none;
+            border-left: 6px solid; 
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin: 0;
+            animation: slideInRight 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+
+        /* 3. The Animations */
+        @keyframes slideInRight {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast-fade-out {
+            animation: fadeOutRight 0.6s forwards !important;
+        }
+
+        @keyframes fadeOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(120%); opacity: 0; }
+        }
+    </style>
+
+    <div class="toast-container">
+        <!-- Catch any flash messages sent from app.py -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    
+                    <!-- Map the Python category to a Bootstrap color -->
+                    {% set border_color = category %}
+                    {% if category == 'error' %}{% set border_color = 'danger' %}{% endif %}
+                    {% if category == 'message' %}{% set border_color = 'info' %}{% endif %}
+                    
+                    <div class="alert alert-dismissible toast-alert border-{{ border_color }}" role="alert">
+                        <div class="d-flex align-items-center">
+                            
+                            <!-- Smart Icons based on category -->
+                            {% if border_color == 'success' %}
+                                <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="fas fa-check text-success fs-5"></i>
+                                </div>
+                            {% elif border_color == 'danger' %}
+                                <div class="bg-danger bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="fas fa-times text-danger fs-5"></i>
+                                </div>
+                            {% elif border_color == 'warning' %}
+                                <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="fas fa-exclamation-triangle text-warning fs-5"></i>
+                                </div>
+                            {% else %}
+                                <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="fas fa-info text-info fs-5"></i>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="me-auto text-dark fw-bold" style="font-size: 0.95rem;">
+                                {{ message }}
+                            </div>
+                            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <script>
+        // 4. The Auto-Dismiss Logic
+        document.addEventListener("DOMContentLoaded", function() {
+            const toasts = document.querySelectorAll('.toast-alert');
+            
+            toasts.forEach(toast => {
+                // Set a 4-second (4000ms) timer
+                setTimeout(() => {
+                    // Apply the slide-out CSS animation
+                    toast.classList.add('toast-fade-out');
+                    
+                    // Wait for the CSS animation to finish (600ms), then delete it from the HTML
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 600); 
+                }, 4000);
+            });
+        });
+    </script>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 

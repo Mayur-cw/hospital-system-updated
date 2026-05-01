@@ -6,19 +6,6 @@ Home | Hospital Management System
 
 {% block body %}
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="container position-absolute start-50 translate-middle-x w-100" style="z-index: 1050; top: 85px; max-width: 800px;">
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-lg border-0" role="alert">
-          <i class="fas fa-check-circle me-2"></i> {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
-
 <!-- ========================================== -->
 <!-- 🩺 DOCTOR DASHBOARD VIEW 🩺                -->
 <!-- ========================================== -->
@@ -32,7 +19,14 @@ Home | Hospital Management System
       <!-- Left: Welcome -->
       <div class="col-lg-4 mb-4 mb-lg-0">
         <h2 class="fw-bold mb-1">Welcome Dr. {{ current_user.username | capitalize }},</h2>
-        <p class="text-light opacity-75 mb-0"><i class="fas fa-clock me-2"></i>Live Dashboard for {{ today_date }}</p>
+        <p class="text-light opacity-75 mb-0">
+            <i class="fas fa-calendar-alt me-2"></i>{{ today_date }} 
+            <!-- 🚨 NEW: Blinking Live Dot -->
+            <span class="ms-3 badge bg-success bg-opacity-25 text-light rounded-pill border border-success">
+                <span class="spinner-grow spinner-grow-sm text-success me-1" role="status" style="width: 0.5rem; height: 0.5rem;"></span>
+                Live Sync Active
+            </span>
+        </p>
       </div>
 
       <!-- Center: THE NEW ACTIVE PATIENT PANEL -->
@@ -40,7 +34,7 @@ Home | Hospital Management System
         {% if current_patient %}
           <div class="bg-white bg-opacity-10 rounded-4 p-3 border border-light border-opacity-25 shadow-sm">
              <span class="badge bg-danger mb-2 px-3 py-2 rounded-pill shadow-sm animate-pulse"><i class="fas fa-exclamation-circle me-1"></i> Action Required for {{ current_patient.time }}</span>
-             <h5 class="fw-bold text-white mb-3">{{ current_patient.name }}</h5>
+             <h5 class="fw-bold text-white mb-3">{{ current_patient.patient.username }}</h5>
              
              <div class="d-flex justify-content-center gap-2">
                 <form action="/mark_missed/{{ current_patient.apt_id }}" method="POST" onsubmit="return confirm('Mark as No-Show?');">
@@ -64,7 +58,7 @@ Home | Hospital Management System
         {% if next_patient %}
         <div class="d-inline-block bg-white text-dark p-3 rounded-4 shadow-sm text-start border-start border-warning border-5 w-100">
             <small class="text-uppercase fw-bold text-muted d-block mb-1">Up Next</small>
-            <h5 class="fw-bold mb-0 text-primary">{{ next_patient.name }} <span class="badge bg-warning text-dark ms-2">{{ next_patient.time }}</span></h5>
+            <h5 class="fw-bold mb-0 text-primary">{{ next_patient.patient.username }} <span class="badge bg-warning text-dark ms-2">{{ next_patient.time }}</span></h5>
             <small class="text-muted">{{ next_patient.disease | truncate(20) }}</small>
         </div>
         {% elif not current_patient %}
@@ -82,10 +76,10 @@ Home | Hospital Management System
 
 <div class="container" style="margin-top: -60px; position: relative; z-index: 10;">
   
-  <!-- 4 Data Widgets -->
+  <!-- 🚨 NEW: 4 INTERACTIVE FILTER WIDGETS -->
   <div class="row mb-5">
     <div class="col-md-3 mb-3">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card shadow rounded-4 h-100 filter-card border-primary border-2 active-filter" id="filter-all" onclick="filterQueue('all')" style="cursor: pointer; transition: all 0.2s ease;">
         <div class="card-body p-4 d-flex align-items-center">
           <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3">
             <i class="fas fa-users fa-2x"></i>
@@ -97,21 +91,23 @@ Home | Hospital Management System
         </div>
       </div>
     </div>
+    
     <div class="col-md-3 mb-3">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card border-0 shadow-sm rounded-4 h-100 filter-card" id="filter-waiting" onclick="filterQueue('waiting')" style="cursor: pointer; transition: all 0.2s ease;">
         <div class="card-body p-4 d-flex align-items-center">
           <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 me-3">
             <i class="fas fa-hourglass-half fa-2x"></i>
           </div>
           <div>
             <h3 class="fw-bold mb-0">{{ waiting_count }}</h3>
-            <span class="text-muted small text-uppercase fw-bold">Waiting</span>
+            <span class="text-muted small text-uppercase fw-bold">Waiting & Unverified</span>
           </div>
         </div>
       </div>
     </div>
+    
     <div class="col-md-3 mb-3">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card border-0 shadow-sm rounded-4 h-100 filter-card" id="filter-completed" onclick="filterQueue('completed')" style="cursor: pointer; transition: all 0.2s ease;">
         <div class="card-body p-4 d-flex align-items-center">
           <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 me-3">
             <i class="fas fa-check fa-2x"></i>
@@ -123,14 +119,15 @@ Home | Hospital Management System
         </div>
       </div>
     </div>
+    
     <div class="col-md-3 mb-3">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
+      <div class="card border-0 shadow-sm rounded-4 h-100 filter-card" id="filter-pending_rx" onclick="filterQueue('pending_rx')" style="cursor: pointer; transition: all 0.2s ease;">
         <div class="card-body p-4 d-flex align-items-center">
           <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-3 me-3">
             <i class="fas fa-notes-medical fa-2x"></i>
           </div>
           <div>
-            <h3 class="fw-bold mb-0">{{ action_required_count }}</h3>
+            <h3 class="fw-bold mb-0">{{ pending_rx_count }}</h3>
             <span class="text-muted small text-uppercase fw-bold">Pending Rx</span>
           </div>
         </div>
@@ -143,11 +140,11 @@ Home | Hospital Management System
     <div class="col-lg-8 mb-4">
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
-                <h5 class="fw-bold mb-0"><i class="fas fa-list-ul text-primary me-2"></i>Live Queue</h5>
+                <h5 class="fw-bold mb-0" id="queue-title"><i class="fas fa-list-ul text-primary me-2"></i>Live Queue (Total Today)</h5>
                 <a href="/upcoming_bookings" class="btn btn-sm btn-outline-primary rounded-pill">Full Schedule</a>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
+                <div class="table-responsive" style="min-height: 200px;">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light text-muted small text-uppercase">
                             <tr>
@@ -158,74 +155,107 @@ Home | Hospital Management System
                             </tr>
                         </thead>
                         <tbody>
-                            {% for apt in live_queue %}
-                            <tr class="{% if apt == current_patient %}bg-light border-start border-primary border-4{% endif %}">
+                            <!-- 🚨 NEW: Passing the entire queue with Data Attributes -->
+                            {% for apt in all_queue %}
+                            <tr class="queue-row {% if apt == current_patient %}bg-light border-start border-primary border-4{% endif %}" data-category="{{ apt.category }}">
                                 <td class="ps-4 fw-bold">{{ apt.time }}</td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="bg-white rounded-circle p-2 me-2 border text-secondary"><i class="fas fa-user"></i></div>
                                         <div>
-                                            <p class="mb-0 fw-bold">{{ apt.name }}</p>
+                                            <p class="mb-0 fw-bold">{{ apt.patient.username }}</p>
                                             <small class="text-muted">{{ apt.disease | truncate(25) }}</small>
                                         </div>
                                     </div>
                                 </td>
                                 
-                                <!-- Smart Status Badges -->
+                                <!-- 🚨 MERGED: Interactive Status Column -->
                                 <td>
-                                    {% if apt.slot == 'Attended' %}
+                                    {% if apt.category == 'completed' %}
+                                        <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Completed</span>
+                                    {% elif apt.category == 'missed' %}
+                                        <span class="badge bg-secondary"><i class="fas fa-user-times me-1"></i>Missed</span>
+                                    {% elif apt.category == 'pending_rx' %}
                                         <span class="badge bg-warning text-dark"><i class="fas fa-clipboard-check me-1"></i>Pending Rx</span>
-                                    {% elif apt.is_active %}
-                                        <span class="badge bg-danger"><i class="fas fa-exclamation-circle me-1"></i>Verify Status</span>
-                                    {% elif apt == next_patient %}
-                                        <span class="badge bg-warning text-dark"><i class="fas fa-arrow-right me-1"></i>Up Next</span>
-                                    {% else %}
-                                        <span class="badge bg-light text-secondary"><i class="fas fa-clock me-1"></i>Waiting</span>
+                                    {% elif apt.category == 'waiting' %}
+                                        
+                                        {% if apt.is_active %}
+                                            <!-- The Button IS the Status Badge now! -->
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-danger rounded-pill dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem; font-weight: bold; padding: 0.35em 0.65em;">
+                                                    <i class="fas fa-exclamation-circle me-1"></i> Verify Status
+                                                </button>
+                                                <ul class="dropdown-menu shadow border-0">
+                                                    <li>
+                                                        <form action="/mark_attended/{{ apt.apt_id }}" method="POST">
+                                                            <button class="dropdown-item fw-bold text-success"><i class="fas fa-check-circle me-2"></i>Mark Attended (Pending Rx)</button>
+                                                        </form>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <form action="/mark_missed/{{ apt.apt_id }}" method="POST" onsubmit="return confirm('Mark as No-Show?');">
+                                                            <button class="dropdown-item fw-bold text-danger"><i class="fas fa-times-circle me-2"></i>Mark Missed</button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        {% else %}
+                                            <!-- WAITING PATIENT: Subtle Outline Dropdown -->
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary rounded-pill dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem; font-weight: bold; padding: 0.35em 0.65em;">
+                                                    <i class="fas fa-clock me-1"></i> Waiting
+                                                </button>
+                                                <ul class="dropdown-menu shadow border-0">
+                                                    <li>
+                                                        <form action="/mark_attended/{{ apt.apt_id }}" method="POST">
+                                                            <button class="dropdown-item fw-bold text-success"><i class="fas fa-check-circle me-2"></i>Mark Attended Early</button>
+                                                        </form>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <form action="/mark_missed/{{ apt.apt_id }}" method="POST" onsubmit="return confirm('Cancel/Mark Missed?');">
+                                                            <button class="dropdown-item fw-bold text-danger"><i class="fas fa-times-circle me-2"></i>Mark Missed</button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        {% endif %}
+
                                     {% endif %}
                                 </td>
 
-                                <!-- 🚨 NEW: DROPDOWN & RX ACTIONS -->
+                                <!-- 🚨 DYNAMIC: Rx Buttons Column -->
                                 <td class="text-end pe-4">
                                     <div class="d-flex justify-content-end gap-2">
-                                        
-                                        <!-- If active but not marked attended yet, show the Verify dropdown -->
-                                        {% if apt.is_active and apt.slot != 'Attended' %}
-                                        <div class="dropdown">
-                                          <button class="btn btn-sm btn-outline-secondary dropdown-toggle rounded-pill fw-bold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            Verify 
-                                          </button>
-                                          <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                            <li>
-                                                <form action="/mark_attended/{{ apt.apt_id }}" method="POST">
-                                                    <button class="dropdown-item fw-bold text-success"><i class="fas fa-check-circle me-2"></i>Mark Attended (Pending Rx)</button>
-                                                </form>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <form action="/mark_missed/{{ apt.apt_id }}" method="POST" onsubmit="return confirm('Mark as No-Show?');">
-                                                    <button class="dropdown-item fw-bold text-danger"><i class="fas fa-times-circle me-2"></i>Mark Missed</button>
-                                                </form>
-                                            </li>
-                                          </ul>
-                                        </div>
+                                        {% if apt.category == 'completed' %}
+                                            <a href="/view_record/{{ apt.apt_id }}" class="btn btn-sm btn-success rounded-pill shadow-sm fw-bold">
+                                                <i class="fas fa-eye"></i> View Rx
+                                            </a>
+                                            <a href="/edit_record/{{ apt.apt_id }}" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm fw-bold">
+                                                <i class="fas fa-edit"></i> Edit Rx
+                                            </a>
+                                        {% elif apt.category == 'missed' %}
+                                            <span class="text-muted small border px-2 py-1 rounded bg-light">No Action Needed</span>
+                                        {% else %}
+                                            <!-- 🚨 FIXED: Write Rx is now ALWAYS active for Waiting and Pending Rx patients -->
+                                            <a href="/add_record/{{ apt.apt_id }}" class="btn btn-sm btn-primary rounded-pill shadow-sm fw-bold">
+                                                <i class="fas fa-pen"></i> Write Rx
+                                            </a>
                                         {% endif %}
-
-                                        <!-- The constant Write Rx button -->
-                                        <a href="/add_record/{{ apt.apt_id }}" class="btn btn-sm btn-primary rounded-pill shadow-sm fw-bold">
-                                            <i class="fas fa-pen"></i> Rx
-                                        </a>
                                     </div>
                                 </td>
                             </tr>
-                            {% else %}
-                            <tr>
+                            {% endfor %}
+                            
+                            <!-- Hidden Empty State Message -->
+                            <tr id="empty-queue-msg" style="display: none;">
                                 <td colspan="4" class="text-center py-5 text-muted">
                                     <i class="fas fa-bed fa-3x mb-3 text-light"></i>
-                                    <h5>Live Queue is Empty</h5>
-                                    <p>All scheduled patients have been handled.</p>
+                                    <h5>No Patients Found</h5>
+                                    <p>There are no patients currently matching this filter.</p>
                                 </td>
                             </tr>
-                            {% endfor %}
+                            
                         </tbody>
                     </table>
                 </div>
@@ -241,11 +271,11 @@ Home | Hospital Management System
             </div>
             <div class="card-body p-4">
                 <div class="d-grid gap-3">
-                    <a href="/upcoming_bookings" class="btn btn-outline-dark btn-lg text-start rounded-3 shadow-sm d-flex justify-content-between align-items-center">
+                    <a href="/upcoming_bookings" class="btn btn-outline-dark btn-lg text-start rounded-3 shadow-sm d-flex justify-content-between align-items-center hover-lift">
                         <span><i class="fas fa-calendar-alt text-primary me-3"></i> Upcoming Appointments</span>
                         <i class="fas fa-chevron-right text-muted"></i>
                     </a>
-                    <a href="/past_records" class="btn btn-outline-dark btn-lg text-start rounded-3 shadow-sm d-flex justify-content-between align-items-center">
+                    <a href="/past_records" class="btn btn-outline-dark btn-lg text-start rounded-3 shadow-sm d-flex justify-content-between align-items-center hover-lift">
                         <span><i class="fas fa-folder-open text-success me-3"></i> Patient History</span>
                         <i class="fas fa-chevron-right text-muted"></i>
                     </a>
@@ -257,7 +287,12 @@ Home | Hospital Management System
 </div>
 
 <style>
-    /* Slight pulse animation to draw attention to active UI elements */
+    /* Styling for the interactive JS cards */
+    .filter-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    
     .animate-pulse {
         animation: pulse 2s infinite;
     }
@@ -269,7 +304,60 @@ Home | Hospital Management System
 </style>
 
 <script>
-    // Silently refreshes the doctor dashboard every 60 seconds
+    // 1. Run this immediately when the page loads
+    document.addEventListener("DOMContentLoaded", function() {
+        // Check if we saved a filter state before the last reload
+        let savedFilter = sessionStorage.getItem('activeQueueFilter') || 'all';
+        filterQueue(savedFilter);
+    });
+
+    function filterQueue(category) {
+        // Save the choice so it survives the 60-second auto-reload
+        sessionStorage.setItem('activeQueueFilter', category);
+
+        document.querySelectorAll('.filter-card').forEach(card => {
+            card.classList.remove('border-primary', 'border-2', 'shadow');
+            card.classList.add('border-0', 'shadow-sm');
+        });
+        
+        let activeCard = document.getElementById('filter-' + category);
+        if(activeCard) {
+            activeCard.classList.remove('border-0', 'shadow-sm');
+            activeCard.classList.add('border-primary', 'border-2', 'shadow');
+        }
+
+        let titleMap = {
+            'all': 'Live Queue (Total Today)',
+            'waiting': 'Waiting & Unverified',
+            'completed': 'Completed Only',
+            'pending_rx': 'Pending Rx Only'
+        };
+        document.getElementById('queue-title').innerHTML = '<i class="fas fa-list-ul text-primary me-2"></i>' + titleMap[category];
+
+        const rows = document.querySelectorAll('.queue-row');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            if (category === 'all' || row.getAttribute('data-category') === category) {
+                row.style.display = '';
+                // Add a tiny animation class so they don't just snap into existence
+                row.classList.add('fade-in-row'); 
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+                row.classList.remove('fade-in-row');
+            }
+        });
+
+        let emptyMsg = document.getElementById('empty-queue-msg');
+        if(visibleCount === 0) {
+            emptyMsg.style.display = '';
+        } else {
+            emptyMsg.style.display = 'none';
+        }
+    }
+
+    // Refresh the page every 60 seconds
     setTimeout(function() {
         window.location.reload();
     }, 60000);
