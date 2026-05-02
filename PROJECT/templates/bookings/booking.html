@@ -23,10 +23,7 @@
         </div>
       </div>
 
-      <!-- 🚨 ALERT BLOCK REMOVED: Now handled globally by base.html Toast Engine -->
-
       <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-        <!-- 🚨 FIXED: Added min-height to prevent dropdown menu clipping on small tables -->
         <div class="table-responsive" style="min-height: 350px;">
           <table class="table table-hover align-middle mb-0">
             <thead class="table-dark text-uppercase small tracking-wide">
@@ -59,7 +56,9 @@
                 <td>{{ post.time }}</td>
                 <td class="text-muted">{{ post.disease | truncate(25) }}</td>
                 
-                <!-- 🚨 UPDATED STATUS LOGIC -->
+                <!-- ========================================== -->
+                <!-- 🚨 UNIFIED INTERACTIVE STATUS COLUMN 🚨    -->
+                <!-- ========================================== -->
                 <td>
                   {% if post.slot == 'Cancelled' %}
                     <span class="badge bg-danger bg-opacity-10 text-danger border border-danger"><i class="fas fa-ban me-1"></i> Cancelled</span>
@@ -69,57 +68,38 @@
                     <span class="badge bg-secondary"><i class="fas fa-user-times me-1"></i> Missed</span>
                   {% elif post.slot == 'Attended' %}
                     <span class="badge bg-warning text-dark"><i class="fas fa-clipboard-check me-1"></i> Pending Rx</span>
-                  {% elif not is_past_record and page_title == "Upcoming Appointments" %}
-                    <span class="badge bg-light text-secondary border"><i class="fas fa-clock me-1"></i> Scheduled</span>
+                  
                   {% else %}
-                    <span class="badge bg-danger"><i class="fas fa-exclamation-circle me-1"></i> Unverified</span>
-                  {% endif %}
-                </td>
-
-                <td class="text-end pe-4">
-                  <div class="d-flex justify-content-end gap-2">
-                    
-                    <!-- SCENARIO: CANCELLED APPOINTMENTS -->
-                    {% if post.slot == 'Cancelled' %}
-                      <span class="text-muted small border px-2 py-1 rounded bg-light">No Further Action</span>
-
-                    <!-- SCENARIO: UPCOMING APPOINTMENTS -->
-                    {% elif not is_past_record and page_title == "Upcoming Appointments" %}
-                      <a href="/edit/{{ post.apt_id }}" class="btn btn-sm btn-outline-warning text-dark fw-bold px-3 rounded-pill shadow-sm">
-                        <i class="fas fa-edit me-1"></i> Reschedule
-                      </a>
-                      <form action="/delete/{{ post.apt_id }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this appointment?');" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-danger fw-bold px-3 rounded-pill shadow-sm">
-                          <i class="fas fa-trash-alt me-1"></i> Cancel
-                        </button>
-                      </form>
-                    
-                    <!-- SCENARIO: PAST RECORDS / LOG -->
-                    {% else %}
+                    <!-- IT IS EITHER UPCOMING OR PAST-UNVERIFIED -->
+                    {% if current_user.usertype == 'Doctor' %}
                       
-                      {% if post.apt_id in prescribed_apt_ids or post.slot == 'Completed' %}
-                        <a href="/view_record/{{ post.apt_id }}" class="btn btn-sm btn-success fw-bold rounded-pill shadow-sm">
-                          <i class="fas fa-eye me-1"></i> View Rx
-                        </a>
-                        {% if current_user.usertype == 'Doctor' %}
-                        <a href="/edit_record/{{ post.apt_id }}" class="btn btn-sm btn-outline-primary fw-bold rounded-pill shadow-sm">
-                          <i class="fas fa-edit me-1"></i> Edit Rx
-                        </a>
-                        {% endif %}
-                      
-                      {% elif post.slot == 'Missed' %}
-                        <span class="text-muted small border px-2 py-1 rounded bg-light">Patient No-Show</span>
-                      
+                      {% if not is_past_record and page_title == "Upcoming Appointments" %}
+                        <!-- 🚨 OUTLINE DROPDOWN (Matches 'Waiting' on Dashboard) -->
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem; font-weight: bold; padding: 0.35em 0.65em;">
+                                <i class="fas fa-clock me-1"></i> Scheduled
+                            </button>
+                            <ul class="dropdown-menu shadow border-0">
+                                <li>
+                                    <form action="/mark_attended/{{ post.apt_id }}" method="POST">
+                                        <button class="dropdown-item fw-bold text-success"><i class="fas fa-check-circle me-2"></i>Mark Attended Early</button>
+                                    </form>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="/cancel_apt/{{ post.apt_id }}" method="POST" onsubmit="return confirm('Cancel this appointment?');">
+                                        <button class="dropdown-item fw-bold text-danger"><i class="fas fa-ban me-2"></i>Cancel Appointment</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
                       {% else %}
-                        <!-- Limbo / Unverified / Pending Rx -->
-                        {% if current_user.usertype == 'Doctor' %}
-                          
-                          {% if post.slot != 'Attended' %}
-                            <div class="dropdown">
-                              <button class="btn btn-sm btn-outline-danger dropdown-toggle rounded-pill fw-bold shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Verify 
-                              </button>
-                              <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <!-- 🚨 DANGER DROPDOWN (Matches 'Verify Status' on Dashboard) -->
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-danger rounded-pill dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem; font-weight: bold; padding: 0.35em 0.65em;">
+                                <i class="fas fa-exclamation-circle me-1"></i> Verify Status
+                            </button>
+                            <ul class="dropdown-menu shadow border-0">
                                 <li>
                                     <form action="/mark_attended/{{ post.apt_id }}" method="POST">
                                         <button class="dropdown-item fw-bold text-success"><i class="fas fa-check-circle me-2"></i>Mark Attended</button>
@@ -131,18 +111,71 @@
                                         <button class="dropdown-item fw-bold text-danger"><i class="fas fa-times-circle me-2"></i>Mark Missed</button>
                                     </form>
                                 </li>
-                              </ul>
-                            </div>
+                            </ul>
+                        </div>
+                      {% endif %}
+
+                    {% else %}
+                      <!-- PATIENT STATIC VIEW -->
+                      {% if not is_past_record and page_title == "Upcoming Appointments" %}
+                        <span class="badge bg-light text-secondary border"><i class="fas fa-clock me-1"></i> Scheduled</span>
+                      {% else %}
+                        <span class="badge bg-danger"><i class="fas fa-hourglass-half me-1"></i> Awaiting Verification</span>
+                      {% endif %}
+                    {% endif %}
+
+                  {% endif %}
+                </td>
+
+                <!-- ========================================== -->
+                <!-- 🚨 UNIFIED QUICK ACTION COLUMN 🚨          -->
+                <!-- ========================================== -->
+                <td class="text-end pe-4">
+                  <div class="d-flex justify-content-end gap-2">
+                    
+                    {% if post.slot == 'Cancelled' %}
+                      <span class="text-muted small border px-2 py-1 rounded bg-light">No Further Action</span>
+                      
+                    {% elif post.apt_id in prescribed_apt_ids or post.slot == 'Completed' %}
+                      <a href="/view_record/{{ post.apt_id }}" class="btn btn-sm btn-success fw-bold rounded-pill shadow-sm">
+                        <i class="fas fa-eye me-1"></i> View Rx
+                      </a>
+                      {% if current_user.usertype == 'Doctor' %}
+                      <a href="/edit_record/{{ post.apt_id }}" class="btn btn-sm btn-outline-primary fw-bold rounded-pill shadow-sm">
+                        <i class="fas fa-edit me-1"></i> Edit Rx
+                      </a>
+                      {% endif %}
+                    
+                    {% elif post.slot == 'Missed' %}
+                      <span class="text-muted small border px-2 py-1 rounded bg-light">Patient No-Show</span>
+
+                    {% else %}
+                      
+                      <!-- ACTIONS FOR SCHEDULED / UNVERIFIED / PENDING RX -->
+                      {% if current_user.usertype == 'Doctor' %}
+                          
+                          {% if not is_past_record and page_title == "Upcoming Appointments" %}
+                             <!-- Reschedule is strictly an Upcoming action -->
+                             <a href="/edit/{{ post.apt_id }}" class="btn btn-sm btn-outline-warning text-dark fw-bold px-3 rounded-pill shadow-sm">
+                               <i class="fas fa-edit me-1"></i> Reschedule
+                             </a>
                           {% endif %}
                           
                           <a href="/add_record/{{ post.apt_id }}" class="btn btn-sm btn-primary rounded-pill shadow-sm fw-bold">
                             <i class="fas fa-pen me-1"></i> Write Rx
                           </a>
-                          
-                        {% else %}
-                          <span class="text-muted small"><i class="fas fa-hourglass-half me-1"></i> Processing by Doctor</span>
-                        {% endif %}
 
+                      {% else %}
+                          <!-- PATIENT ACTIONS -->
+                          {% if not is_past_record and page_title == "Upcoming Appointments" %}
+                             <form action="/cancel_apt/{{ post.apt_id }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this appointment?');" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-danger fw-bold px-3 rounded-pill shadow-sm">
+                                  <i class="fas fa-ban me-1"></i> Cancel
+                                </button>
+                             </form>
+                          {% else %}
+                             <span class="text-muted small"><i class="fas fa-hourglass-half me-1"></i> Processing by Doctor</span>
+                          {% endif %}
                       {% endif %}
 
                     {% endif %}

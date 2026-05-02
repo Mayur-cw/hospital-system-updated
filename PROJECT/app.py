@@ -10,7 +10,7 @@ from datetime import datetime, date
 
 # Import our separated config and models
 from config import Config
-from models import db, Test, User, Appointments, MedicalRecord, Doctors, AuditLog # 🚨 UPDATED IMPORT
+from models import db, Test, User, Appointments, MedicalRecord, Doctors, AuditLog 
 
 # ─────────────────────────────────────────────
 # App Configuration
@@ -48,7 +48,12 @@ def is_slot_booked(requested_date, requested_time, target_doctor, current_apt_id
     if current_apt_id:
         query = query.filter(Appointments.apt_id != current_apt_id)
 
-    return query.first() is not None
+    bookings = query.all()
+    
+    # 🚨 SMART FIX: If an appointment is Cancelled or Missed, the slot becomes available again!
+    active_bookings = [b for b in bookings if b.slot not in ['Cancelled', 'Missed']]
+
+    return len(active_bookings) > 0
 
 # ─────────────────────────────────────────────
 # Routes
@@ -73,7 +78,7 @@ def index():
         unverified_active = []
         next_patient = None
         
-        # New Strict Counters for the Filter Cards
+        # Strict Counters for the Filter Cards
         completed_count = 0
         waiting_count = 0
         pending_rx_count = 0 
@@ -84,12 +89,14 @@ def index():
             apt_time = datetime.strptime(apt.time, '%I:%M %p').time()
             apt.is_active = (apt_time <= now)
 
-            # 🚨 NEW: Categorize every patient for the JS Filters
+            # Categorize every patient for the JS Filters
             if apt.apt_id in prescribed_apt_ids or apt.slot == 'Completed':
                 apt.category = 'completed'
                 completed_count += 1
             elif apt.slot == 'Missed':
                 apt.category = 'missed'
+            elif apt.slot == 'Cancelled':
+                apt.category = 'cancelled' # Exclude from waiting counts
             elif apt.slot == 'Attended':
                 apt.category = 'pending_rx'
                 pending_rx_count += 1
@@ -111,13 +118,13 @@ def index():
         formatted_date = today.strftime('%A, %b %d, %Y')
 
         return render_template('index.html', 
-                               all_queue=todays_appointments, # Pass EVERYONE
+                               all_queue=todays_appointments, 
                                total_today=total_today,
                                current_patient=current_patient,
                                next_patient=next_patient,
                                waiting_count=waiting_count,
                                completed_count=completed_count,
-                               pending_rx_count=pending_rx_count, # Pass new strict counter
+                               pending_rx_count=pending_rx_count, 
                                today_date=formatted_date)
 
     return render_template('index.html')
@@ -145,7 +152,8 @@ def get_booked_slots():
         query = query.filter(Appointments.apt_id != current_apt_id)
 
     bookings = query.all()
-    booked_times = [booking.time for booking in bookings]
+    # 🚨 SMART FIX: Don't disable slots in the JS calendar if they were cancelled
+    booked_times = [b.time for b in bookings if b.slot not in ['Cancelled', 'Missed']]
 
     return jsonify({'booked_times': booked_times})
 
@@ -155,7 +163,6 @@ def patient():
     doct = Doctors.query.all()
 
     if request.method == "POST":
-        # 🚨 NORMALIZATION FIX: We no longer pull personal info from the form!
         slot    = request.form.get('slot', '').strip()
         disease = request.form.get('disease', '').strip()
         time    = request.form.get('time', '').strip()
@@ -191,7 +198,6 @@ def patient():
             flash(f"Slot Unavailable: Dr. {doctor.capitalize()} is already booked at {time}. Please choose another slot.", "warning")
             return redirect(url_for('patient'))
 
-        # 🚨 NORMALIZATION FIX: Create appointment using the Foreign Key user_id
         new_appointment = Appointments(
             user_id=current_user.id, 
             slot=slot, disease=disease, time=time,
@@ -212,12 +218,32 @@ def patient():
 def booking_success(apt_id):
     appointment = Appointments.query.get_or_404(apt_id)
     
-    # 🚨 NORMALIZATION FIX: Compare user_id instead of email
     if current_user.usertype != "Doctor" and appointment.user_id != current_user.id:
         flash("Unauthorized access.", "danger")
         return redirect(url_for('index'))
         
     return render_template('bookings/booking_success.html', appointment=appointment)
+
+# 🚨 NEW: The Cancel Appointment Route
+@app.route('/cancel_apt/<int:apt_id>', methods=['POST'])
+@login_required
+def cancel_apt(apt_id):
+    appointment = Appointments.query.get_or_404(apt_id)
+
+    # Security Check
+    if current_user.usertype == "Patient" and appointment.user_id != current_user.id:
+        flash("Unauthorized! You can only cancel your own appointments.", "danger")
+        return redirect(request.referrer or url_for('upcoming_bookings'))
+    elif current_user.usertype == "Doctor" and appointment.doctor.lower() != current_user.username.lower():
+         flash("Unauthorized! You can only cancel your own schedule.", "danger")
+         return redirect(request.referrer or url_for('dashboard'))
+
+    # Update state to cancelled instead of deleting
+    appointment.slot = 'Cancelled'
+    db.session.commit()
+    
+    flash(f"Appointment has been successfully cancelled.", "warning")
+    return redirect(request.referrer or url_for('dashboard'))
 
 @app.route('/mark_missed/<int:apt_id>', methods=['POST'])
 @login_required
@@ -261,7 +287,6 @@ def dashboard():
     records = MedicalRecord.query.all()
     prescribed_apt_ids = [r.apt_id for r in records]
     
-    # 🚨 RENAMED: This is now the master 'Appointment Log'
     return render_template('bookings/booking.html', query=query, page_title="Appointment Log", prescribed_apt_ids=prescribed_apt_ids)
 
 @app.route('/upcoming_bookings')
@@ -277,7 +302,6 @@ def upcoming_bookings():
             Appointments.date >= today
         ).all()
     else:
-        # 🚨 NORMALIZATION FIX
         raw_query = Appointments.query.filter(
             Appointments.user_id == current_user.id, 
             Appointments.date >= today
@@ -291,7 +315,8 @@ def upcoming_bookings():
         apt_time = datetime.strptime(apt.time, '%I:%M %p').time()
         if apt.date == today and apt_time <= now:
             continue
-        if apt.slot in ['Completed', 'Missed', 'Attended'] or apt.apt_id in prescribed_apt_ids:
+        # 🚨 FILTER FIX: Exclude Cancelled from Upcoming views
+        if apt.slot in ['Completed', 'Missed', 'Attended', 'Cancelled'] or apt.apt_id in prescribed_apt_ids:
             continue
         upcoming_list.append(apt)
         
@@ -335,7 +360,6 @@ def view_record(apt_id):
     appointment = Appointments.query.get_or_404(apt_id)
     record = MedicalRecord.query.filter_by(apt_id=apt_id).first()
     
-    # 🚨 NORMALIZATION FIX
     if current_user.usertype == "Patient" and appointment.user_id != current_user.id:
         flash("Unauthorized access to medical records.", "danger")
         return redirect(url_for('dashboard'))
@@ -395,19 +419,18 @@ def past_records():
     
     history_list = []
     
-    # 🚨 THE STRICT CLINICAL FILTER
+    # THE STRICT CLINICAL FILTER
     for apt in raw_query:
         is_completed = (apt.apt_id in prescribed_apt_ids) or (apt.slot == 'Completed')
         is_pending_rx = (apt.slot == 'Attended')
-        # Catch unverified past appointments, but explicitly EXCLUDE 'Missed'
-        is_past_unverified = (str(apt.date) < today_str and apt.slot not in ['Completed', 'Attended', 'Missed'])
+        # 🚨 FILTER FIX: Ensure 'Cancelled' is strictly excluded from clinical history
+        is_past_unverified = (str(apt.date) < today_str and apt.slot not in ['Completed', 'Attended', 'Missed', 'Cancelled'])
         
         if is_completed or is_pending_rx or is_past_unverified:
             history_list.append(apt)
 
     history_list.sort(key=lambda x: datetime.strptime(f"{x.date} {x.time}", '%Y-%m-%d %I:%M %p'), reverse=True)
     
-    # 🚨 RENAMED BACK: Remains 'Patient History'
     return render_template('bookings/booking.html', query=history_list, page_title="Patient History", is_past_record=True, prescribed_apt_ids=prescribed_apt_ids)
 
 @app.route('/edit/<int:apt_id>', methods=['POST', 'GET'])
@@ -416,13 +439,11 @@ def edit(apt_id):
     post = Appointments.query.get_or_404(apt_id)
     doct = Doctors.query.all()
 
-    # 🚨 NORMALIZATION FIX
     if current_user.usertype != "Doctor" and post.user_id != current_user.id:
         flash("Unauthorized access.", "danger")
         return redirect(url_for('upcoming_bookings'))
 
     if request.method == "POST":
-        # 🚨 NORMALIZATION FIX: Only updating the booking details, NOT personal info!
         post.slot    = request.form.get('slot', '').strip()
         post.disease = request.form.get('disease', '').strip()
         new_time     = request.form.get('time', '').strip()
@@ -449,15 +470,15 @@ def edit(apt_id):
 def delete(apt_id):
     appointment = Appointments.query.get_or_404(apt_id)
 
-    # 🚨 NORMALIZATION FIX
     if current_user.usertype != "Doctor" and appointment.user_id != current_user.id:
         flash("Unauthorized access.", "danger")
         return redirect(url_for('upcoming_bookings'))
 
     db.session.delete(appointment)
     db.session.commit()
-    flash("Booking deleted successfully.", "danger")
-    return redirect(url_for('upcoming_bookings'))
+    # Updated to stay on same page
+    flash("Booking permanently deleted from database.", "danger")
+    return redirect(request.referrer or url_for('dashboard'))
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -577,7 +598,6 @@ def search():
 
         search_term = f"%{query_str}%"
 
-        # 🚨 SMART SEARCH FIX: Use SQLAlchemy .join() to search the User table via the Appointment
         if current_user.usertype == 'Doctor':
             results = Appointments.query.join(User).filter(
                 Appointments.doctor == current_user.username,
@@ -618,7 +638,6 @@ def admin_dashboard():
     total_users = User.query.filter_by(usertype='Patient').count()
     total_appointments = Appointments.query.count()
     
-    # 🚨 UPDATED: AuditLog instead of Trigr
     recent_logs = AuditLog.query.order_by(AuditLog.tid.desc()).limit(5).all()
 
     return render_template('admin/admin.html', 
@@ -659,7 +678,6 @@ def add_staff():
 @app.route('/details')
 @login_required
 def details():
-    # 🚨 UPDATED: AuditLog instead of Trigr
     posts = AuditLog.query.order_by(AuditLog.tid.desc()).all()
     return render_template('admin/trigers.html', posts=posts)
 

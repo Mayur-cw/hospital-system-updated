@@ -155,7 +155,6 @@ Home | Hospital Management System
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- 🚨 NEW: Passing the entire queue with Data Attributes -->
                             {% for apt in all_queue %}
                             <tr class="queue-row {% if apt == current_patient %}bg-light border-start border-primary border-4{% endif %}" data-category="{{ apt.category }}">
                                 <td class="ps-4 fw-bold">{{ apt.time }}</td>
@@ -169,18 +168,19 @@ Home | Hospital Management System
                                     </div>
                                 </td>
                                 
-                                <!-- 🚨 MERGED: Interactive Status Column -->
                                 <td>
                                     {% if apt.category == 'completed' %}
                                         <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Completed</span>
                                     {% elif apt.category == 'missed' %}
                                         <span class="badge bg-secondary"><i class="fas fa-user-times me-1"></i>Missed</span>
+                                    <!-- 🚨 NEW: Added handler for Cancelled appointments in the Live Queue -->
+                                    {% elif apt.category == 'cancelled' %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger"><i class="fas fa-ban me-1"></i>Cancelled</span>
                                     {% elif apt.category == 'pending_rx' %}
                                         <span class="badge bg-warning text-dark"><i class="fas fa-clipboard-check me-1"></i>Pending Rx</span>
                                     {% elif apt.category == 'waiting' %}
                                         
                                         {% if apt.is_active %}
-                                            <!-- The Button IS the Status Badge now! -->
                                             <div class="dropdown">
                                                 <button class="btn btn-sm btn-danger rounded-pill dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem; font-weight: bold; padding: 0.35em 0.65em;">
                                                     <i class="fas fa-exclamation-circle me-1"></i> Verify Status
@@ -192,6 +192,7 @@ Home | Hospital Management System
                                                         </form>
                                                     </li>
                                                     <li><hr class="dropdown-divider"></li>
+                                                    <!-- 🚨 PAST/NOW: Remains 'Mark Missed' -->
                                                     <li>
                                                         <form action="/mark_missed/{{ apt.apt_id }}" method="POST" onsubmit="return confirm('Mark as No-Show?');">
                                                             <button class="dropdown-item fw-bold text-danger"><i class="fas fa-times-circle me-2"></i>Mark Missed</button>
@@ -200,7 +201,6 @@ Home | Hospital Management System
                                                 </ul>
                                             </div>
                                         {% else %}
-                                            <!-- WAITING PATIENT: Subtle Outline Dropdown -->
                                             <div class="dropdown">
                                                 <button class="btn btn-sm btn-outline-secondary rounded-pill dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem; font-weight: bold; padding: 0.35em 0.65em;">
                                                     <i class="fas fa-clock me-1"></i> Waiting
@@ -212,9 +212,10 @@ Home | Hospital Management System
                                                         </form>
                                                     </li>
                                                     <li><hr class="dropdown-divider"></li>
+                                                    <!-- 🚨 FUTURE: Changed to 'Cancel Appointment' -->
                                                     <li>
-                                                        <form action="/mark_missed/{{ apt.apt_id }}" method="POST" onsubmit="return confirm('Cancel/Mark Missed?');">
-                                                            <button class="dropdown-item fw-bold text-danger"><i class="fas fa-times-circle me-2"></i>Mark Missed</button>
+                                                        <form action="/cancel_apt/{{ apt.apt_id }}" method="POST" onsubmit="return confirm('Cancel this appointment?');">
+                                                            <button class="dropdown-item fw-bold text-danger"><i class="fas fa-ban me-2"></i>Cancel Appointment</button>
                                                         </form>
                                                     </li>
                                                 </ul>
@@ -224,7 +225,6 @@ Home | Hospital Management System
                                     {% endif %}
                                 </td>
 
-                                <!-- 🚨 DYNAMIC: Rx Buttons Column -->
                                 <td class="text-end pe-4">
                                     <div class="d-flex justify-content-end gap-2">
                                         {% if apt.category == 'completed' %}
@@ -234,10 +234,10 @@ Home | Hospital Management System
                                             <a href="/edit_record/{{ apt.apt_id }}" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm fw-bold">
                                                 <i class="fas fa-edit"></i> Edit Rx
                                             </a>
-                                        {% elif apt.category == 'missed' %}
+                                        <!-- 🚨 NEW: Cancelled items require no action -->
+                                        {% elif apt.category == 'missed' or apt.category == 'cancelled' %}
                                             <span class="text-muted small border px-2 py-1 rounded bg-light">No Action Needed</span>
                                         {% else %}
-                                            <!-- 🚨 FIXED: Write Rx is now ALWAYS active for Waiting and Pending Rx patients -->
                                             <a href="/add_record/{{ apt.apt_id }}" class="btn btn-sm btn-primary rounded-pill shadow-sm fw-bold">
                                                 <i class="fas fa-pen"></i> Write Rx
                                             </a>
