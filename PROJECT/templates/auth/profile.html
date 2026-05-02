@@ -1,114 +1,415 @@
 {% extends 'base.html' %}
 
-{% block title %}
-My Profile | Hospital Management System
-{% endblock title %}
+{% block title %}My Profile | Hospital Management System{% endblock title %}
 
 {% block body %}
-<div class="container mt-5 mb-5">
-  <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
 
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-      <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-body p-5">
-          
-          <!-- Profile Header & Avatar -->
-          <div class="text-center mb-4">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
-              <i class="fas fa-user fa-3x"></i>
+  :root {
+    /* 🚨 SYNCHRONIZED HMS COLOR PALETTE */
+    --primary:      #0d6efd;
+    --primary-dim:  #0b5ed7;
+    --primary-pale: #e7f1ff;
+    --primary-mid:  #b6d4fe;
+    --header-start: #1e3c72;
+    --header-end:   #2a5298;
+    
+    --text-dark: #212529;
+    --text-mid:  #495057;
+    --text-soft: #6c757d;
+    --text-hint: #adb5bd;
+    --surface:   #f8f9fa;
+    --card-bg:   #ffffff;
+    --border:    #dee2e6;
+  }
+
+  * { box-sizing: border-box; }
+
+  .pf-root {
+    min-height: 100vh;
+    background: var(--surface);
+    padding: 2.5rem 1.25rem 4rem;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .pf-shell {
+    max-width: 940px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 270px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  /* ── SIDEBAR ── */
+  .pf-sidebar {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    animation: pf-up 0.4s ease both;
+  }
+
+  .pf-sidebar-hero {
+    background: linear-gradient(135deg, var(--header-start) 0%, var(--header-end) 100%);
+    padding: 2.25rem 1.5rem 2.75rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .pf-sidebar-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 28px;
+    background: var(--card-bg);
+    border-radius: 50% 50% 0 0 / 28px 28px 0 0;
+  }
+
+  .pf-avatar {
+    width: 82px; height: 82px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem;
+  }
+
+  .pf-avatar i { font-size: 1.8rem; color: #ffffff; }
+
+  .pf-sname {
+    font-size: 1.1rem; font-weight: 600;
+    color: #fff; margin: 0 0 0.5rem;
+  }
+
+  .pf-role-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 20px;
+  }
+
+  .pf-sidebar-body {
+    background: var(--card-bg);
+    padding: 1.5rem 1.25rem 1.75rem;
+  }
+
+  .pf-id-block {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--primary-pale);
+    border: 1px solid var(--primary-mid);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .pf-id-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .pf-id-icon i { color: #ffffff; font-size: 0.82rem; }
+
+  .pf-id-label { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-hint); font-weight: 600; }
+  .pf-id-value { font-size: 0.9rem; font-weight: 700; color: var(--text-dark); }
+
+  .pf-meta {
+    list-style: none; padding: 0; margin: 0;
+    border-top: 1px solid var(--border); padding-top: 1.1rem;
+    display: flex; flex-direction: column; gap: 0.7rem;
+  }
+
+  .pf-meta li { display: flex; align-items: center; gap: 9px; font-size: 0.83rem; color: var(--text-mid); overflow: hidden; }
+  .pf-meta li i { color: var(--primary); font-size: 0.78rem; width: 14px; flex-shrink: 0; }
+  .pf-meta li span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ── FORM CARD ── */
+  .pf-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    overflow: hidden;
+    animation: pf-up 0.4s 0.06s ease both;
+  }
+
+  .pf-card-header {
+    background: linear-gradient(135deg, var(--header-start) 0%, var(--header-end) 100%);
+    padding: 1.35rem 2rem;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .pf-card-header-icon {
+    width: 36px; height: 36px; border-radius: 9px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.30);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .pf-card-header-icon i { color: #ffffff; font-size: 0.9rem; }
+
+  .pf-card-header h2 { margin: 0; font-size: 1rem; font-weight: 600; color: #fff; }
+  .pf-card-header p  { margin: 0; font-size: 0.78rem; color: rgba(255,255,255,0.6); }
+
+  .pf-primary-bar { height: 3px; background: linear-gradient(90deg, var(--primary) 0%, transparent 100%); }
+
+  .pf-card-body { padding: 2rem; }
+
+  .pf-section-tag {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--text-hint); margin-bottom: 1rem;
+  }
+
+  .pf-section-tag::before {
+    content: ''; display: block;
+    width: 3px; height: 14px;
+    background: var(--primary); border-radius: 2px;
+  }
+
+  .pf-divider { border: none; border-top: 1px solid var(--border); margin: 1.6rem 0; }
+
+  .pf-field { margin-bottom: 1.1rem; }
+
+  .pf-label {
+    display: block; font-size: 0.75rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-soft); margin-bottom: 0.4rem;
+  }
+
+  .pf-input-wrap { position: relative; }
+
+  .pf-input-wrap .pf-ico {
+    position: absolute; left: 13px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-hint); font-size: 0.82rem;
+    pointer-events: none; z-index: 1;
+  }
+
+  .pf-input-wrap input,
+  .pf-input-wrap select {
+    width: 100%;
+    padding: 0.62rem 1rem 0.62rem 2.4rem;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem; color: var(--text-dark);
+    background: #fafbfc;
+    transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+    outline: none; -webkit-appearance: none;
+  }
+
+  .pf-input-wrap input:focus,
+  .pf-input-wrap select:focus {
+    border-color: var(--primary);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+  }
+
+  .pf-input-wrap input[readonly] {
+    color: var(--text-hint); background: #f4f5f7; cursor: not-allowed;
+  }
+
+  .pf-hint {
+    margin-top: 0.3rem; font-size: 0.73rem; color: var(--text-hint);
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  .pf-pw-zone {
+    background: #f7f8fa;
+    border: 1.5px dashed var(--border);
+    border-radius: 11px;
+    padding: 1.25rem;
+  }
+
+  .pf-pw-zone .pf-field { margin-bottom: 0; }
+
+  .pf-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 0.8rem;
+    background: var(--primary); color: #fff;
+    border: 2px solid var(--primary); border-radius: 10px;
+    font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600;
+    letter-spacing: 0.02em; cursor: pointer;
+    transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.12s;
+    margin-top: 1.6rem;
+  }
+
+  .pf-btn:hover { background: transparent; border-color: var(--primary); color: var(--primary); }
+  .pf-btn:active { transform: scale(0.99); }
+
+  @keyframes pf-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 700px) {
+    .pf-shell { grid-template-columns: 1fr; }
+    .two-col  { grid-template-columns: 1fr; }
+    .pf-card-body { padding: 1.5rem; }
+  }
+</style>
+
+<div class="pf-root">
+  <div class="pf-shell">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="pf-sidebar">
+      <div class="pf-sidebar-hero">
+        <div class="pf-avatar">
+          <i class="fas fa-user"></i>
+        </div>
+        <p class="pf-sname">{{ current_user.username | capitalize }}</p>
+        <span class="pf-role-pill">
+          {% if current_user.usertype == 'Admin' %}
+            <i class="fas fa-crown"></i>
+          {% elif current_user.usertype == 'Doctor' %}
+            <i class="fas fa-stethoscope"></i>
+          {% else %}
+            <i class="fas fa-user-injured"></i>
+          {% endif %}
+          {{ current_user.usertype }}
+        </span>
+      </div>
+
+      <div class="pf-sidebar-body">
+
+        <div class="pf-id-block">
+          <div class="pf-id-icon">
+            {% if current_user.usertype == 'Admin' %}
+              <i class="fas fa-crown"></i>
+            {% elif current_user.usertype == 'Doctor' %}
+              <i class="fas fa-stethoscope"></i>
+            {% else %}
+              <i class="fas fa-id-card"></i>
+            {% endif %}
+          </div>
+          <div>
+            <div class="pf-id-label">System ID</div>
+            <div class="pf-id-value">
+              {% if current_user.usertype == 'Admin' %}A-{% elif current_user.usertype == 'Doctor' %}D-{% else %}P-{% endif %}{{ current_user.id }}
             </div>
-            <h4 class="fw-bold text-dark">{{ current_user.username | capitalize }}</h4>
-            
-            <!-- THE NEW SYSTEM ID BADGES -->
-            <div class="d-flex justify-content-center gap-2 mt-2">
-                <span class="badge bg-secondary">{{ current_user.usertype }} Account</span>
-                <span class="badge bg-light text-dark border shadow-sm" title="Your System Account ID">
-                    {% if current_user.usertype == 'Admin' %}
-                        <i class="fas fa-crown text-warning me-1"></i>A-ID: {{ current_user.id }}
-                    {% elif current_user.usertype == 'Doctor' %}
-                        <i class="fas fa-stethoscope text-success me-1"></i>D-ID: {{ current_user.id }}
-                    {% else %}
-                        <i class="fas fa-user-injured text-primary me-1"></i>P-ID: {{ current_user.id }}
-                    {% endif %}
-                </span>
+          </div>
+        </div>
+
+        <ul class="pf-meta">
+          <li><i class="fas fa-envelope"></i><span>{{ current_user.email }}</span></li>
+          {% if current_user.phone %}
+          <li><i class="fas fa-phone"></i><span>{{ current_user.phone }}</span></li>
+          {% endif %}
+          {% if current_user.gender %}
+          <li><i class="fas fa-venus-mars"></i><span>{{ current_user.gender }}</span></li>
+          {% endif %}
+          {% if current_user.usertype == 'Doctor' %}
+          <li><i class="fas fa-hospital"></i><span>{{ doctor_info.dept if doctor_info else 'Unassigned' }}</span></li>
+          {% endif %}
+        </ul>
+
+      </div>
+    </aside>
+
+    <!-- ── FORM CARD ── -->
+    <div class="pf-card">
+
+      <div class="pf-card-header">
+        <div class="pf-card-header-icon"><i class="fas fa-user-edit"></i></div>
+        <div>
+          <h2>Edit Profile</h2>
+          <p>Update your personal information</p>
+        </div>
+      </div>
+
+      <div class="pf-primary-bar"></div>
+
+      <div class="pf-card-body">
+        <form action="/profile" method="POST">
+
+          <p class="pf-section-tag">Personal Details</p>
+
+          <div class="pf-field">
+            <label class="pf-label" for="pf-name">Full Name</label>
+            <div class="pf-input-wrap">
+              <i class="fas fa-user pf-ico"></i>
+              <input id="pf-name" type="text" name="username" value="{{ current_user.username }}" required>
             </div>
           </div>
 
-          <hr class="mb-4 text-muted">
+          <div class="pf-field">
+            <label class="pf-label" for="pf-email">Email Address</label>
+            <div class="pf-input-wrap">
+              <i class="fas fa-envelope pf-ico"></i>
+              <input id="pf-email" type="email" name="email" value="{{ current_user.email }}" required>
+            </div>
+          </div>
 
-          <!-- Profile Update Form -->
-          <form action="/profile" method="POST">
-            
-            <div class="mb-3">
-              <label class="form-label fw-bold text-dark">Full Name</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
-                <input type="text" class="form-control" name="username" value="{{ current_user.username }}" required>
+          <div class="two-col">
+            <div class="pf-field">
+              <label class="pf-label" for="pf-phone">Phone Number</label>
+              <div class="pf-input-wrap">
+                <i class="fas fa-phone pf-ico"></i>
+                <input id="pf-phone" type="text" name="phone"
+                  value="{{ current_user.phone if current_user.phone != None else '' }}"
+                  pattern="\d{10}" title="Please enter exactly 10 digits">
               </div>
             </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-bold text-dark">Email Address</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fas fa-envelope text-muted"></i></span>
-                <input type="email" class="form-control" name="email" value="{{ current_user.email }}" required>
+            <div class="pf-field">
+              <label class="pf-label" for="pf-gender">Gender</label>
+              <div class="pf-input-wrap">
+                <i class="fas fa-venus-mars pf-ico"></i>
+                <select id="pf-gender" name="gender">
+                  <option value="" {% if not current_user.gender %}selected{% endif %} disabled hidden>Select gender</option>
+                  <option value="Male"   {% if current_user.gender == 'Male'   %}selected{% endif %}>Male</option>
+                  <option value="Female" {% if current_user.gender == 'Female' %}selected{% endif %}>Female</option>
+                  <option value="Others" {% if current_user.gender == 'Others' %}selected{% endif %}>Others</option>
+                </select>
               </div>
             </div>
+          </div>
 
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label fw-bold text-dark">Phone Number</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-phone text-muted"></i></span>
-                  <input type="text" class="form-control" name="phone" value="{{ current_user.phone if current_user.phone != None else '' }}" pattern="\d{10}" title="Please enter exactly 10 digits">
-                </div>
-              </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label class="form-label fw-bold text-dark">Gender</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
-                  <select class="form-select" name="gender">
-                    <option value="" {% if not current_user.gender %}selected{% endif %} disabled hidden>Select Gender</option>
-                    <option value="Male" {% if current_user.gender == 'Male' %}selected{% endif %}>Male</option>
-                    <option value="Female" {% if current_user.gender == 'Female' %}selected{% endif %}>Female</option>
-                    <option value="Others" {% if current_user.gender == 'Others' %}selected{% endif %}>Others</option>
-                  </select>
-                </div>
-              </div>
+          {% if current_user.usertype == 'Doctor' %}
+          <hr class="pf-divider">
+          <p class="pf-section-tag">Department</p>
+          <div class="pf-field">
+            <label class="pf-label">Assigned Department</label>
+            <div class="pf-input-wrap">
+              <i class="fas fa-stethoscope pf-ico"></i>
+              <input type="text" value="{{ doctor_info.dept if doctor_info else 'Unassigned' }}" readonly>
             </div>
+            <p class="pf-hint"><i class="fas fa-lock"></i> Department transfers must be processed by an Administrator.</p>
+          </div>
+          {% endif %}
 
-            <!-- 🚨 SMART DEPARTMENT FIELD (Doctors Only) -->
-            {% if current_user.usertype == 'Doctor' %}
-            <div class="mb-3">
-              <label class="form-label fw-bold text-dark">Assigned Department</label>
-              <div class="input-group shadow-sm">
-                <span class="input-group-text bg-light text-muted border-secondary border-opacity-25"><i class="fas fa-stethoscope"></i></span>
-                <input type="text" class="form-control bg-light text-muted border-secondary border-opacity-25" value="{{ doctor_info.dept if doctor_info else 'Unassigned' }}" readonly>
-              </div>
-              <small class="text-muted mt-1 d-block"><i class="fas fa-lock text-secondary me-1"></i> Department transfers must be processed by a System Administrator.</small>
-            </div>
-            {% endif %}
+          <hr class="pf-divider">
+          <p class="pf-section-tag">Security</p>
 
-            <div class="mb-4 mt-4">
-              <label class="form-label fw-bold text-dark">New Password <small class="text-muted fw-normal">(Leave blank to keep current password)</small></label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fas fa-lock text-muted"></i></span>
-                <input type="password" class="form-control" name="password" placeholder="Enter a new password">
+          <div class="pf-pw-zone">
+            <div class="pf-field">
+              <label class="pf-label" for="pf-pass">New Password</label>
+              <div class="pf-input-wrap">
+                <i class="fas fa-lock pf-ico"></i>
+                <input id="pf-pass" type="password" name="password" placeholder="Leave blank to keep current password">
               </div>
             </div>
+          </div>
 
-            <div class="d-grid mt-2">
-              <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm">
-                <i class="fas fa-user-edit me-2"></i> Update Profile
-              </button>
-            </div>
+          <button type="submit" class="pf-btn">
+            <i class="fas fa-check-circle"></i> Save Changes
+          </button>
 
-          </form>
-
-        </div>
+        </form>
       </div>
     </div>
+
   </div>
 </div>
+
 {% endblock body %}

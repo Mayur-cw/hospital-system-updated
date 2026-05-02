@@ -5,155 +5,364 @@ Book Appointment | Hospital Management System
 {% endblock title %}
 
 {% block body %}
-<div class="container mt-5 mb-5">
-  
-  <div class="row align-items-start">
-    
-    <div class="col-lg-4 mb-4">
-      <div class="card shadow-sm border-0">
-        <img src="static/images/doc.jpg" class="card-img-top" alt="Hospital Doctors" style="height: 200px; object-fit: cover;">
-        <div class="card-body bg-dark text-white">
-          <h5 class="card-title fw-bold mb-0"><i class="fas fa-user-md me-2"></i>Our Specialists</h5>
-          <p class="card-text text-light small mt-1">Available departments for booking.</p>
-        </div>
-        
-        <ul class="list-group list-group-flush">
-          {% for d in doct %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="fw-bold text-secondary">Dr. {{ d.doctorname | capitalize }}</span>
-              <span class="badge bg-primary rounded-pill">{{ d.dept | capitalize }}</span>
-            </li>
-          {% else %}
-            <li class="list-group-item text-muted text-center py-3">No doctors currently listed.</li>
-          {% endfor %}
-        </ul>
-        
-        <div class="card-body text-center bg-light">
-          <span class="text-muted fw-bold"><i class="fas fa-phone-alt me-2"></i>Contact Front Desk for Help</span>
-        </div>
-      </div>
-    </div>
 
-    <div class="col-lg-8">
+<style>
+  /* 🚨 PREMIUM WIZARD THEME */
+  :root {
+    --primary:      #0d6efd;
+    --primary-dim:  #0b5ed7;
+    --primary-pale: #e7f1ff;
+    --header-start: #1e3c72;
+    --header-end:   #2a5298;
+    --text-dark:    #2b3440;
+    --text-hint:    #a0aec0;
+    --border:       #e2e8f0;
+    --surface:      #f8fafc;
+    --success:      #10b981;
+  }
+
+  .wizard-hero {
+    background: linear-gradient(135deg, var(--header-start) 0%, var(--header-end) 100%);
+    padding: 3rem 0 5rem;
+    text-align: center;
+    color: white;
+  }
+
+  /* ── PROGRESS STEPPER ── */
+  .stepper-wrapper {
+    display: flex; justify-content: space-between;
+    margin-bottom: 2.5rem; position: relative;
+    max-width: 600px; margin-left: auto; margin-right: auto;
+  }
+  .stepper-wrapper::before {
+    content: ''; position: absolute;
+    top: 18px; left: 0; right: 0; height: 3px; background: var(--border); z-index: 1;
+  }
+  .stepper-progress {
+    position: absolute; top: 18px; left: 0;
+    height: 3px; background: var(--primary); z-index: 2; transition: width 0.4s ease;
+  }
+  .step-item {
+    position: relative; z-index: 3;
+    display: flex; flex-direction: column; align-items: center; width: 33.33%;
+  }
+  .step-circle {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: white; border: 3px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; color: var(--text-hint); transition: all 0.3s ease;
+  }
+  .step-label {
+    margin-top: 0.5rem; font-size: 0.8rem; font-weight: 600;
+    color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.3s ease;
+  }
+
+  .step-item.active .step-circle { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--primary-pale); }
+  .step-item.active .step-label { color: var(--primary); }
+  .step-item.completed .step-circle { background: var(--primary); border-color: var(--primary); color: white; }
+  .step-item.completed .step-label { color: var(--text-dark); }
+
+  /* ── WIZARD PANELS ── */
+  .wizard-panel { display: none; animation: slideUp 0.4s ease forwards; }
+  .wizard-panel.active { display: block; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── INPUT STYLING ── */
+  .pf-label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.5rem; }
+  .pf-input-wrap { position: relative; }
+  .pf-input-wrap .pf-ico { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-hint); font-size: 0.9rem; z-index: 10; }
+  .pf-input-wrap textarea + .pf-ico { top: 20px; transform: none; }
+  
+  .pf-input-wrap input, .pf-input-wrap select, .pf-input-wrap textarea {
+    width: 100%; padding: 0.85rem 1rem 0.85rem 2.8rem;
+    border: 2px solid var(--border); border-radius: 12px;
+    font-size: 0.95rem; color: var(--text-dark); background: white;
+    transition: all 0.2s; outline: none;
+  }
+  .pf-input-wrap input:focus, .pf-input-wrap select:focus, .pf-input-wrap textarea:focus {
+    border-color: var(--primary); box-shadow: 0 4px 12px rgba(13, 110, 253, 0.1);
+  }
+  .pf-input-wrap input[readonly] { background: var(--surface); color: var(--text-hint); }
+
+  /* ── DOCTOR UI CARDS ── */
+  .doc-card {
+    border: 2px solid var(--border); border-radius: 12px;
+    padding: 1.25rem; cursor: pointer; transition: all 0.2s; background: white;
+    display: flex; align-items: center; gap: 15px; height: 100%;
+  }
+  .doc-card:hover { border-color: var(--primary-dim); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+  .doc-card.selected { border-color: var(--primary); background: var(--primary-pale); box-shadow: 0 0 0 2px var(--primary) inset; }
+  
+  .doc-card-avatar {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary); font-size: 1.2rem; flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .doc-card.selected .doc-card-avatar { background: var(--primary); color: white; border-color: var(--primary); }
+
+  /* ── TIME SLOTS ── */
+  .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+  .slot-btn {
+    background: white; border: 2px solid var(--border); border-radius: 10px;
+    padding: 0.75rem 0.5rem; font-weight: 600; color: var(--text-dark);
+    transition: all 0.2s; text-align: center; cursor: pointer;
+  }
+  .slot-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+  .slot-btn.selected { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2); }
+  .slot-btn:disabled { background: var(--surface); border-color: var(--border); color: var(--text-hint); text-decoration: line-through; cursor: not-allowed; }
+
+  /* ── STEP 3 SUMMARY UI (NEW) ── */
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex; align-items: center; gap: 15px;
+    height: 100%;
+  }
+  .summary-icon {
+    width: 45px; height: 45px; border-radius: 10px;
+    background: var(--primary-pale); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+  }
+  .summary-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-hint); font-weight: 700; letter-spacing: 0.05em; margin-bottom: 2px;}
+  .summary-value { font-size: 1rem; font-weight: 700; color: var(--text-dark); line-height: 1.2; }
+</style>
+
+<!-- Hidden Inputs for Auto-Skip Logic -->
+<input type="hidden" id="init_dept" value="{{ pre_dept }}">
+<input type="hidden" id="init_doc" value="{{ pre_doc }}">
+
+<!-- Hero Section -->
+<div class="wizard-hero">
+    <div class="container">
+        <h1 class="display-5 fw-bold mb-2">Schedule Your Visit</h1>
+        <p class="lead opacity-75">Book your consultation in three easy steps.</p>
+    </div>
+</div>
+
+<div class="container mb-5" style="margin-top: -60px; position: relative; z-index: 10;">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
       
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm border-0 rounded-4 mb-4" role="alert">
+              <div class="d-flex align-items-center fw-bold"><i class="fas fa-info-circle fs-5 me-2"></i> {{ message }}</div>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
           {% endfor %}
         {% endif %}
       {% endwith %}
 
-      <div class="card shadow border-0">
-        <div class="card-header bg-primary text-white py-3">
-          <h4 class="mb-0 text-center fw-bold"><i class="fas fa-calendar-plus me-2"></i>Book Your Slot</h4>
-        </div>
-        
-        <div class="card-body p-4 bg-light">
-          <form action="/patients" method="POST">
-            
+      <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-4 p-md-5">
+          
+          <!-- PROGRESS STEPPER -->
+          <div class="stepper-wrapper">
+            <div class="stepper-progress" id="progress-bar" style="width: 0%;"></div>
+            <div class="step-item active" id="indicator-1">
+              <div class="step-circle"><i class="fas fa-user-md"></i></div><div class="step-label">Specialist</div>
+            </div>
+            <div class="step-item" id="indicator-2">
+              <div class="step-circle"><i class="fas fa-calendar-alt"></i></div><div class="step-label">Schedule</div>
+            </div>
+            <div class="step-item" id="indicator-3">
+              <div class="step-circle"><i class="fas fa-clipboard-list"></i></div><div class="step-label">Details</div>
+            </div>
+          </div>
+
+          <!-- THE FORM -->
+          <form action="/patients" method="POST" id="bookingForm">
             <input type="hidden" name="slot" value="Scheduled">
+            <input type="hidden" id="selected_doctor" name="doctor" required>
+            <input type="hidden" id="selected_time" name="time" required>
+            
+            <!-- ========================================== -->
+            <!-- STEP 1: SELECT SPECIALIST                  -->
+            <!-- ========================================== -->
+            <div class="wizard-panel active" id="step-1">
+              
+              <div id="skip-msg" class="alert alert-primary bg-primary-pale border-primary border-opacity-25 d-none mb-4">
+                  <i class="fas fa-magic me-2"></i> We auto-filled your doctor from the directory!
+              </div>
 
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="name" class="form-label fw-bold text-dark">Full Name</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
-                  <input type="text" class="form-control" id="name" name="name" value="{{ current_user.username }}" placeholder="Enter patient name" required>
+              <h4 class="fw-bold mb-4 text-center">Who would you like to see?</h4>
+              
+              <div class="row mb-4 justify-content-center">
+                <div class="col-md-8">
+                  <label for="dept" class="pf-label">Filter by Department</label>
+                  <div class="pf-input-wrap">
+                    <i class="fas fa-stethoscope pf-ico"></i>
+                    <select id="dept" name="dept" required onchange="filterDoctorCards(true)">
+                      <option value="" disabled hidden selected>View All Departments...</option>
+                      {% for d in doct %}
+                        <option value="{{ d.dept }}">{{ d.dept | capitalize }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
                 </div>
               </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label for="email" class="form-label fw-bold text-dark">Email Address</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-envelope text-muted"></i></span>
-                  <input type="email" class="form-control bg-light" id="email" name="email" value="{{ current_user.email }}" readonly required>
-                </div>
+
+              <label class="pf-label text-center mb-3">Available Specialists</label>
+              <div class="row g-3" id="doctor-grid">
+                {% for d in doct %}
+                  <div class="col-md-6 doc-wrapper" data-dept="{{ d.dept }}" data-doc="{{ d.doctorname }}">
+                    <div class="doc-card" onclick="selectDoctorCard('{{ d.doctorname }}', this)">
+                       <div class="doc-card-avatar"><i class="fas fa-user-md"></i></div>
+                       <div>
+                         <h6 class="fw-bold text-dark mb-1">Dr. {{ d.doctorname | capitalize }}</h6>
+                         <span class="badge bg-light text-secondary border">{{ d.dept | capitalize }}</span>
+                       </div>
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="col-12 text-center text-muted py-4"><i class="fas fa-user-slash fa-2x mb-2"></i><br>No specialists found.</div>
+                {% endfor %}
+              </div>
+
+              <div class="d-flex justify-content-end mt-5 pt-3 border-top">
+                <button type="button" id="btn-step-1" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm" onclick="nextStep(1)">
+                  Continue <i class="fas fa-arrow-right ms-2"></i>
+                </button>
               </div>
             </div>
 
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="number" class="form-label fw-bold text-dark">Phone Number</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-phone text-muted"></i></span>
-                  <input type="text" class="form-control" id="number" name="number" value="{{ current_user.phone if current_user.phone != None else '' }}" placeholder="10-digit number" pattern="\d{10}" title="Please enter exactly 10 digits" required>
+            <!-- ========================================== -->
+            <!-- STEP 2: SELECT DATE & TIME                 -->
+            <!-- ========================================== -->
+            <div class="wizard-panel" id="step-2">
+              <h4 class="fw-bold mb-4 text-center">When are you available?</h4>
+              
+              <div class="row mb-4 justify-content-center">
+                <div class="col-md-8">
+                  <label for="date" class="pf-label">Choose Date</label>
+                  <div class="pf-input-wrap mb-4">
+                    <i class="fas fa-calendar-day pf-ico"></i>
+                    <input type="date" id="date" name="date" required onchange="checkAvailableSlots()">
+                  </div>
+
+                  <label class="pf-label d-flex justify-content-between">
+                    <span>Available Time Slots</span>
+                    <span id="doc-badge" class="badge bg-primary-pale text-primary"><i class="fas fa-user-md me-1"></i><span id="doc-name-display"></span></span>
+                  </label>
+                  
+                  <div class="bg-surface border rounded-4 p-4">
+                      <div id="slot-container" class="slot-grid">
+                        <div class="text-center text-muted w-100" style="grid-column: 1 / -1; padding: 2rem 0;">
+                            <i class="fas fa-calendar-check fa-2x mb-2 opacity-50"></i>
+                            <p class="mb-0 small">Please select a Date above to view slots.</p>
+                        </div>
+                      </div>
+                  </div>
                 </div>
               </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label for="gender" class="form-label fw-bold text-dark">Gender</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
-                  <select class="form-select" id="gender" name="gender" required>
-                    <option value="" {% if not current_user.gender %}selected{% endif %} disabled hidden>Select Gender</option>
-                    <option value="Male" {% if current_user.gender == 'Male' %}selected{% endif %}>Male</option>
-                    <option value="Female" {% if current_user.gender == 'Female' %}selected{% endif %}>Female</option>
-                    <option value="Others" {% if current_user.gender == 'Others' %}selected{% endif %}>Others</option>
-                  </select>
-                </div>
+
+              <div class="d-flex justify-content-between mt-5 pt-3 border-top">
+                <button type="button" class="btn btn-light btn-lg rounded-pill px-4 fw-bold text-muted border" onclick="prevStep(2)">
+                  <i class="fas fa-arrow-left me-2"></i> Back
+                </button>
+                <button type="button" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm" onclick="nextStep(2)">
+                  Continue <i class="fas fa-arrow-right ms-2"></i>
+                </button>
               </div>
             </div>
 
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="dept" class="form-label fw-bold text-dark">Department</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
-                  <select class="form-select" id="dept" name="dept" required onchange="filterDoctors(true)">
-                    <option value="" {% if not pre_dept %}selected{% endif %} disabled hidden>Select Department</option>
-                    {% for d in doct %}
-                      <option value="{{ d.dept }}" {% if pre_dept == d.dept %}selected{% endif %}>{{ d.dept | capitalize }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
+            <!-- ========================================== -->
+            <!-- STEP 3: REVIEW & INTAKE (UPGRADED UI)      -->
+            <!-- ========================================== -->
+            <div class="wizard-panel" id="step-3">
+              <h4 class="fw-bold mb-4 text-center">Review & Confirm</h4>
+              
+              <!-- 🚨 NEW DYNAMIC BOOKING SUMMARY -->
+              <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-clipboard-check text-primary me-2"></i>Appointment Summary</h6>
+              <div class="row mb-5 g-3">
+                  <div class="col-md-6">
+                      <div class="summary-card">
+                          <div class="summary-icon"><i class="fas fa-user-md"></i></div>
+                          <div>
+                              <div class="summary-label">Specialist</div>
+                              <div class="summary-value" id="summary-doc-name">Dr. Pending</div>
+                              <div class="small text-muted fw-bold mt-1" id="summary-dept-name">Department</div>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="col-md-6">
+                      <div class="summary-card">
+                          <div class="summary-icon"><i class="fas fa-calendar-alt"></i></div>
+                          <div>
+                              <div class="summary-label">Schedule</div>
+                              <div class="summary-value" id="summary-date-display">Date Pending</div>
+                              <div class="small text-primary fw-bold mt-1" id="summary-time-display">Time Pending</div>
+                          </div>
+                      </div>
+                  </div>
               </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label for="doctor" class="form-label fw-bold text-dark">Select Doctor</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-user-md text-muted"></i></span>
-                  <select class="form-select" id="doctor" name="doctor" required {% if not pre_dept %}disabled{% endif %} onchange="checkAvailableSlots()">
-                    <option value="" {% if not pre_doc %}selected{% endif %} disabled hidden>Choose a Specialist</option>
-                    {% for d in doct %}
-                      <option value="{{ d.doctorname }}" data-dept="{{ d.dept }}" {% if pre_doc == d.doctorname %}selected{% endif %}>Dr. {{ d.doctorname | capitalize }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-            </div>
 
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="date" class="form-label fw-bold text-dark">Preferred Date</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-calendar-alt text-muted"></i></span>
-                  <input type="date" class="form-control" id="date" name="date" required onchange="checkAvailableSlots()">
+              <!-- PERSONAL DETAILS -->
+              <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-user text-primary me-2"></i>Patient Information</h6>
+              <div class="row mb-3">
+                <div class="col-md-6 mb-3">
+                  <label for="name" class="pf-label">Full Name</label>
+                  <div class="pf-input-wrap">
+                    <i class="fas fa-user pf-ico"></i>
+                    <input type="text" id="name" name="name" value="{{ current_user.username }}" required>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="number" class="pf-label">Phone Number</label>
+                  <div class="pf-input-wrap">
+                    <i class="fas fa-phone pf-ico"></i>
+                    <input type="text" id="number" name="number" value="{{ current_user.phone if current_user.phone != None else '' }}" pattern="\d{10}" title="10-digit number" required>
+                  </div>
                 </div>
               </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label class="form-label fw-bold text-dark">Available Time Slots</label>
-                <input type="hidden" id="selected_time" name="time" required>
-                <div id="slot-container" class="d-flex flex-wrap gap-2 pt-1">
-                  <span class="text-muted small"><i class="fas fa-info-circle me-1"></i>Please select a Doctor and Date first.</span>
-                </div>
-              </div>
-            </div>
 
-            <div class="row mb-4">
-              <div class="col-md-12">
-                <label for="disease" class="form-label fw-bold text-dark">Disease name / Symptoms overview</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-notes-medical text-muted"></i></span>
-                  <input type="text" class="form-control" id="disease" name="disease" placeholder="e.g., Fever, Cold" required>
+              <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                  <label for="email" class="pf-label">Email Address</label>
+                  <div class="pf-input-wrap">
+                    <i class="fas fa-lock pf-ico"></i>
+                    <input type="email" id="email" name="email" value="{{ current_user.email }}" readonly>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="gender" class="pf-label">Gender</label>
+                  <div class="pf-input-wrap">
+                    <i class="fas fa-venus-mars pf-ico"></i>
+                    <select id="gender" name="gender" required>
+                      <option value="" {% if not current_user.gender %}selected{% endif %} disabled hidden>Select Gender</option>
+                      <option value="Male" {% if current_user.gender == 'Male' %}selected{% endif %}>Male</option>
+                      <option value="Female" {% if current_user.gender == 'Female' %}selected{% endif %}>Female</option>
+                      <option value="Others" {% if current_user.gender == 'Others' %}selected{% endif %}>Others</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="d-grid mt-2">
-              <button type="submit" id="btn" class="btn btn-primary btn-lg shadow-sm fw-bold">
-                <i class="fas fa-check-circle me-2"></i> Confirm Booking
-              </button>
+              <!-- INTAKE NOTES -->
+              <h6 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-2"><i class="fas fa-notes-medical text-primary me-2"></i>Pre-Appointment Intake</h6>
+              <div class="row mb-4">
+                <div class="col-md-12">
+                  <label for="disease" class="pf-label">Symptoms / Reason for Visit</label>
+                  <div class="pf-input-wrap">
+                    <i class="fas fa-notes-medical pf-ico align-top"></i>
+                    <textarea id="disease" name="disease" rows="3" placeholder="Briefly describe what you are experiencing..." required></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-between mt-5 pt-3 border-top">
+                <button type="button" class="btn btn-light btn-lg rounded-pill px-4 fw-bold text-muted border" onclick="prevStep(3)">
+                  <i class="fas fa-arrow-left me-2"></i> Back
+                </button>
+                <button type="submit" class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow">
+                  <i class="fas fa-check-circle me-2"></i> Confirm Booking
+                </button>
+              </div>
             </div>
 
           </form>
@@ -162,59 +371,129 @@ Book Appointment | Hospital Management System
 
     </div>
   </div>
-
 </div>
 
+<!-- ── WIZARD & AUTO-SKIP LOGIC ── -->
 <script>
-  function filterDoctors(isManualChange = false) {
-    const selectedDept = document.getElementById("dept").value;
-    const doctorDropdown = document.getElementById("doctor");
-    const doctorOptions = doctorDropdown.querySelectorAll("option");
-    
-    if (isManualChange) {
-      doctorDropdown.disabled = false;
-      doctorDropdown.value = "";
-      document.getElementById('slot-container').innerHTML = '<span class="text-muted small"><i class="fas fa-info-circle me-1"></i>Please select a Doctor and Date first.</span>';
-      document.getElementById('selected_time').value = "";
-    }
-    
-    doctorOptions.forEach(option => {
-      if (option.value === "") {
-        option.style.display = "block";
-        return;
-      }
-      if (option.getAttribute("data-dept") === selectedDept) {
-        option.style.display = "block";
-      } else {
-        option.style.display = "none";
-      }
-    });
-  }
-
+  // 🚨 AUTO-SKIP ENGINE
   document.addEventListener("DOMContentLoaded", function() {
-    const deptDropdown = document.getElementById("dept");
-    if (deptDropdown.value) {
-        filterDoctors(false); 
+    let today = new Date().toISOString().split('T')[0];
+    document.getElementById("date").setAttribute("min", today);
+
+    const initDept = document.getElementById("init_dept").value;
+    const initDoc = document.getElementById("init_doc").value;
+
+    if (initDept && initDoc) {
+        document.getElementById('dept').value = initDept;
+        filterDoctorCards(false);
+        
+        const targetWrapper = document.querySelector(`.doc-wrapper[data-doc="${initDoc}"]`);
+        if (targetWrapper) {
+            const card = targetWrapper.querySelector('.doc-card');
+            selectDoctorCard(initDoc, card);
+            
+            document.getElementById('skip-msg').classList.remove('d-none');
+            setTimeout(() => { nextStep(1); }, 100);
+        }
     }
   });
-</script>
 
-<script>
-  const allSlots = [
-    "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM",
-    "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
-  ];
+  // 🚨 DOCTOR CARD LOGIC
+  function filterDoctorCards(isManual) {
+      const selectedDept = document.getElementById("dept").value;
+      const allWrappers = document.querySelectorAll('.doc-wrapper');
+      
+      if (isManual) {
+         document.getElementById('selected_doctor').value = "";
+         document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('selected'));
+         document.getElementById('selected_time').value = "";
+         document.getElementById('slot-container').innerHTML = '<div class="text-center text-muted w-100" style="grid-column: 1 / -1; padding: 2rem 0;"><i class="fas fa-calendar-check fa-2x mb-2 opacity-50"></i><p class="mb-0 small">Please select a Date above to view slots.</p></div>';
+      }
+
+      allWrappers.forEach(wrap => {
+          if (!selectedDept || wrap.getAttribute('data-dept') === selectedDept) {
+              wrap.style.display = 'block';
+          } else {
+              wrap.style.display = 'none';
+          }
+      });
+  }
+
+  function selectDoctorCard(docName, cardElement) {
+      document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('selected'));
+      cardElement.classList.add('selected');
+      document.getElementById('selected_doctor').value = docName;
+      document.getElementById('doc-name-display').innerText = 'Dr. ' + docName;
+      
+      if(document.getElementById('date').value) {
+          checkAvailableSlots();
+      }
+  }
+
+  // 🚨 STEPPER LOGIC
+  function nextStep(current) {
+    if (current === 1) {
+        if (!document.getElementById('selected_doctor').value) {
+            alert('Please select a Specialist to continue.');
+            return;
+        }
+    }
+    if (current === 2) {
+        if (!document.getElementById('date').value) { alert('Please select a Date.'); return; }
+        if (!document.getElementById('selected_time').value) { alert('Please select an available Time Slot.'); return; }
+        
+        // 🚨 NEW: INJECT DATA INTO STEP 3 SUMMARY 🚨
+        const docName = document.getElementById('selected_doctor').value;
+        const deptSelect = document.getElementById('dept');
+        const deptName = deptSelect.options[deptSelect.selectedIndex].text;
+        
+        // Format the date beautifully (e.g., "Mon, Oct 14, 2025")
+        const dateVal = document.getElementById('date').value;
+        const dateParts = dateVal.split('-');
+        const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+        const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        
+        const timeVal = document.getElementById('selected_time').value;
+
+        document.getElementById('summary-doc-name').innerText = "Dr. " + docName;
+        // Fallback for department if auto-skipped
+        document.getElementById('summary-dept-name').innerText = deptName !== "View All Departments..." ? deptName : "Specialist";
+        document.getElementById('summary-date-display').innerText = formattedDate;
+        document.getElementById('summary-time-display').innerText = timeVal;
+    }
+
+    document.getElementById(`step-${current}`).classList.remove('active');
+    document.getElementById(`step-${current + 1}`).classList.add('active');
+    
+    document.getElementById(`indicator-${current}`).classList.add('completed');
+    document.getElementById(`indicator-${current}`).classList.remove('active');
+    document.getElementById(`indicator-${current + 1}`).classList.add('active');
+    
+    document.getElementById('progress-bar').style.width = (current * 50) + '%';
+  }
+
+  function prevStep(current) {
+    document.getElementById(`step-${current}`).classList.remove('active');
+    document.getElementById(`step-${current - 1}`).classList.add('active');
+    
+    document.getElementById(`indicator-${current}`).classList.remove('active');
+    document.getElementById(`indicator-${current - 1}`).classList.add('active');
+    document.getElementById(`indicator-${current - 1}`).classList.remove('completed');
+    
+    document.getElementById('progress-bar').style.width = ((current - 2) * 50) + '%';
+  }
+
+  // 🚨 TIME SLOT LOGIC
+  const allSlots = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"];
 
   function checkAvailableSlots() {
     const dateStr = document.getElementById('date').value;
-    const doctorStr = document.getElementById('doctor').value;
+    const doctorStr = document.getElementById('selected_doctor').value;
     const slotContainer = document.getElementById('slot-container');
 
-    if (!dateStr || !doctorStr || doctorStr === "") {
-        return;
-    }
+    if (!dateStr || !doctorStr) return;
 
-    slotContainer.innerHTML = '<span class="text-primary small"><i class="fas fa-spinner fa-spin me-1"></i> Checking availability...</span>';
+    slotContainer.innerHTML = '<div class="text-center text-primary w-100 fw-bold py-4" style="grid-column: 1 / -1;"><i class="fas fa-circle-notch fa-spin me-2"></i> Scanning schedule...</div>';
 
     fetch('/get_booked_slots', {
         method: 'POST',
@@ -226,82 +505,50 @@ Book Appointment | Hospital Management System
         const bookedTimes = data.booked_times;
         slotContainer.innerHTML = ''; 
 
-        // Get current time for comparison
         const now = new Date();
         const selectedDateStr = document.getElementById('date').value; 
-        
-        // Check if the user selected TODAY safely
         const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
         const isToday = (selectedDateStr === todayStr);
 
         allSlots.forEach(slot => {
             const btn = document.createElement('button');
             btn.type = 'button'; 
-            btn.className = 'btn btn-sm shadow-sm border ';
+            btn.className = 'slot-btn';
             btn.innerText = slot;
 
-            // --- TIME COMPARISON LOGIC ---
             let isPastTime = false;
             if (isToday) {
                 let [timePart, modifier] = slot.split(' ');
                 let [hours, minutes] = timePart.split(':');
                 hours = parseInt(hours, 10);
-                
                 if (hours === 12 && modifier === 'AM') hours = 0;
                 if (modifier === 'PM' && hours < 12) hours += 12;
                 
                 const slotDateTime = new Date();
                 slotDateTime.setHours(hours, parseInt(minutes, 10), 0, 0);
-                
-                if (slotDateTime < now) {
-                    isPastTime = true;
-                }
+                if (slotDateTime < now) isPastTime = true;
             }
 
-            // Disable if booked OR past time today
             if (bookedTimes.includes(slot) || isPastTime) {
-                btn.classList.add('btn-light', 'text-muted');
                 btn.disabled = true;
-                btn.style.textDecoration = 'line-through';
-                if (isPastTime && !bookedTimes.includes(slot)) {
-                    btn.title = "This time has already passed";
-                }
+                btn.title = isPastTime && !bookedTimes.includes(slot) ? "Time passed" : "Booked";
             } else {
-                btn.classList.add('btn-outline-primary', 'fw-bold');
-                btn.onclick = function() {
-                    selectSlot(btn, slot);
-                };
+                btn.onclick = function() { selectSlot(btn, slot); };
             }
             slotContainer.appendChild(btn);
         });
     })
     .catch(error => {
-        slotContainer.innerHTML = '<span class="text-danger small">Error loading slots.</span>';
+        slotContainer.innerHTML = '<div class="text-center text-danger w-100 py-4" style="grid-column: 1 / -1;"><i class="fas fa-exclamation-triangle me-2"></i> Error loading slots.</div>';
     });
   }
 
   function selectSlot(clickedBtn, timeValue) {
     document.getElementById('selected_time').value = timeValue;
-
     const allBtns = document.getElementById('slot-container').querySelectorAll('button');
-    allBtns.forEach(b => {
-        if (!b.disabled) {
-            b.classList.remove('btn-primary', 'text-white');
-            b.classList.add('btn-outline-primary');
-        }
-    });
-
-    clickedBtn.classList.remove('btn-outline-primary');
-    clickedBtn.classList.add('btn-primary', 'text-white');
+    allBtns.forEach(b => b.classList.remove('selected'));
+    clickedBtn.classList.add('selected');
   }
-</script>
-
-<script>
-  // Automatically restrict the date picker to Today and future dates
-  document.addEventListener("DOMContentLoaded", function() {
-    let today = new Date().toISOString().split('T')[0];
-    document.getElementById("date").setAttribute("min", today);
-  });
 </script>
 
 {% endblock body %}

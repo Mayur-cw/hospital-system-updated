@@ -1,80 +1,271 @@
 {% extends 'base.html' %}
 
-{% block title %}
-Booking Confirmed | Hospital Management System
-{% endblock title %}
+{% block title %}Booking Confirmed | Hospital Management System{% endblock title %}
 
 {% block body %}
-<div class="container mt-5 mb-5 py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            
-            <div class="card shadow-lg border-0 rounded-4 text-center p-5 bg-white position-relative overflow-hidden">
-                <!-- Decorative background elements -->
-                <div class="position-absolute top-0 start-0 w-100 bg-success" style="height: 6px;"></div>
-                
-                <div class="text-success mb-4 animate-pop">
-                    <i class="fas fa-check-circle" style="font-size: 6rem; drop-shadow: 0 4px 6px rgba(25, 135, 84, 0.2);"></i>
-                </div>
-                
-                <h2 class="fw-bold mb-3 text-dark">Booking Confirmed!</h2>
-                <p class="text-muted mb-4 fs-5">Your appointment has been successfully scheduled.</p>
-                
-                <!-- Appointment Summary Card -->
-                <div class="bg-light rounded-4 p-4 text-start mb-5 border border-success border-opacity-25 shadow-sm">
-                    <h5 class="fw-bold border-bottom border-secondary border-opacity-25 pb-3 mb-3 text-primary">
-                        <i class="fas fa-receipt me-2"></i>Appointment Details
-                    </h5>
-                    
-                    <div class="row mb-2">
-                        <div class="col-sm-4 text-muted fw-bold">Patient Name</div>
-                        <div class="col-sm-8 text-dark">{{ appointment.name }}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-4 text-muted fw-bold">Specialist</div>
-                        <div class="col-sm-8 text-dark">Dr. {{ appointment.doctor | capitalize }} <span class="badge bg-secondary ms-1">{{ appointment.dept }}</span></div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-4 text-muted fw-bold">Date</div>
-                        <div class="col-sm-8 text-dark"><i class="fas fa-calendar-day text-primary me-2"></i>{{ appointment.date }}</div>
-                    </div>
-                    <div class="row mb-0">
-                        <div class="col-sm-4 text-muted fw-bold">Time</div>
-                        <div class="col-sm-8 text-dark"><i class="fas fa-clock text-primary me-2"></i>{{ appointment.time }}</div>
-                    </div>
-                </div>
-                
-                <!-- Action Buttons -->
-                <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
-                    <a href="/upcoming_bookings" class="btn btn-primary btn-lg px-4 rounded-pill fw-bold shadow-sm hover-lift">
-                        <i class="fas fa-calendar-check me-2"></i>View Upcoming Appointments
-                    </a>
-                    <a href="/dashboard" class="btn btn-outline-dark btn-lg px-4 rounded-pill fw-bold hover-lift">
-                        Back to Home
-                    </a>
-                </div>
-                
-            </div>
-            
+
+<style>
+  /* 🚨 SYNCHRONIZED PREMIUM THEME */
+  :root {
+    --primary:      #0d6efd;
+    --primary-dim:  #0b5ed7;
+    --primary-pale: #e7f1ff;
+    --header-start: #1e3c72;
+    --header-end:   #2a5298;
+    --text-dark:    #2b3440;
+    --text-hint:    #a0aec0;
+    --border:       #e2e8f0;
+    --surface:      #f8fafc;
+    --success:      #10b981;
+  }
+
+  body { background-color: var(--surface); }
+
+  /* Reduced Hero Padding */
+  .success-hero {
+    background: linear-gradient(135deg, var(--header-start) 0%, var(--header-end) 100%);
+    padding: 1.5rem 0 4rem; 
+    text-align: center;
+    color: white;
+  }
+
+  /* ── COMPACT TICKET DESIGN ── */
+  .ticket-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    position: relative;
+    margin-top: -40px;
+    overflow: hidden;
+    animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Tighter Header */
+  .ticket-header {
+    background: var(--success);
+    padding: 1.5rem 1.5rem 1rem;
+    text-align: center;
+    color: white;
+  }
+
+  /* Smaller Success Checkmark */
+  .success-icon-wrap {
+    width: 55px; height: 55px;
+    background: white; color: var(--success);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 0.75rem;
+    box-shadow: 0 0 0 6px rgba(255,255,255,0.2);
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transform: scale(0);
+  }
+
+  /* Tighter Body */
+  .ticket-body { padding: 1.25rem 2rem; }
+
+  /* The Perforated Edge Effect */
+  .ticket-divider {
+    border-top: 2px dashed var(--border);
+    position: relative; margin: 0;
+  }
+  .ticket-divider::before, .ticket-divider::after {
+    content: ''; position: absolute;
+    width: 30px; height: 30px;
+    background: var(--surface);
+    border-radius: 50%; top: -15px;
+  }
+  .ticket-divider::before { left: -15px; box-shadow: inset -2px 0 4px rgba(0,0,0,0.03); }
+  .ticket-divider::after { right: -15px; box-shadow: inset 2px 0 4px rgba(0,0,0,0.03); }
+
+  /* Tighter Footer */
+  .ticket-footer {
+    padding: 1.25rem 2rem 1.5rem;
+    background: #fafbfc;
+  }
+
+  /* ── TYPOGRAPHY ── */
+  .detail-label {
+    font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-hint);
+    font-weight: 700; margin-bottom: 0.2rem;
+  }
+  .detail-value { font-size: 1rem; font-weight: 700; color: var(--text-dark); }
+  .detail-value.large { font-size: 1.15rem; color: var(--primary); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes popIn {
+    0% { transform: scale(0); }
+    80% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+</style>
+
+<div class="success-hero"></div>
+
+<div class="container mb-4" style="position: relative; z-index: 10;">
+  <div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+      
+      <div class="ticket-card">
+        
+        <!-- COMPACT HEADER -->
+        <div class="ticket-header">
+          <div class="success-icon-wrap"><i class="fas fa-check"></i></div>
+          <h4 class="fw-bold mb-1">Booking Confirmed!</h4>
+          <p class="mb-0 small opacity-75">Your appointment is successfully secured.</p>
         </div>
+
+        <!-- CLEAR PATIENT & DOCTOR INFO -->
+        <div class="ticket-body">
+          
+          <!-- Top Row: Patient & ID -->
+          <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+            <div>
+              <div class="detail-label"><i class="fas fa-user me-1"></i> Patient</div>
+              <div class="detail-value fs-5 text-primary">{{ appointment.patient.username }}</div>
+            </div>
+            <div class="text-end">
+              <div class="detail-label">Apt ID</div>
+              <div class="badge bg-dark text-white px-3 py-2 rounded-pill shadow-sm" style="font-size: 0.9rem;">
+                #{{ appointment.apt_id }}
+              </div>
+            </div>
+          </div>
+          
+          <!-- Middle Row: Doctor & Reason -->
+          <div class="row align-items-center">
+            <div class="col-7">
+              <div class="detail-label"><i class="fas fa-user-md me-1"></i> Specialist</div>
+              <div class="detail-value fs-6">Dr. {{ appointment.doctor | capitalize }}</div>
+              <span class="badge bg-primary-pale text-primary mt-1 border">{{ appointment.dept }}</span>
+            </div>
+            <div class="col-5 text-end">
+              <div class="detail-label"><i class="fas fa-notes-medical me-1"></i> Reason</div>
+              <div class="detail-value small text-muted text-truncate" title="{{ appointment.disease }}">{{ appointment.disease | truncate(25) }}</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- PERFORATED DIVIDER -->
+        <div class="ticket-divider"></div>
+
+        <!-- TIGHT FOOTER (Time & Actions) -->
+        <div class="ticket-footer">
+          <div class="bg-primary-pale border border-primary rounded-3 p-3 d-flex justify-content-between align-items-center mb-3 shadow-sm">
+            <div>
+              <div class="detail-label text-primary">Date</div>
+              <div class="detail-value large" id="apt-date-display">{{ appointment.date }}</div>
+            </div>
+            <div class="text-end">
+              <div class="detail-label text-primary">Time</div>
+              <div class="detail-value large">{{ appointment.time }}</div>
+            </div>
+          </div>
+
+          <!-- Buttons Row -->
+          <div class="d-grid gap-2">
+            <!-- ICS Export -->
+            <button onclick="generateICS()" class="btn btn-outline-primary rounded-pill fw-bold shadow-sm py-2">
+              <i class="fas fa-calendar-plus me-1"></i> Add to Calendar
+            </button>
+            
+            <div class="row g-2">
+                <div class="col-6">
+                    <a href="/upcoming_bookings" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm" style="font-size: 0.9rem;">
+                        View Schedule
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="/" class="btn btn-light border w-100 rounded-pill fw-bold py-2 text-muted shadow-sm" style="font-size: 0.9rem;">
+                        Back Home
+                    </a>
+                </div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+
     </div>
+  </div>
 </div>
 
-<!-- Add a tiny bit of inline CSS for a nice pop animation on the checkmark -->
-<style>
-    .animate-pop {
-        animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-    @keyframes popIn {
-        0% { transform: scale(0.5); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
-    }
-    .hover-lift {
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-    .hover-lift:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-    }
-</style>
+<!-- 🚨 Add to Calendar UX Magic 🚨 -->
+<script>
+  // Format the date beautifully for the display
+  document.addEventListener("DOMContentLoaded", function() {
+      const dateStr = "{{ appointment.date }}"; // e.g. YYYY-MM-DD
+      const dateParts = dateStr.split('-');
+      const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+      document.getElementById('apt-date-display').innerText = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  });
+
+  // Pure JS ICS File Generator
+  function generateICS() {
+      const dateStr = "{{ appointment.date }}"; // YYYY-MM-DD
+      const timeStr = "{{ appointment.time }}"; // e.g., "02:30 PM"
+      const doctor = "Dr. {{ appointment.doctor | capitalize }}";
+      const dept = "{{ appointment.dept }}";
+      
+      let [time, modifier] = timeStr.split(' ');
+      let [hours, minutes] = time.split(':');
+      hours = parseInt(hours, 10);
+      if (hours === 12 && modifier === 'AM') hours = 0;
+      if (modifier === 'PM' && hours < 12) hours += 12;
+      
+      const [year, month, day] = dateStr.split('-');
+      const startDate = new Date(year, month - 1, day, hours, minutes);
+      const endDate = new Date(startDate.getTime() + 30 * 60000);
+
+      const formatICSDate = (date) => {
+          return date.toISOString().replace(/-|:|\.\d+/g, '').substring(0, 15) + 'Z';
+      };
+
+      const startICS = formatICSDate(startDate);
+      const endICS = formatICSDate(endDate);
+      const stampICS = formatICSDate(new Date());
+
+      const icsMSG = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//HMS System//EN
+BEGIN:VEVENT
+UID:${stampICS}-${Math.floor(Math.random() * 10000)}@hms.local
+DTSTAMP:${stampICS}
+DTSTART:${startICS}
+DTEND:${endICS}
+SUMMARY:Medical Appointment with ${doctor}
+DESCRIPTION:Department: ${dept}\\nReason: {{ appointment.disease }}
+LOCATION:HMS Medical Center
+END:VEVENT
+END:VCALENDAR`;
+
+      const blob = new Blob([icsMSG], { type: 'text/calendar;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.setAttribute('download', `Appointment_${doctor.replace(/\s+/g, '_')}.ics`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      const btn = event.currentTarget;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Downloaded!';
+      btn.classList.replace('btn-outline-primary', 'btn-success');
+      btn.classList.replace('text-primary', 'text-white');
+      
+      setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.classList.replace('btn-success', 'btn-outline-primary');
+          btn.classList.remove('text-white');
+      }, 3000);
+  }
+</script>
+
 {% endblock body %}
