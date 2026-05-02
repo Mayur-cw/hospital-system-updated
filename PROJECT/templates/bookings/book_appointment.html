@@ -239,10 +239,10 @@ Book Appointment | Hospital Management System
               
               <div class="row mb-4 justify-content-center">
                 <div class="col-md-8">
-                  <label for="appointmentDate" class="pf-label">Choose Date</label>
+                  <label for="date" class="pf-label">Choose Date</label>
                   <div class="pf-input-wrap mb-4">
                     <i class="fas fa-calendar-day pf-ico"></i>
-                    <input type="date" id="appointmentDate" name="date" required onchange="checkAvailableSlots()">
+                    <input type="date" id="date" name="date" required onchange="checkAvailableSlots()">
                   </div>
 
                   <label class="pf-label d-flex justify-content-between">
@@ -377,7 +377,8 @@ Book Appointment | Hospital Management System
 <script>
   // 🚨 AUTO-SKIP ENGINE
   document.addEventListener("DOMContentLoaded", function() {
-    let today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     document.getElementById("date").setAttribute("min", today);
 
     const initDept = document.getElementById("init_dept").value;
@@ -551,30 +552,5 @@ Book Appointment | Hospital Management System
   }
 </script>
 
-<script>
-  document.addEventListener("DOMContentLoaded", function() {
-      // 1. Get today's date in local time
-      const now = new Date();
-      
-      // 2. Adjust for timezone to get YYYY-MM-DD
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const localToday = `${year}-${month}-${day}`;
-      
-      // 3. Find the input and lock it down
-      const dateInput = document.getElementById('appointmentDate');
-      
-      if (dateInput) {
-          // Sets the minimum selectable date to today
-          dateInput.setAttribute('min', localToday);
-          
-          // Auto-set the value to today if it's currently empty or in the past
-          if (!dateInput.value || dateInput.value < localToday) {
-              dateInput.value = localToday;
-          }
-      }
-  });
-</script>
 
 {% endblock body %}
