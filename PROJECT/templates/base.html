@@ -5,209 +5,229 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="static/css/virtualregister.css">
-    {% block css %}{% endblock css %}
+    <!-- Premium Fonts: Syne (Headings) & DM Sans (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* 🚨 GLOBAL PRO MAX THEME 🚨 */
+        :root {
+            --hms-navy:       #0b1d35;
+            --hms-navy-mid:   #122a4d;
+            --hms-teal:       #00c9a7;
+            --hms-teal-soft:  #e6faf6;
+            --hms-amber:      #f59e0b;
+            --hms-danger:     #ef4444;
+            --hms-success:    #10b981;
+            --hms-surface:    #f7f9fc;
+            --hms-border:     #e2e8f0;
+            --hms-text:       #0f172a;
+            --hms-muted:      #64748b;
+            
+            --radius-md: 14px;
+            --radius-pill: 999px;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--hms-surface);
+            color: var(--hms-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, h5, h6, .brand-font { font-family: 'Syne', sans-serif; }
+
+        /* ── GLASSMORPHIC NAVBAR ── */
+        .navbar-premium {
+            background-color: rgba(11, 29, 53, 0.95) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 0.8rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        /* ── BRAND GLEAMING EFFECT ── */
+        .brand-text-gleam {
+            font-weight: 800; font-size: 1.4rem; letter-spacing: -0.02em;
+            background: linear-gradient(90deg, #ffffff 0%, var(--hms-teal) 50%, #ffffff 100%);
+            background-size: 200% auto; color: transparent;
+            -webkit-background-clip: text; background-clip: text;
+            animation: shimmer 4s linear infinite;
+        }
+
+        @keyframes shimmer { to { background-position: 200% center; } }
+
+        .nav-link {
+            color: rgba(255,255,255,0.7) !important;
+            font-weight: 500; font-size: 0.95rem;
+            transition: all 0.2s ease; padding: 0.5rem 1rem !important;
+        }
+        .nav-link:hover { color: var(--hms-teal) !important; transform: translateY(-1px); }
+
+        /* ── GLASS SEARCH BAR ── */
+        .glass-search {
+            background: rgba(255,255,255,0.08) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            color: white !important; border-radius: var(--radius-pill);
+            padding-left: 1.2rem; font-size: 0.9rem; transition: all 0.3s ease;
+        }
+        .glass-search:focus {
+            background: rgba(255,255,255,0.15) !important;
+            border-color: var(--hms-teal) !important;
+            box-shadow: 0 0 0 4px rgba(0, 201, 167, 0.15) !important;
+        }
+        .glass-search::placeholder { color: rgba(255,255,255,0.4); }
+
+        /* ── USER PILL & DROPDOWN ── */
+        .user-pill {
+            background: rgba(0, 201, 167, 0.1);
+            border: 1px solid rgba(0, 201, 167, 0.3);
+            color: var(--hms-teal-soft); border-radius: var(--radius-pill);
+            padding: 0.4rem 1.2rem; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;
+        }
+        .user-pill:hover {
+            background: rgba(0, 201, 167, 0.2); color: white;
+            box-shadow: 0 4px 12px rgba(0, 201, 167, 0.2);
+        }
+        .dropdown-item-hover:hover { background-color: rgba(0, 201, 167, 0.08) !important; color: var(--hms-navy) !important; }
+
+        /* ── TOAST ENGINE ── */
+        .toast-container { position: fixed; top: 90px; right: 25px; z-index: 9999; pointer-events: none; display: flex; flex-direction: column; gap: 10px; }
+        .toast-alert {
+            pointer-events: auto; min-width: 320px; max-width: 450px; background: white;
+            border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lg) !important;
+            border-left: 6px solid; padding: 1rem 1.25rem; margin: 0;
+            animation: slideIn 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        }
+        @keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast-fade-out { animation: fadeOut 0.5s forwards; }
+        @keyframes fadeOut { to { transform: translateX(120%); opacity: 0; } }
+
+        /* ── FOOTER ── */
+        .footer-premium { background: var(--hms-navy); border-top: 1px solid rgba(255,255,255,0.05); padding: 3rem 0 2rem; color: rgba(255,255,255,0.6); }
+    </style>
+    
+    {% block css %}{% endblock css %}
     <title>{% block title %}HMS{% endblock title %}</title>
 </head>
 
-<body class="d-flex flex-column min-vh-100 bg-light">
+<body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold tracking-wide" href="/">
-                <i class="fas fa-hospital-user text-primary me-2"></i>H.M.S
+    <!-- ── NAVBAR ── -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-premium sticky-top shadow-sm">
+        <div class="container-fluid px-lg-5">
+            
+            <a class="navbar-brand brand-font d-flex align-items-center" href="/">
+                <div class="bg-white rounded p-1 d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                    <i class="fas fa-hospital-alt fs-6" style="color: var(--hms-navy);"></i>
+                </div>
+                <span class="brand-text-gleam">H.M.S</span>
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+                <i class="fas fa-bars"></i>
             </button>
 
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
-                    </li>
+            <div class="collapse navbar-collapse" id="navContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
 
                     {% if current_user.is_authenticated %}
-                        
-                        <!-- 👑 ADMIN LINKS -->
                         {% if current_user.usertype == "Admin" %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="/admin_dashboard"><i class="fas fa-tools me-1"></i> Dashboard</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/details"><i class="fas fa-clipboard-list me-1"></i> System Logs</a>
-                            </li>
-                            
-                        <!-- 👨‍⚕️ DOCTOR LINKS -->
+                            <li class="nav-item"><a class="nav-link" href="/admin_dashboard">Admin Portal</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/details">Audit Logs</a></li>
                         {% elif current_user.usertype == "Doctor" %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="/upcoming_bookings">My Schedule</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/past_records">Patient History</a>
-                            </li>
-
-                        <!-- 🧑‍🤝‍🧑 PATIENT LINKS -->
+                            <li class="nav-item"><a class="nav-link" href="/upcoming_bookings">My Schedule</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/past_records">Patient History</a></li>
                         {% else %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="/patients">Book Appointment</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/upcoming_bookings">Upcoming Appointments</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/past_records">Past Records</a>
-                            </li>
+                            <li class="nav-item"><a class="nav-link" href="/patients">Book Appointment</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/upcoming_bookings">My Schedule</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/past_records">History</a></li>
                         {% endif %}
-                        
-                        <!-- USER DROPDOWN -->
-                        <li class="nav-item dropdown ms-lg-3">
-                            <a class="nav-link dropdown-toggle text-white fw-bold" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                              <i class="fas fa-user-circle me-1 text-primary"></i> {{ current_user.username | capitalize }}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="userDropdown">
-                                <li><a class="dropdown-item" href="/profile"><i class="fas fa-user-cog me-2"></i>My Profile</a></li>
-    
-                                <!-- 🚨 CHANGED: 'All History' is now 'Appointment Log' -->
-                                <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-clipboard-list me-2"></i>Appointment Log</a></li>
-    
-                                <li><hr class="dropdown-divider border-secondary"></li>
-                                <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <!-- GUEST LINKS -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="authDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-sign-in-alt me-1"></i> Account
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="authDropdown">
-                                <li><a class="dropdown-item" href="/signup">Signup</a></li>
-                                <li><a class="dropdown-item" href="/login">Login</a></li>
-                            </ul>
-                        </li>
                     {% endif %}
                 </ul>
 
-                <form class="d-flex" action="/search" method="post">
-                    <!-- 🚨 NEW SMART SEARCH BAR -->
-                    {% if current_user.is_authenticated and current_user.usertype == 'Doctor' %}
-                        <input class="form-control me-2 glass-search" type="search" placeholder="Search Patient Name..." name="search" aria-label="Search" required>
+                <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
+                    <form class="d-none d-lg-block position-relative" action="/search" method="post">
+                        <input class="form-control glass-search" type="search" name="search" 
+                               placeholder="{% if current_user.usertype == 'Doctor' %}Search patients...{% else %}Search doctors...{% endif %}" required>
+                        <i class="fas fa-search position-absolute top-50 translate-middle-y end-0 me-3 opacity-50 text-white" style="font-size: 0.8rem;"></i>
+                    </form>
+
+                    {% if current_user.is_authenticated %}
+                        <div class="dropdown ms-lg-2">
+                            <a class="user-pill dropdown-toggle d-flex align-items-center text-decoration-none" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-2 fs-6"></i> {{ current_user.username | capitalize }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-3 p-2 rounded-4">
+                                <li><a class="dropdown-item dropdown-item-hover fw-bold py-2 rounded-3" href="/profile"><i class="fas fa-user-cog me-2 text-primary"></i>Profile Settings</a></li>
+                                <li><a class="dropdown-item dropdown-item-hover fw-bold py-2 rounded-3" href="/dashboard"><i class="fas fa-list-alt me-2 text-primary"></i>Appointment Log</a></li>
+                                <li><hr class="dropdown-divider opacity-10 my-2"></li>
+                                <li><a class="dropdown-item dropdown-item-hover text-danger fw-bold py-2 rounded-3" href="/logout"><i class="fas fa-power-off me-2"></i>Secure Logout</a></li>
+                            </ul>
+                        </div>
                     {% else %}
-                        <input class="form-control me-2 glass-search" type="search" placeholder="Search Doctor/Dept" name="search" aria-label="Search" required>
+                        <div class="d-flex gap-2">
+                            <a href="/login" class="nav-link">Login</a>
+                            <a href="/signup" class="btn text-white rounded-pill px-4 shadow-sm" style="background: var(--hms-teal); font-weight: 600; border: 1px solid var(--hms-teal-soft);">Signup</a>
+                        </div>
                     {% endif %}
-                    
-                    <button class="btn btn-primary rounded-circle shadow-sm" type="submit" style="width: 42px; height: 42px; padding: 0;">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </form>
+                </div>
             </div>
         </div>
     </nav>
 
+    <!-- ── MAIN CONTENT ── -->
     <main class="flex-grow-1">
-        {% block body %}
-        {% endblock body %}
+        {% block body %}{% endblock %}
     </main>
 
-   <footer class="bg-dark text-light py-4 mt-auto border-top border-secondary">
+    <!-- ── FOOTER ── -->
+    <footer class="footer-premium mt-auto">
         <div class="container text-center">
-            <h5 class="text-uppercase tracking-wide mb-3"><i class="fas fa-stethoscope text-primary me-2"></i>Hospital Management System</h5>
-            <p class="mb-1 text-light" style="opacity: 0.8;">A DBMS Mini-Project Developed By:</p>
-            <h3 class="fw-bold mb-3">Vedant, Pawan & Mayur</h3>
-            <hr class="border-secondary mx-auto" style="width: 50%;">
-            <small class="mb-1 text-light" style="opacity: 0.8;">&copy; 2026 HMS Database Project. Built with Flask & MySQL.</small>
+            <h5 class="brand-font text-white mb-3 tracking-wide">
+                <i class="fas fa-shield-virus me-2" style="color: var(--hms-teal);"></i>HMS CORE
+            </h5>
+            <p class="mb-4 small" style="max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                A premium medical management interface built with advanced relational integrity and secure clinical workflow standards.
+            </p>
+            
+            <div class="d-flex justify-content-center gap-4 mb-4 fs-5 text-white">
+                <a href="#" class="text-white opacity-50 text-decoration-none" style="transition: 0.2s;"><i class="fab fa-github"></i></a>
+                <a href="#" class="text-white opacity-50 text-decoration-none" style="transition: 0.2s;"><i class="fab fa-linkedin"></i></a>
+                <a href="#" class="text-white opacity-50 text-decoration-none" style="transition: 0.2s;"><i class="fas fa-envelope"></i></a>
+            </div>
+            
+            <hr class="border-light opacity-10 mx-auto w-50 mb-3">
+            <p class="small opacity-10 mb-0">&copy; 2026 DBMS Mini-Project. Engineered by<br> <strong style="font-size: 20px;">Vedant, Pawan & Mayur</strong>.</p>
         </div>
     </footer>
 
-    <!-- ========================================== -->
-    <!-- 🍞 GLOBAL TOAST NOTIFICATION ENGINE 🍞     -->
-    <!-- ========================================== -->
-    <style>
-        /* 1. The Container - Fixed to the Top Right */
-        .toast-container {
-            position: fixed;
-            top: 80px; /* Sits cleanly below the navbar */
-            right: 20px;
-            z-index: 9999; 
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            pointer-events: none; 
-        }
-
-        /* 2. The Toast Card */
-        .toast-alert {
-            pointer-events: auto; 
-            min-width: 320px;
-            max-width: 450px;
-            background-color: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
-            border: none;
-            border-left: 6px solid; 
-            border-radius: 8px;
-            padding: 1rem 1.25rem;
-            margin: 0;
-            animation: slideInRight 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-        }
-
-        /* 3. The Animations */
-        @keyframes slideInRight {
-            from { transform: translateX(120%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .toast-fade-out {
-            animation: fadeOutRight 0.6s forwards !important;
-        }
-
-        @keyframes fadeOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(120%); opacity: 0; }
-        }
-    </style>
-
+    <!-- ── TOAST ENGINE ── -->
     <div class="toast-container">
-        <!-- Catch any flash messages sent from app.py -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    
-                    <!-- Map the Python category to a Bootstrap color -->
-                    {% set border_color = category %}
-                    {% if category == 'error' %}{% set border_color = 'danger' %}{% endif %}
-                    {% if category == 'message' %}{% set border_color = 'info' %}{% endif %}
-                    
-                    <div class="alert alert-dismissible toast-alert border-{{ border_color }}" role="alert">
+                    {% set type = 'danger' if category == 'error' else ('info' if category == 'message' else category) %}
+                    {% set type = type if type in ['success', 'danger', 'warning', 'info'] else 'info' %}
+                    <div class="toast-alert border-{{ type }}" role="alert">
                         <div class="d-flex align-items-center">
-                            
-                            <!-- Smart Icons based on category -->
-                            {% if border_color == 'success' %}
-                                <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
-                                    <i class="fas fa-check text-success fs-5"></i>
-                                </div>
-                            {% elif border_color == 'danger' %}
-                                <div class="bg-danger bg-opacity-10 rounded-circle p-2 me-3">
-                                    <i class="fas fa-times text-danger fs-5"></i>
-                                </div>
-                            {% elif border_color == 'warning' %}
-                                <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
-                                    <i class="fas fa-exclamation-triangle text-warning fs-5"></i>
-                                </div>
-                            {% else %}
-                                <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3">
-                                    <i class="fas fa-info text-info fs-5"></i>
-                                </div>
-                            {% endif %}
-                            
-                            <div class="me-auto text-dark fw-bold" style="font-size: 0.95rem;">
-                                {{ message }}
+                            <div class="rounded-circle bg-{{ type }} bg-opacity-10 p-2 me-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="fas {% if type=='success' %}fa-check-circle{% elif type=='danger' %}fa-times-circle{% elif type=='warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} text-{{ type }} fs-5"></i>
                             </div>
-                            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <div class="me-auto text-dark fw-bold" style="font-size: 0.92rem; line-height: 1.3;">{{ message }}</div>
+                            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert" style="font-size: 0.75rem;"></button>
                         </div>
                     </div>
                 {% endfor %}
@@ -215,27 +235,16 @@
         {% endwith %}
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // 4. The Auto-Dismiss Logic
         document.addEventListener("DOMContentLoaded", function() {
-            const toasts = document.querySelectorAll('.toast-alert');
-            
-            toasts.forEach(toast => {
-                // Set a 4-second (4000ms) timer
+            document.querySelectorAll('.toast-alert').forEach(toast => {
                 setTimeout(() => {
-                    // Apply the slide-out CSS animation
                     toast.classList.add('toast-fade-out');
-                    
-                    // Wait for the CSS animation to finish (600ms), then delete it from the HTML
-                    setTimeout(() => {
-                        toast.remove();
-                    }, 600); 
-                }, 4000);
+                    setTimeout(() => toast.remove(), 500);
+                }, 4500);
             });
         });
     </script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 </body>
 </html>
