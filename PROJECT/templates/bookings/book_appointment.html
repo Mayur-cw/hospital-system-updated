@@ -113,7 +113,7 @@ Book Appointment | Hospital Management System
   .slot-btn.selected { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2); }
   .slot-btn:disabled { background: var(--surface); border-color: var(--border); color: var(--text-hint); text-decoration: line-through; cursor: not-allowed; }
 
-  /* ── STEP 3 SUMMARY UI (NEW) ── */
+  /* ── STEP 3 SUMMARY UI ── */
   .summary-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -272,12 +272,12 @@ Book Appointment | Hospital Management System
             </div>
 
             <!-- ========================================== -->
-            <!-- STEP 3: REVIEW & INTAKE (UPGRADED UI)      -->
+            <!-- STEP 3: REVIEW & INTAKE                    -->
             <!-- ========================================== -->
             <div class="wizard-panel" id="step-3">
               <h4 class="fw-bold mb-4 text-center">Review & Confirm</h4>
               
-              <!-- 🚨 NEW DYNAMIC BOOKING SUMMARY -->
+              <!-- DYNAMIC BOOKING SUMMARY -->
               <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-clipboard-check text-primary me-2"></i>Appointment Summary</h6>
               <div class="row mb-5 g-3">
                   <div class="col-md-6">
@@ -375,120 +375,192 @@ Book Appointment | Hospital Management System
 
 <!-- ── WIZARD & AUTO-SKIP LOGIC ── -->
 <script>
-  // 🚨 AUTO-SKIP ENGINE
-  document.addEventListener("DOMContentLoaded", function() {
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    document.getElementById("date").setAttribute("min", today);
 
+  // ── HELPERS ──────────────────────────────────────────
+  function getLocalDateStr() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  }
+
+  function populateSummary(docName, deptName, dateVal, timeVal) {
+    const dateParts = dateVal.split('-');
+    const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+    const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    document.getElementById('summary-doc-name').innerText = "Dr. " + docName;
+    document.getElementById('summary-dept-name').innerText = (deptName && deptName !== "View All Departments...") ? deptName : "Specialist";
+    document.getElementById('summary-date-display').innerText = formattedDate;
+    document.getElementById('summary-time-display').innerText = timeVal;
+  }
+
+  function getCurrentStep() {
+    for (let i = 1; i <= 3; i++) {
+      if (document.getElementById(`step-${i}`).classList.contains('active')) return i;
+    }
+    return 1;
+  }
+
+  // ── SESSION STORAGE ───────────────────────────────────
+  function saveState() {
+    sessionStorage.setItem('wiz_step',   getCurrentStep());
+    sessionStorage.setItem('wiz_doctor', document.getElementById('selected_doctor').value);
+    sessionStorage.setItem('wiz_dept',   document.getElementById('dept').value);
+    sessionStorage.setItem('wiz_date',   document.getElementById('date').value);
+    sessionStorage.setItem('wiz_time',   document.getElementById('selected_time').value);
+  }
+
+  function clearState() {
+    ['wiz_step','wiz_doctor','wiz_dept','wiz_date','wiz_time'].forEach(k => sessionStorage.removeItem(k));
+  }
+
+  // ── ON LOAD ───────────────────────────────────────────
+  document.addEventListener("DOMContentLoaded", function() {
+
+    // FIX: use local date so IST users don't see yesterday as selectable
+    document.getElementById("date").setAttribute("min", getLocalDateStr());
+
+    // Clear state on successful form submit
+    document.getElementById('bookingForm').addEventListener('submit', function() {
+      clearState();
+    });
+
+    // ── TRY RESTORE FROM SESSION ──
+    const savedStep   = sessionStorage.getItem('wiz_step');
+    const savedDoctor = sessionStorage.getItem('wiz_doctor');
+    const savedDept   = sessionStorage.getItem('wiz_dept');
+    const savedDate   = sessionStorage.getItem('wiz_date');
+    const savedTime   = sessionStorage.getItem('wiz_time');
+
+    if (savedStep && parseInt(savedStep) > 1 && savedDoctor) {
+      // Restore dept + doctor card
+      if (savedDept) {
+        document.getElementById('dept').value = savedDept;
+        filterDoctorCards(false);
+      }
+      const targetCard = document.querySelector(`.doc-wrapper[data-doc="${savedDoctor}"] .doc-card`);
+      if (targetCard) selectDoctorCard(savedDoctor, targetCard);
+
+      // Restore date + time hidden input
+      if (savedDate) document.getElementById('date').value = savedDate;
+      if (savedTime) document.getElementById('selected_time').value = savedTime;
+
+      // Jump stepper to saved step
+      const step = parseInt(savedStep);
+      for (let i = 1; i < step; i++) {
+        document.getElementById(`step-${i}`).classList.remove('active');
+        document.getElementById(`indicator-${i}`).classList.remove('active');
+        document.getElementById(`indicator-${i}`).classList.add('completed');
+      }
+      document.getElementById(`step-${step}`).classList.add('active');
+      document.getElementById(`indicator-${step}`).classList.add('active');
+      document.getElementById('progress-bar').style.width = ((step - 1) * 50) + '%';
+
+      // If restored to step 3, reload slots visually + repopulate summary
+      if (step === 2 && savedDate) {
+        checkAvailableSlots();
+      }
+      if (step === 3) {
+        const deptSelect = document.getElementById('dept');
+        const deptName = deptSelect.options[deptSelect.selectedIndex] ? deptSelect.options[deptSelect.selectedIndex].text : '';
+        populateSummary(savedDoctor, deptName, savedDate, savedTime);
+        // Also reload slots in background so going Back works
+        if (savedDate) checkAvailableSlots();
+      }
+
+      return; // skip auto-skip logic below if restoring
+    }
+
+    // ── AUTO-SKIP (from doctor directory) ──
     const initDept = document.getElementById("init_dept").value;
-    const initDoc = document.getElementById("init_doc").value;
+    const initDoc  = document.getElementById("init_doc").value;
 
     if (initDept && initDoc) {
-        document.getElementById('dept').value = initDept;
-        filterDoctorCards(false);
-        
-        const targetWrapper = document.querySelector(`.doc-wrapper[data-doc="${initDoc}"]`);
-        if (targetWrapper) {
-            const card = targetWrapper.querySelector('.doc-card');
-            selectDoctorCard(initDoc, card);
-            
-            document.getElementById('skip-msg').classList.remove('d-none');
-            setTimeout(() => { nextStep(1); }, 100);
-        }
+      document.getElementById('dept').value = initDept;
+      filterDoctorCards(false);
+
+      const targetWrapper = document.querySelector(`.doc-wrapper[data-doc="${initDoc}"]`);
+      if (targetWrapper) {
+        const card = targetWrapper.querySelector('.doc-card');
+        selectDoctorCard(initDoc, card);
+        document.getElementById('skip-msg').classList.remove('d-none');
+        setTimeout(() => { nextStep(1); }, 100);
+      }
     }
   });
 
-  // 🚨 DOCTOR CARD LOGIC
+  // ── DOCTOR CARD LOGIC ─────────────────────────────────
   function filterDoctorCards(isManual) {
-      const selectedDept = document.getElementById("dept").value;
-      const allWrappers = document.querySelectorAll('.doc-wrapper');
-      
-      if (isManual) {
-         document.getElementById('selected_doctor').value = "";
-         document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('selected'));
-         document.getElementById('selected_time').value = "";
-         document.getElementById('slot-container').innerHTML = '<div class="text-center text-muted w-100" style="grid-column: 1 / -1; padding: 2rem 0;"><i class="fas fa-calendar-check fa-2x mb-2 opacity-50"></i><p class="mb-0 small">Please select a Date above to view slots.</p></div>';
-      }
+    const selectedDept = document.getElementById("dept").value;
+    const allWrappers  = document.querySelectorAll('.doc-wrapper');
 
-      allWrappers.forEach(wrap => {
-          if (!selectedDept || wrap.getAttribute('data-dept') === selectedDept) {
-              wrap.style.display = 'block';
-          } else {
-              wrap.style.display = 'none';
-          }
-      });
+    if (isManual) {
+      document.getElementById('selected_doctor').value = "";
+      document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById('selected_time').value = "";
+      document.getElementById('slot-container').innerHTML = '<div class="text-center text-muted w-100" style="grid-column: 1 / -1; padding: 2rem 0;"><i class="fas fa-calendar-check fa-2x mb-2 opacity-50"></i><p class="mb-0 small">Please select a Date above to view slots.</p></div>';
+    }
+
+    allWrappers.forEach(wrap => {
+      wrap.style.display = (!selectedDept || wrap.getAttribute('data-dept') === selectedDept) ? 'block' : 'none';
+    });
   }
 
   function selectDoctorCard(docName, cardElement) {
-      document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('selected'));
-      cardElement.classList.add('selected');
-      document.getElementById('selected_doctor').value = docName;
-      document.getElementById('doc-name-display').innerText = 'Dr. ' + docName;
-      
-      if(document.getElementById('date').value) {
-          checkAvailableSlots();
-      }
+    document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('selected'));
+    cardElement.classList.add('selected');
+    document.getElementById('selected_doctor').value = docName;
+    document.getElementById('doc-name-display').innerText = 'Dr. ' + docName;
+
+    if (document.getElementById('date').value) {
+      checkAvailableSlots();
+    }
   }
 
-  // 🚨 STEPPER LOGIC
+  // ── STEPPER LOGIC ─────────────────────────────────────
   function nextStep(current) {
     if (current === 1) {
-        if (!document.getElementById('selected_doctor').value) {
-            alert('Please select a Specialist to continue.');
-            return;
-        }
+      if (!document.getElementById('selected_doctor').value) {
+        alert('Please select a Specialist to continue.');
+        return;
+      }
     }
     if (current === 2) {
-        if (!document.getElementById('date').value) { alert('Please select a Date.'); return; }
-        if (!document.getElementById('selected_time').value) { alert('Please select an available Time Slot.'); return; }
-        
-        // 🚨 NEW: INJECT DATA INTO STEP 3 SUMMARY 🚨
-        const docName = document.getElementById('selected_doctor').value;
-        const deptSelect = document.getElementById('dept');
-        const deptName = deptSelect.options[deptSelect.selectedIndex].text;
-        
-        // Format the date beautifully (e.g., "Mon, Oct 14, 2025")
-        const dateVal = document.getElementById('date').value;
-        const dateParts = dateVal.split('-');
-        const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-        const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-        
-        const timeVal = document.getElementById('selected_time').value;
+      if (!document.getElementById('date').value)         { alert('Please select a Date.'); return; }
+      if (!document.getElementById('selected_time').value){ alert('Please select an available Time Slot.'); return; }
 
-        document.getElementById('summary-doc-name').innerText = "Dr. " + docName;
-        // Fallback for department if auto-skipped
-        document.getElementById('summary-dept-name').innerText = deptName !== "View All Departments..." ? deptName : "Specialist";
-        document.getElementById('summary-date-display').innerText = formattedDate;
-        document.getElementById('summary-time-display').innerText = timeVal;
+      const docName   = document.getElementById('selected_doctor').value;
+      const deptSelect = document.getElementById('dept');
+      const deptName  = deptSelect.options[deptSelect.selectedIndex].text;
+      const dateVal   = document.getElementById('date').value;
+      const timeVal   = document.getElementById('selected_time').value;
+      populateSummary(docName, deptName, dateVal, timeVal);
     }
 
     document.getElementById(`step-${current}`).classList.remove('active');
     document.getElementById(`step-${current + 1}`).classList.add('active');
-    
     document.getElementById(`indicator-${current}`).classList.add('completed');
     document.getElementById(`indicator-${current}`).classList.remove('active');
     document.getElementById(`indicator-${current + 1}`).classList.add('active');
-    
     document.getElementById('progress-bar').style.width = (current * 50) + '%';
+
+    saveState(); // persist after every forward step
   }
 
   function prevStep(current) {
     document.getElementById(`step-${current}`).classList.remove('active');
     document.getElementById(`step-${current - 1}`).classList.add('active');
-    
     document.getElementById(`indicator-${current}`).classList.remove('active');
     document.getElementById(`indicator-${current - 1}`).classList.add('active');
     document.getElementById(`indicator-${current - 1}`).classList.remove('completed');
-    
     document.getElementById('progress-bar').style.width = ((current - 2) * 50) + '%';
+
+    saveState(); // persist step position on back too
   }
 
-  // 🚨 TIME SLOT LOGIC
-  const allSlots = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"];
+  // ── TIME SLOT LOGIC ───────────────────────────────────
+  const allSlots = ["10:00 AM","10:30 AM","11:00 AM","11:30 AM","12:00 PM","12:30 PM","03:00 PM","03:30 PM","04:00 PM","04:30 PM"];
 
   function checkAvailableSlots() {
-    const dateStr = document.getElementById('date').value;
+    const dateStr   = document.getElementById('date').value;
     const doctorStr = document.getElementById('selected_doctor').value;
     const slotContainer = document.getElementById('slot-container');
 
@@ -497,60 +569,61 @@ Book Appointment | Hospital Management System
     slotContainer.innerHTML = '<div class="text-center text-primary w-100 fw-bold py-4" style="grid-column: 1 / -1;"><i class="fas fa-circle-notch fa-spin me-2"></i> Scanning schedule...</div>';
 
     fetch('/get_booked_slots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: dateStr, doctor: doctorStr })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: dateStr, doctor: doctorStr })
     })
-    .then(response => response.json())
+    .then(r => r.json())
     .then(data => {
-        const bookedTimes = data.booked_times;
-        slotContainer.innerHTML = ''; 
+      const bookedTimes = data.booked_times;
+      slotContainer.innerHTML = '';
 
-        const now = new Date();
-        const selectedDateStr = document.getElementById('date').value; 
-        const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-        const isToday = (selectedDateStr === todayStr);
+      const now        = new Date();
+      const todayStr   = getLocalDateStr(); // FIX: use local date helper
+      const isToday    = (dateStr === todayStr);
 
-        allSlots.forEach(slot => {
-            const btn = document.createElement('button');
-            btn.type = 'button'; 
-            btn.className = 'slot-btn';
-            btn.innerText = slot;
+      allSlots.forEach(slot => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'slot-btn';
+        btn.innerText = slot;
 
-            let isPastTime = false;
-            if (isToday) {
-                let [timePart, modifier] = slot.split(' ');
-                let [hours, minutes] = timePart.split(':');
-                hours = parseInt(hours, 10);
-                if (hours === 12 && modifier === 'AM') hours = 0;
-                if (modifier === 'PM' && hours < 12) hours += 12;
-                
-                const slotDateTime = new Date();
-                slotDateTime.setHours(hours, parseInt(minutes, 10), 0, 0);
-                if (slotDateTime < now) isPastTime = true;
-            }
+        let isPastTime = false;
+        if (isToday) {
+          let [timePart, modifier] = slot.split(' ');
+          let [hours, minutes] = timePart.split(':');
+          hours = parseInt(hours, 10);
+          if (hours === 12 && modifier === 'AM') hours = 0;
+          if (modifier === 'PM' && hours < 12) hours += 12;
+          const slotDateTime = new Date();
+          slotDateTime.setHours(hours, parseInt(minutes, 10), 0, 0);
+          if (slotDateTime < now) isPastTime = true;
+        }
 
-            if (bookedTimes.includes(slot) || isPastTime) {
-                btn.disabled = true;
-                btn.title = isPastTime && !bookedTimes.includes(slot) ? "Time passed" : "Booked";
-            } else {
-                btn.onclick = function() { selectSlot(btn, slot); };
-            }
-            slotContainer.appendChild(btn);
-        });
+        if (bookedTimes.includes(slot) || isPastTime) {
+          btn.disabled = true;
+          btn.title = (isPastTime && !bookedTimes.includes(slot)) ? "Time passed" : "Booked";
+        } else {
+          // Re-highlight previously selected slot on restore
+          if (slot === document.getElementById('selected_time').value) {
+            btn.classList.add('selected');
+          }
+          btn.onclick = function() { selectSlot(btn, slot); };
+        }
+        slotContainer.appendChild(btn);
+      });
     })
-    .catch(error => {
-        slotContainer.innerHTML = '<div class="text-center text-danger w-100 py-4" style="grid-column: 1 / -1;"><i class="fas fa-exclamation-triangle me-2"></i> Error loading slots.</div>';
+    .catch(() => {
+      slotContainer.innerHTML = '<div class="text-center text-danger w-100 py-4" style="grid-column: 1 / -1;"><i class="fas fa-exclamation-triangle me-2"></i> Error loading slots.</div>';
     });
   }
 
   function selectSlot(clickedBtn, timeValue) {
     document.getElementById('selected_time').value = timeValue;
-    const allBtns = document.getElementById('slot-container').querySelectorAll('button');
-    allBtns.forEach(b => b.classList.remove('selected'));
+    document.getElementById('slot-container').querySelectorAll('button').forEach(b => b.classList.remove('selected'));
     clickedBtn.classList.add('selected');
   }
-</script>
 
+</script>
 
 {% endblock body %}

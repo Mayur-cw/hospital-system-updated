@@ -85,7 +85,7 @@ Home | Hospital Management System
   .stat-icon-sm { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: 12px; }
   .stat-num { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--hms-navy); line-height: 1; }
   
-  .table-card { background: white; border: 1px solid var(--hms-border); border-radius: 16px; overflow: hidden; }
+  .table-card { background: white; border: 1px solid var(--hms-border); border-radius: 16px; overflow: visible; min-height: 300px; }
   .hms-table th { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--hms-muted); padding: 16px; border-bottom: 1px solid var(--hms-border); background: #f8fafc; }
   .hms-table td { padding: 16px; vertical-align: middle; border-bottom: 1px solid rgba(0,0,0,0.03); }
   
@@ -204,7 +204,7 @@ Home | Hospital Management System
     </div>
   </div>
 
-  <div class="row g-4">
+  <div class="row g-4 align-items-start">
     <!-- 🚨 LIVE QUEUE TABLE 🚨 -->
     <div class="col-lg-8">
         <div class="table-card">
@@ -215,7 +215,7 @@ Home | Hospital Management System
                 <a href="/upcoming_bookings" class="btn btn-sm btn-light border fw-bold text-muted rounded-pill px-3 shadow-sm" style="font-size: 0.75rem;">Full Schedule <i class="fas fa-arrow-right ms-1"></i></a>
             </div>
             
-            <div class="table-responsive">
+            <div class="table-responsive" style="overflow: visible;">
                 <table class="table hms-table mb-0">
                     <thead>
                         <tr>
