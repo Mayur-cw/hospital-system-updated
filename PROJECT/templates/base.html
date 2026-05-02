@@ -145,15 +145,43 @@
 
                     {% if current_user.is_authenticated %}
                         {% if current_user.usertype == "Admin" %}
-                            <li class="nav-item"><a class="nav-link" href="/admin_dashboard">Admin Portal</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/details">Audit Logs</a></li>
+                            <!-- 1.. Directories Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-folder-open me-1"></i> Directories
+                                </a>
+                                <ul class="dropdown-menu shadow-sm border-0 mt-2 rounded-3">
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="/admin/doctors"><i class="fas fa-user-md me-2 text-primary"></i>Doctors</a></li>
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="/admin/patients"><i class="fas fa-procedures me-2 text-success"></i>Patients</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="/admin/staff"><i class="fas fa-user-shield me-2 text-info"></i>System Staff</a></li>
+                                </ul>
+                            </li>
+
+                            <!-- 🚨 2.. NEW: Quick Create Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-warning fw-bold" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-plus-circle me-1"></i> Quick Add
+                                </a>
+                                <ul class="dropdown-menu shadow-sm border-0 mt-2 rounded-3">
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="#" data-bs-toggle="modal" data-bs-target="#globalAddDoctorModal"><i class="fas fa-user-md me-2 text-primary"></i>New Doctor</a></li>
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="#" data-bs-toggle="modal" data-bs-target="#globalAddStaffModal"><i class="fas fa-user-shield me-2 text-warning"></i>New Admin</a></li>
+                                </ul>
+                            </li>
+                            
+                            <!-- 3.. Audit Logs -->
+                            <li class="nav-item"><a class="nav-link" href="/details"><i class="fas fa-clipboard-list me-1"></i> Audit Logs</a></li>
+
                         {% elif current_user.usertype == "Doctor" %}
                             <li class="nav-item"><a class="nav-link" href="/upcoming_bookings">My Schedule</a></li>
                             <li class="nav-item"><a class="nav-link" href="/past_records">Patient History</a></li>
+
                         {% else %}
-                            <li class="nav-item"><a class="nav-link" href="/patients">Book Appointment</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/upcoming_bookings">My Schedule</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/past_records">History</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/patients"><i class="fas fa-calendar-plus me-1"></i> Book Appointment</a></li>
+                            
+                            <!-- 🚨 NEW: Unified Appointments Hub -->
+                            <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="fas fa-folder-open me-1"></i> My Appointments</a></li>
+                            
                         {% endif %}
                     {% endif %}
                 </ul>
@@ -213,6 +241,91 @@
             <p class="small opacity-10 mb-0">&copy; 2026 DBMS Mini-Project. Engineered by<br> <strong style="font-size: 20px;">Vedant, Pawan & Mayur</strong>.</p>
         </div>
     </footer>
+
+
+    <!-- =========================================================== -->
+    <!-- 🌐 GLOBAL ADMIN MODALS (Triggered from Navbar)              -->
+    <!-- =========================================================== -->
+    {% if current_user.is_authenticated and current_user.usertype == "Admin" %}
+    
+    <!-- Global Add Doctor Modal -->
+    <div class="modal fade" id="globalAddDoctorModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header bg-primary text-white rounded-top-4">
+            <h5 class="modal-title fw-bold"><i class="fas fa-user-plus me-2"></i>Provision New Doctor</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form action="/add_staff" method="POST">
+            <div class="modal-body p-4 bg-light">
+              <input type="hidden" name="usertype" value="Doctor">
+              <div class="mb-3">
+                <label class="form-label fw-bold text-dark small text-uppercase">Doctor's Full Name</label>
+                <input type="text" class="form-control border-0 shadow-sm px-3 py-2" name="username" placeholder="e.g., Dr. Jane Doe" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold text-dark small text-uppercase">Official Email</label>
+                <input type="email" class="form-control border-0 shadow-sm px-3 py-2" name="email" placeholder="name@hospital.com" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold text-dark small text-uppercase">Department / Specialty</label>
+                <input type="text" class="form-control border-0 shadow-sm px-3 py-2" name="dept" placeholder="e.g., Cardiology" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold text-dark small text-uppercase">Temporary Password</label>
+                <input type="password" class="form-control border-0 shadow-sm px-3 py-2" name="password" placeholder="••••••••" required minlength="6">
+                <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle me-1"></i>They can change this upon first login.</small>
+              </div>
+            </div>
+            <div class="modal-footer border-0 bg-light rounded-bottom-4">
+              <button type="button" class="btn btn-outline-secondary rounded-pill fw-bold" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary rounded-pill fw-bold px-4 shadow-sm">
+                <i class="fas fa-check-circle me-1"></i>Create Doctor Account
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Add Admin Modal -->
+    <div class="modal fade" id="globalAddStaffModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header text-white rounded-top-4" style="background: #2c3e50;">
+            <h5 class="modal-title fw-bold"><i class="fas fa-user-shield me-2"></i>Provision System Administrator</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <form action="/add_staff" method="POST">
+            <div class="modal-body p-4 bg-light">
+              <input type="hidden" name="usertype" value="Admin">
+              <input type="hidden" name="dept" value="IT/Administration">
+              <div class="mb-3">
+                <label class="form-label fw-bold text-dark small text-uppercase">Admin Full Name</label>
+                <input type="text" class="form-control border-0 shadow-sm px-3 py-2" name="username" placeholder="e.g., John Smith" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold text-dark small text-uppercase">Admin Email</label>
+                <input type="email" class="form-control border-0 shadow-sm px-3 py-2" name="email" placeholder="admin@hospital.com" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold text-dark small text-uppercase">Temporary Password</label>
+                <input type="password" class="form-control border-0 shadow-sm px-3 py-2" name="password" placeholder="••••••••" required minlength="6">
+              </div>
+            </div>
+            <div class="modal-footer border-0 bg-light rounded-bottom-4">
+              <button type="button" class="btn btn-outline-secondary rounded-pill fw-bold" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn rounded-pill fw-bold px-4 shadow-sm text-white" style="background: #2c3e50;">
+                <i class="fas fa-check-circle me-1"></i>Authorize Admin
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    <!-- =========================================================== -->
+
 
     <!-- ── TOAST ENGINE ── -->
     <div class="toast-container">

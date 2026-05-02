@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Database Logs | Hospital Management System
+{% endblock title %}
+
+{% block body %}
+<style>
+  .hms-card {
+    background: #ffffff; border: 1px solid var(--hms-border);
+    border-radius: 16px; box-shadow: var(--shadow-sm);
+    transition: all .2s ease; overflow: hidden;
+  }
+  .hms-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: var(--radius-pill);
+  }
+  .hms-badge-success { background: #dcfce7; color: #15803d; }
+  .hms-badge-warning { background: #fef9c3; color: #854d0e; }
+  .hms-badge-danger  { background: #fee2e2; color: #b91c1c; }
+  .hms-badge-neutral { background: #f1f5f9; color: #475569; }
+</style>
+
+<div class="container mt-5 mb-5">
+  
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+      <h2 class="brand-font text-dark mb-1"><i class="fas fa-clipboard-list me-2" style="color: var(--hms-teal);"></i>Database Activity Logs</h2>
+      <p class="text-muted mb-0">Automated system logs recorded by MySQL triggers for patient data modifications.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="/admin_dashboard" class="hms-btn hms-btn-ghost"><i class="fas fa-arrow-left me-2"></i>Back to Dashboard</a>
+    </div>
+  </div>
+
+  <div class="hms-card" style="overflow:hidden;">
+      <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
+        <thead style="background: rgba(247,249,252,0.5);">
+          <tr>
+            <th class="ps-4 text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">TID</th>
+            <th class="text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">PID</th>
+            <th class="text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">Email</th>
+            <th class="text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">Name</th>
+            <th class="text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">Trigger Action</th>
+            <th class="pe-4 text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for post in posts %}
+            <tr style="transition: all 0.2s ease;">
+              <td class="ps-4 fw-bold text-dark border-bottom">{{ post.tid }}</td>
+              <td class="border-bottom"><span class="hms-badge hms-badge-neutral">PID: {{ post.pid }}</span></td>
+              <td class="border-bottom text-muted" style="font-size: 14px;">{{ post.email }}</td>
+              <td class="border-bottom fw-bold" style="font-size: 14px;">{{ post.name }}</td>
+              <td class="border-bottom">
+                {% if 'INSERTED' in post.action.upper() %}
+                  <span class="hms-badge hms-badge-success">{{ post.action | upper }}</span>
+                {% elif 'UPDATED' in post.action.upper() %}
+                  <span class="hms-badge hms-badge-warning">{{ post.action | upper }}</span>
+                {% elif 'DELETED' in post.action.upper() %}
+                  <span class="hms-badge hms-badge-danger">{{ post.action | upper }}</span>
+                {% else %}
+                  <span class="hms-badge hms-badge-neutral">{{ post.action | upper }}</span>
+                {% endif %}
+              </td>
+              <td class="pe-4 border-bottom"><code style="color: var(--hms-navy); background: var(--hms-surface); padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">{{ post.timestamp }}</code></td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted border-0">
+                <i class="fas fa-history fa-3x mb-3 opacity-50"></i>
+                <h5 class="brand-font text-dark">No logs found</h5>
+                <p class="mb-0">The database trigger history is currently empty.</p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+  </div>
+</div>
+{% endblock body %}

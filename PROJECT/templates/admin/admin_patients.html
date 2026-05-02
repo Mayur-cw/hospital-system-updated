@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Registered Patients | Hospital Management System
+{% endblock title %}
+
+{% block body %}
+<div class="container mt-5 mb-5">
+
+  <!-- Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+          <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none text-primary">Admin Dashboard</a></li>
+          <li class="breadcrumb-item active text-muted">Registered Patients</li>
+        </ol>
+      </nav>
+      <h2 class="fw-bold text-dark mb-0"><i class="fas fa-users text-info me-2"></i>Registered Patients</h2>
+      <p class="text-muted mt-1">Search and view all registered patients in the system.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <span class="badge bg-info fs-6 rounded-pill px-4 py-2 shadow-sm text-white">
+        <i class="fas fa-users me-2"></i>{{ patients | length }} Patient(s)
+      </span>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Search Card -->
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body p-4">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-8">
+          <label class="form-label fw-bold text-dark mb-1">
+            <i class="fas fa-search me-1 text-info"></i>Search Patients
+          </label>
+          <div class="input-group input-group-lg shadow-sm">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+            <input type="text" id="patientSearch" class="form-control border-start-0 ps-0" 
+                   placeholder="Search by name, email or patient ID..." 
+                   value="{{ search_query if search_query else '' }}"
+                   onkeyup="liveSearch()">
+            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <form method="GET" action="/admin/patients" class="d-flex gap-2">
+            <input type="text" class="form-control" name="search" id="serverSearch" 
+                   placeholder="Search & filter..." value="{{ search_query if search_query else '' }}">
+            <button type="submit" class="btn btn-info text-white fw-bold rounded-pill px-3">
+              <i class="fas fa-filter me-1"></i>Filter
+            </button>
+            {% if search_query %}
+            <a href="/admin/patients" class="btn btn-outline-secondary rounded-pill">
+              <i class="fas fa-undo"></i>
+            </a>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+      {% if search_query %}
+      <div class="mt-3">
+        <span class="badge bg-info text-white rounded-pill px-3 py-2">
+          <i class="fas fa-filter me-1"></i>
+          Showing results for: "{{ search_query }}" — {{ patients | length }} found
+          <a href="/admin/patients" class="text-white ms-2"><i class="fas fa-times-circle"></i></a>
+        </span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Patients Table -->
+  <div class="card shadow border-0 rounded-4">
+    <div class="card-header bg-dark text-white py-3 rounded-top-4 d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-list me-2"></i>Patient Directory</h5>
+      <span class="badge bg-light text-dark" id="visibleCount">{{ patients | length }} records</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle mb-0" id="patientTable">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="ps-4">#</th>
+              <th scope="col">Patient</th>
+              <th scope="col">Email</th>
+              <th scope="col">Patient ID</th>
+              <th scope="col">Appointments</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="patientTableBody">
+            {% for patient in patients %}
+            <tr class="patient-row"
+                data-name="{{ patient.username | lower }}"
+                data-email="{{ patient.email | lower }}"
+                data-id="{{ patient.id | string }}">
+              <td class="ps-4 text-muted fw-bold">{{ loop.index }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-3">
+                  <div class="patient-avatar bg-info rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                       style="width:40px;height:40px;font-size:1rem;">
+                    {{ patient.username[0] | upper }}
+                  </div>
+                  <div>
+                    <div class="fw-bold text-dark">{{ patient.username }}</div>
+                    <small class="text-muted">Registered Patient</small>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <a href="mailto:{{ patient.email }}" class="text-decoration-none text-dark">
+                  <i class="fas fa-envelope text-muted me-1 small"></i>{{ patient.email }}
+                </a>
+              </td>
+              <td>
+                <code class="bg-light text-dark px-2 py-1 rounded">PID-{{ patient.id }}</code>
+              </td>
+              <td>
+                <a href="/admin/appointments?search={{ patient.email }}" 
+                   class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2 text-decoration-none">
+                  <i class="fas fa-calendar-alt me-1"></i>
+                  {{ patient.appointment_count if patient.appointment_count is defined else 'View' }}
+                </a>
+              </td>
+              <td>
+                <span class="badge bg-success rounded-pill px-3">
+                  <i class="fas fa-circle me-1" style="font-size:0.5rem;vertical-align:middle;"></i>Active
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center">
+                  <button class="btn btn-sm btn-outline-info rounded-pill" 
+                          title="View Profile"
+                          onclick="viewPatientProfile('{{ patient.id }}', '{{ patient.username }}', '{{ patient.email }}')">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <a href="/admin/appointments?search={{ patient.email }}" 
+                     class="btn btn-sm btn-outline-primary rounded-pill" title="View Appointments">
+                    <i class="fas fa-calendar"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="fas fa-users fa-3x mb-3 text-secondary opacity-50"></i>
+                <h5>No patients found</h5>
+                <p class="mb-0">
+                  {% if search_query %}
+                    No patients match "{{ search_query }}". <a href="/admin/patients">Clear search</a>
+                  {% else %}
+                    No patients are registered yet.
+                  {% endif %}
+                </p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Pagination / Footer -->
+    <div class="card-footer bg-light rounded-bottom-4 border-0 d-flex justify-content-between align-items-center py-3 px-4">
+      <small class="text-muted">
+        <i class="fas fa-info-circle me-1"></i>
+        Showing <span id="shownCount">{{ patients | length }}</span> of {{ patients | length }} patients
+      </small>
+      <div id="noLiveResults" class="text-muted small d-none">
+        <i class="fas fa-search me-1"></i>No matching patients for live search.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Patient Profile Modal -->
+<div class="modal fade" id="patientProfileModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
+      <div class="modal-header bg-info text-white rounded-top-4">
+        <h5 class="modal-title fw-bold"><i class="fas fa-user me-2"></i>Patient Profile</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 text-center">
+        <div class="patient-avatar bg-info rounded-circle d-flex align-items-center justify-content-center text-white fw-bold mx-auto mb-3"
+             style="width:72px;height:72px;font-size:1.8rem;" id="profileAvatar"></div>
+        <h5 class="fw-bold" id="profileName"></h5>
+        <p class="text-muted mb-3" id="profileEmail"></p>
+        <div class="d-flex justify-content-center gap-2">
+          <span class="badge bg-success rounded-pill px-3 py-2">Active Patient</span>
+          <span class="badge bg-secondary rounded-pill px-3 py-2" id="profileId"></span>
+        </div>
+      </div>
+      <div class="modal-footer border-0 justify-content-center">
+        <a href="#" class="btn btn-primary rounded-pill px-4 fw-bold" id="profileApptLink">
+          <i class="fas fa-calendar me-1"></i>View Appointments
+        </a>
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function liveSearch() {
+    const query = document.getElementById('patientSearch').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.patient-row');
+    let visible = 0;
+    rows.forEach(row => {
+      const name = row.dataset.name || '';
+      const email = row.dataset.email || '';
+      const id = row.dataset.id || '';
+      if (!query || name.includes(query) || email.includes(query) || id.includes(query)) {
+        row.style.display = '';
+        visible++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+    document.getElementById('shownCount').textContent = visible;
+    document.getElementById('visibleCount').textContent = visible + ' records';
+    document.getElementById('noLiveResults').classList.toggle('d-none', visible > 0);
+  }
+
+  function clearSearch() {
+    document.getElementById('patientSearch').value = '';
+    liveSearch();
+  }
+
+  function viewPatientProfile(id, name, email) {
+    document.getElementById('profileAvatar').textContent = name[0].toUpperCase();
+    document.getElementById('profileName').textContent = name;
+    document.getElementById('profileEmail').textContent = email;
+    document.getElementById('profileId').textContent = 'PID-' + id;
+    document.getElementById('profileApptLink').href = '/admin/appointments?search=' + encodeURIComponent(email);
+    new bootstrap.Modal(document.getElementById('patientProfileModal')).show();
+  }
+</script>
+{% endblock body %}

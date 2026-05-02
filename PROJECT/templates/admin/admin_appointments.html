@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Appointments Log | Hospital Management System
+{% endblock title %}
+
+{% block body %}
+<style>
+  /* ── LOCAL COMPONENT SYSTEM (Inherits vars from base.html) ── */
+  .hms-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: var(--radius-pill);
+  }
+  .hms-badge-success { background: #dcfce7; color: #15803d; }
+  .hms-badge-warning { background: #fef9c3; color: #854d0e; }
+  .hms-badge-danger  { background: #fee2e2; color: #b91c1c; }
+  .hms-badge-neutral { background: #f1f5f9; color: #475569; }
+  .hms-badge-teal    { background: var(--hms-teal-soft); color: #0f766e; }
+
+  .hms-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 8px 18px; border-radius: var(--radius-pill);
+    border: 1.5px solid transparent; cursor: pointer;
+    transition: all .2s ease; text-decoration: none; white-space: nowrap;
+  }
+  .hms-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); text-decoration: none; }
+  .hms-btn-primary  { background: var(--hms-navy); color: #fff; border-color: var(--hms-navy); }
+  .hms-btn-primary:hover { background: var(--hms-navy-mid); color: #fff; }
+  .hms-btn-ghost    { background: transparent; color: var(--hms-navy); border-color: var(--hms-border); }
+  .hms-btn-ghost:hover { background: #ffffff; color: var(--hms-navy); border-color: #cbd5e1; }
+  .hms-btn-outline  { background: transparent; color: var(--hms-text); border-color: var(--hms-border); }
+  .hms-btn-outline:hover { background: var(--hms-surface); border-color: var(--hms-navy); }
+  .hms-btn-sm { font-size: 12px; padding: 6px 14px; }
+
+  .hms-card {
+    background: #ffffff; border: 1px solid var(--hms-border);
+    border-radius: 16px; box-shadow: var(--shadow-sm);
+    transition: all .2s ease; overflow: hidden;
+  }
+  
+  .form-control-modern {
+    border: 2px solid var(--hms-border); border-radius: 10px; padding: 10px 16px;
+    font-size: 14px; transition: all 0.2s ease; background: #fff; width: 100%;
+  }
+  .form-control-modern:focus { border-color: var(--hms-teal); box-shadow: 0 0 0 4px rgba(0,201,167,0.1); outline: none; }
+  
+  .table-modern { border-collapse: separate; border-spacing: 0; width: 100%; }
+  .table-modern th { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--hms-muted); padding: 16px; background: rgba(247,249,252,0.8); border-bottom: 1px solid var(--hms-border); }
+  .table-modern td { padding: 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 14px; transition: background 0.2s; }
+  .table-modern tr:hover td { background: #f8fafc; }
+
+  /* 🚨 UPGRADED INTERACTIVE STAT CARDS 🚨 */
+  .stat-filter-card {
+    border: none; border-radius: 16px; padding: 20px 16px; text-align: center;
+    color: white; cursor: pointer; position: relative; z-index: 1; overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-filter-card::before {
+    content: ''; position: absolute; top: -20px; right: -20px;
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+    z-index: -1; pointer-events: none;
+  }
+  .stat-filter-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+  
+  /* Filter States */
+  .stat-filter-card.inactive-filter {
+    filter: grayscale(80%) opacity(0.6);
+    transform: scale(0.98);
+    box-shadow: none;
+  }
+  
+  /* Gradients */
+  .grad-navy { background: linear-gradient(135deg, var(--hms-navy) 0%, #1e293b 100%); }
+  .grad-emerald { background: linear-gradient(135deg, #10b981 0%, #047857 100%); }
+  .grad-amber { background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); }
+  .grad-rose { background: linear-gradient(135deg, #ef4444 0%, #be123c 100%); }
+</style>
+
+<div class="container mt-5 mb-5">
+
+  <!-- ── HEADER ── -->
+  <div class="row mb-4 align-items-end">
+    <div class="col-md-8">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a href="/admin_dashboard" class="text-decoration-none fw-bold" style="color: var(--hms-teal);">Admin Dashboard</a></li>
+          <li class="breadcrumb-item active text-muted fw-bold" aria-current="page">Appointments Log</li>
+        </ol>
+      </nav>
+      <h2 class="brand-font text-dark mb-0"><i class="fas fa-calendar-check me-2" style="color: var(--hms-teal);"></i>Appointment Logs</h2>
+      <p class="text-muted mt-2 mb-0">Comprehensive doctor-wise appointment records with advanced filtering.</p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+      <div class="hms-badge hms-badge-teal border px-4 py-2" style="font-size: 13px;">
+        <i class="fas fa-database me-2"></i>{{ total_appointments }} Total Records
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FILTER BAR ── -->
+  <div class="hms-card mb-4">
+    <div class="p-4 bg-light border-bottom">
+      <form method="GET" action="/admin/appointments" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="fw-bold text-dark small mb-2"><i class="fas fa-user-md me-1" style="color: var(--hms-teal);"></i> Filter by Doctor</label>
+          <select class="form-control-modern" name="doctor_id" onchange="this.form.submit()">
+            <option value="">All Doctors</option>
+            {% for doctor in doctors %}
+              <option value="{{ doctor.id }}" {% if selected_doctor == doctor.id|string %}selected{% endif %}>
+                Dr. {{ doctor.username }} — {{ doctor.dept if doctor.dept else 'General' }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="fw-bold text-dark small mb-2"><i class="fas fa-calendar-alt me-1 text-primary"></i> Select Date</label>
+          <input type="date" class="form-control-modern" name="date" value="{{ selected_date }}" onchange="this.form.submit()">
+        </div>
+        <div class="col-md-3">
+          <label class="fw-bold text-dark small mb-2"><i class="fas fa-search me-1 text-muted"></i> Search Patient</label>
+          <input type="text" class="form-control-modern" name="search" value="{{ search_query if search_query else '' }}" placeholder="Name or Email...">
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <button type="submit" class="hms-btn hms-btn-primary flex-fill" style="padding: 10px;">
+            <i class="fas fa-filter"></i> Apply
+          </button>
+          <a href="/admin/appointments" class="hms-btn hms-btn-outline" style="padding: 10px;" title="Reset Filters">
+            <i class="fas fa-undo"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Quick Date Chips -->
+    <div class="p-3 bg-white d-flex flex-wrap gap-2 align-items-center">
+      <span class="text-muted small fw-bold me-2 text-uppercase" style="letter-spacing: 0.1em;">Quick Links:</span>
+      <a href="/admin/appointments?date={{ today }}&doctor_id={{ selected_doctor if selected_doctor else '' }}" 
+         class="hms-btn hms-btn-sm {% if selected_date == today %}hms-btn-teal{% else %}hms-btn-outline{% endif %}">
+        <i class="fas fa-calendar-day"></i> Today
+      </a>
+      <a href="/admin/appointments?date={{ yesterday }}&doctor_id={{ selected_doctor if selected_doctor else '' }}" 
+         class="hms-btn hms-btn-sm {% if selected_date == yesterday %}hms-btn-teal{% else %}hms-btn-outline{% endif %}">
+        <i class="fas fa-history"></i> Yesterday
+      </a>
+      <!-- 🚨 Added "date=&" to override the default 'today' fallback in Flask -->
+      <a href="/admin/appointments?date=&doctor_id={{ selected_doctor if selected_doctor else '' }}" 
+         class="hms-btn hms-btn-sm {% if not selected_date %}hms-btn-primary{% else %}hms-btn-outline{% endif %}">
+        <i class="fas fa-list"></i> All Dates
+      </a>
+    </div>
+  </div>
+
+  <!-- ── CLICKABLE STATS / FILTERS ROW ── -->
+  {% if appointments is defined %}
+  <div class="row mb-4 g-3">
+    <!-- All Results -->
+    <div class="col-md-3 col-6">
+      <div class="stat-filter-card grad-navy" id="filter-All" onclick="filterTableByStatus('All')">
+        <h3 class="brand-font fw-bold mb-1">{{ appointments | length }}</h3>
+        <div class="small fw-bold text-uppercase" style="letter-spacing: 1px; opacity: 0.9;">All Results</div>
+      </div>
+    </div>
+    <!-- Confirmed -->
+    <div class="col-md-3 col-6">
+      <div class="stat-filter-card grad-emerald" id="filter-Confirmed" onclick="filterTableByStatus('Confirmed')">
+        <h3 class="brand-font fw-bold mb-1">{{ appointments | selectattr('status', 'equalto', 'Confirmed') | list | length }}</h3>
+        <div class="small fw-bold text-uppercase" style="letter-spacing: 1px; opacity: 0.9;">Confirmed</div>
+      </div>
+    </div>
+    <!-- Pending -->
+    <div class="col-md-3 col-6">
+      <div class="stat-filter-card grad-amber" id="filter-Pending" onclick="filterTableByStatus('Pending')">
+        <h3 class="brand-font fw-bold mb-1">{{ appointments | selectattr('status', 'equalto', 'Pending') | list | length }}</h3>
+        <div class="small fw-bold text-uppercase" style="letter-spacing: 1px; opacity: 0.9;">Pending</div>
+      </div>
+    </div>
+    <!-- Cancelled -->
+    <div class="col-md-3 col-6">
+      <div class="stat-filter-card grad-rose" id="filter-Cancelled" onclick="filterTableByStatus('Cancelled')">
+        <h3 class="brand-font fw-bold mb-1">{{ appointments | selectattr('status', 'equalto', 'Cancelled') | list | length }}</h3>
+        <div class="small fw-bold text-uppercase" style="letter-spacing: 1px; opacity: 0.9;">Cancelled</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── APPOINTMENTS TABLE ── -->
+  <div class="hms-card">
+    <div class="bg-light p-4 border-bottom d-flex justify-content-between align-items-center">
+      <h5 class="brand-font mb-0 text-dark">
+        <i class="fas fa-table text-muted me-2"></i>
+        <span id="tableTitlePrefix">
+          {% if selected_date %}Schedule for {{ selected_date }}{% else %}All Appointments{% endif %}
+        </span>
+        {% if selected_doctor %} <span class="text-primary">— {{ doctor_name }}</span>{% endif %}
+      </h5>
+      <span class="hms-badge hms-badge-neutral border" id="rowCountLabel">{{ appointments | length if appointments else 0 }} rows</span>
+    </div>
+    
+    <div class="table-responsive">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th class="ps-4">#</th>
+            <th>Patient Info</th>
+            <th>Specialist</th>
+            <th>Date & Time</th>
+            <th>Status</th>
+            <th class="text-end pe-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for appt in appointments %}
+          <!-- 🚨 Added data-status here so JS can filter it 🚨 -->
+          <tr class="appt-row" data-status="{{ appt.status }}">
+            <td class="ps-4 fw-bold text-muted">{{ loop.index }}</td>
+            <td>
+              <div class="fw-bold text-dark">{{ appt.patient_name }}</div>
+              <div class="text-muted" style="font-size: 12px;">{{ appt.patient_email }}</div>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                  <div class="bg-primary-pale text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;"><i class="fas fa-user-md"></i></div>
+                  <div>
+                      <div class="fw-bold text-dark" style="font-size: 13px;">Dr. {{ appt.doctor_name }}</div>
+                      <div class="text-muted" style="font-size: 11px;">{{ appt.dept if appt.dept else 'General' }}</div>
+                  </div>
+              </div>
+            </td>
+            <td>
+                <div class="fw-bold text-dark" style="font-size: 13px;">{{ appt.appointment_date }}</div>
+                <span class="hms-badge hms-badge-neutral border mt-1">{{ appt.time_slot if appt.time_slot else 'N/A' }}</span>
+            </td>
+            <td>
+              {% if appt.status == 'Confirmed' %}
+                <span class="hms-badge hms-badge-success"><i class="fas fa-check-circle"></i> Confirmed</span>
+              {% elif appt.status == 'Pending' %}
+                <span class="hms-badge hms-badge-warning"><i class="fas fa-clock"></i> Pending</span>
+              {% elif appt.status == 'Cancelled' %}
+                <span class="hms-badge hms-badge-danger"><i class="fas fa-ban"></i> Cancelled</span>
+              {% else %}
+                <span class="hms-badge hms-badge-neutral">{{ appt.status }}</span>
+              {% endif %}
+            </td>
+            <td class="text-end pe-4">
+              <div class="d-flex gap-2 justify-content-end align-items-center">
+                
+                <!-- Status Update Form -->
+                <form action="/admin/update_appointment_status" method="POST" class="m-0">
+                  <input type="hidden" name="appointment_id" value="{{ appt.id }}">
+                  <input type="hidden" name="redirect_url" value="{{ request.url }}">
+                  <select name="status" class="form-control-modern py-1 px-2 text-muted fw-bold" style="width: auto; height: 32px;" onchange="this.form.submit()">
+                    <option value="" disabled selected>Update...</option>
+                    <option value="Confirmed">Mark Confirmed</option>
+                    <option value="Pending">Mark Pending</option>
+                    <option value="Cancelled">Mark Cancelled</option>
+                  </select>
+                </form>
+
+                <!-- Delete Form -->
+                <form action="/admin/delete_appointment" method="POST" class="m-0" onsubmit="return confirm('WARNING: Permanently delete this appointment?')">
+                  <input type="hidden" name="appointment_id" value="{{ appt.id }}">
+                  <input type="hidden" name="redirect_url" value="{{ request.url }}">
+                  <button type="submit" class="hms-btn hms-btn-ghost-light hms-btn-sm text-danger border-danger px-2" style="height: 32px;" title="Delete Record">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+                
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr id="noAppointmentsMsg">
+            <td colspan="6" class="text-center py-5 text-muted">
+              <i class="fas fa-calendar-times fa-3x mb-3 opacity-25"></i>
+              <h5 class="brand-font text-dark">No appointments found</h5>
+              <p class="mb-0">Try adjusting your date or doctor filters.</p>
+            </td>
+          </tr>
+          {% endfor %}
+          <!-- Hidden empty state for client-side filtering -->
+          <tr id="emptyFilterMsg" style="display: none;">
+            <td colspan="6" class="text-center py-5 text-muted">
+              <i class="fas fa-filter fa-3x mb-3 opacity-25"></i>
+              <h5 class="brand-font text-dark">No records match this status</h5>
+              <p class="mb-0">Select "All Results" to clear the filter.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- 🚨 JAVASCRIPT FOR INSTANT FILTERING 🚨 -->
+<script>
+  function filterTableByStatus(targetStatus) {
+    // 1. Update Card Styling (Highlight selected, dim others)
+    const allCards = ['All', 'Confirmed', 'Pending', 'Cancelled'];
+    allCards.forEach(status => {
+      let card = document.getElementById('filter-' + status);
+      if (card) {
+        if (status === targetStatus) {
+          card.classList.remove('inactive-filter');
+        } else {
+          card.classList.add('inactive-filter');
+        }
+      }
+    });
+
+    // 2. Filter the Table Rows
+    const rows = document.querySelectorAll('.appt-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      // Get the status from the data attribute we added
+      const rowStatus = row.getAttribute('data-status');
+      
+      if (targetStatus === 'All' || rowStatus === targetStatus) {
+        row.style.display = ''; // Show
+        visibleCount++;
+      } else {
+        row.style.display = 'none'; // Hide
+      }
+    });
+
+    // 3. Update the Badge showing row count
+    document.getElementById('rowCountLabel').innerText = visibleCount + (visibleCount === 1 ? ' row' : ' rows');
+
+    // 4. Show Empty Message if everything is filtered out
+    const emptyMsg = document.getElementById('emptyFilterMsg');
+    if (visibleCount === 0 && rows.length > 0) {
+      emptyMsg.style.display = '';
+    } else {
+      emptyMsg.style.display = 'none';
+    }
+  }
+</script>
+{% endblock body %}

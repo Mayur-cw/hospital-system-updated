@@ -1,12 +1,10 @@
-from datetime import date
+import os
+from datetime import datetime, date, timedelta
 from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify
 from flask_login import (
     LoginManager, login_user, logout_user, login_required, current_user
 )
 from werkzeug.security import generate_password_hash, check_password_hash
-import os
-
-from datetime import datetime, date
 
 # Import our separated config and models
 from config import Config
@@ -50,20 +48,23 @@ def is_slot_booked(requested_date, requested_time, target_doctor, current_apt_id
 
     bookings = query.all()
     
-    # 🚨 SMART FIX: If an appointment is Cancelled or Missed, the slot becomes available again!
+    # If an appointment is Cancelled or Missed, the slot becomes available again!
     active_bookings = [b for b in bookings if b.slot not in ['Cancelled', 'Missed']]
 
     return len(active_bookings) > 0
 
 # ─────────────────────────────────────────────
-# Routes
+# Core Routes
 # ─────────────────────────────────────────────
 
 @app.route('/')
 def index():
+
+    if current_user.usertype == 'Admin':
+            return redirect(url_for('admin_dashboard'))
+    
     if current_user.is_authenticated and current_user.usertype == 'Doctor':
         today = date.today()
-        from datetime import datetime
         now = datetime.now().time()
 
         todays_appointments = Appointments.query.filter_by(
@@ -78,7 +79,6 @@ def index():
         unverified_active = []
         next_patient = None
         
-        # Strict Counters for the Filter Cards
         completed_count = 0
         waiting_count = 0
         pending_rx_count = 0 
@@ -89,14 +89,13 @@ def index():
             apt_time = datetime.strptime(apt.time, '%I:%M %p').time()
             apt.is_active = (apt_time <= now)
 
-            # Categorize every patient for the JS Filters
             if apt.apt_id in prescribed_apt_ids or apt.slot == 'Completed':
                 apt.category = 'completed'
                 completed_count += 1
             elif apt.slot == 'Missed':
                 apt.category = 'missed'
             elif apt.slot == 'Cancelled':
-                apt.category = 'cancelled' # Exclude from waiting counts
+                apt.category = 'cancelled'
             elif apt.slot == 'Attended':
                 apt.category = 'pending_rx'
                 pending_rx_count += 1
@@ -127,13 +126,47 @@ def index():
                                pending_rx_count=pending_rx_count, 
                                today_date=formatted_date)
 
+# ==========================================
+# 🧑‍🤝‍🧑 PATIENT DASHBOARD LOGIC
+# ==========================================
+    elif current_user.usertype == 'Patient':
+        today = date.today()
+        now = datetime.now().time()
+            
+        # Fetch all upcoming appointments
+        raw_upcoming = Appointments.query.filter(
+            Appointments.user_id == current_user.id,
+            Appointments.date >= today
+        ).all()
+        
+        upcoming_list = []
+        for apt in raw_upcoming:
+            apt_time = datetime.strptime(apt.time, '%I:%M %p').time()
+            # Skip past times today
+            if apt.date == str(today) and apt_time <= now:
+                continue
+            # Only show 'Scheduled' in the upcoming widget
+            if apt.slot == 'Scheduled': 
+                upcoming_list.append(apt)
+                
+        # Sort by date and time
+        upcoming_list.sort(key=lambda x: datetime.strptime(f"{x.date} {x.time}", '%Y-%m-%d %I:%M %p'))
+        
+        # Slice the top 5
+        upcoming_appointments = upcoming_list[:5]
+        
+        return render_template('index.html', 
+                                upcoming_appointments=upcoming_appointments, 
+                                today_date=today.strftime('%A, %b %d, %Y'))
+
+
     return render_template('index.html')
 
 @app.route('/doctors', methods=['GET'])
 @login_required
 def doctors():
     all_doctors = Doctors.query.all()
-    return render_template('doctor.html', all_doctors=all_doctors)
+    return render_template('doctor_directory.html', all_doctors=all_doctors)
 
 @app.route('/get_booked_slots', methods=['POST'])
 @login_required
@@ -152,7 +185,6 @@ def get_booked_slots():
         query = query.filter(Appointments.apt_id != current_apt_id)
 
     bookings = query.all()
-    # 🚨 SMART FIX: Don't disable slots in the JS calendar if they were cancelled
     booked_times = [b.time for b in bookings if b.slot not in ['Cancelled', 'Missed']]
 
     return jsonify({'booked_times': booked_times})
@@ -166,16 +198,16 @@ def patient():
         slot    = request.form.get('slot', '').strip()
         disease = request.form.get('disease', '').strip()
         time    = request.form.get('time', '').strip()
-        date    = request.form.get('date', '').strip()
+        date_str= request.form.get('date', '').strip()
         dept    = request.form.get('dept', '').strip()
         doctor  = request.form.get('doctor', '').strip()
 
-        if not all([slot, disease, time, date, dept, doctor]):
+        if not all([slot, disease, time, date_str, dept, doctor]):
             flash("All fields are required.", "danger")
-            return render_template('bookings/patient.html', doct=doct)
+            return render_template('bookings/book_appointment.html', doct=doct)
 
         try:
-            appointment_date = datetime.strptime(date, '%Y-%m-%d').date()
+            appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             today_date = datetime.today().date()
             
             if appointment_date < today_date:
@@ -194,14 +226,14 @@ def patient():
             flash("Invalid date or time format.", "danger")
             return redirect(url_for('patient'))
 
-        if is_slot_booked(date, time, doctor):
+        if is_slot_booked(date_str, time, doctor):
             flash(f"Slot Unavailable: Dr. {doctor.capitalize()} is already booked at {time}. Please choose another slot.", "warning")
             return redirect(url_for('patient'))
 
         new_appointment = Appointments(
             user_id=current_user.id, 
             slot=slot, disease=disease, time=time,
-            date=date, dept=dept, doctor=doctor
+            date=date_str, dept=dept, doctor=doctor
         )
         db.session.add(new_appointment)
         db.session.commit()
@@ -211,26 +243,21 @@ def patient():
     pre_dept = request.args.get('dept', '')
     pre_doc = request.args.get('doctor', '')
 
-    return render_template('bookings/patient.html', doct=doct, pre_dept=pre_dept, pre_doc=pre_doc)
+    return render_template('bookings/book_appointment.html', doct=doct, pre_dept=pre_dept, pre_doc=pre_doc)
 
 @app.route('/booking_success/<int:apt_id>')
 @login_required
 def booking_success(apt_id):
     appointment = Appointments.query.get_or_404(apt_id)
-    
     if current_user.usertype != "Doctor" and appointment.user_id != current_user.id:
         flash("Unauthorized access.", "danger")
         return redirect(url_for('index'))
-        
     return render_template('bookings/booking_success.html', appointment=appointment)
 
-# 🚨 NEW: The Cancel Appointment Route
 @app.route('/cancel_apt/<int:apt_id>', methods=['POST'])
 @login_required
 def cancel_apt(apt_id):
     appointment = Appointments.query.get_or_404(apt_id)
-
-    # Security Check
     if current_user.usertype == "Patient" and appointment.user_id != current_user.id:
         flash("Unauthorized! You can only cancel your own appointments.", "danger")
         return redirect(request.referrer or url_for('upcoming_bookings'))
@@ -238,11 +265,9 @@ def cancel_apt(apt_id):
          flash("Unauthorized! You can only cancel your own schedule.", "danger")
          return redirect(request.referrer or url_for('dashboard'))
 
-    # Update state to cancelled instead of deleting
     appointment.slot = 'Cancelled'
     db.session.commit()
-    
-    flash(f"Appointment has been successfully cancelled.", "warning")
+    flash("Appointment has been successfully cancelled.", "warning")
     return redirect(request.referrer or url_for('dashboard'))
 
 @app.route('/mark_missed/<int:apt_id>', methods=['POST'])
@@ -251,12 +276,10 @@ def mark_missed(apt_id):
     if current_user.usertype != "Doctor":
         flash("Unauthorized!", "danger")
         return redirect(url_for('dashboard'))
-
     appointment = Appointments.query.get_or_404(apt_id)
     appointment.slot = 'Missed'
     db.session.commit()
-    
-    flash(f"Appointment for {appointment.patient.username} marked as Missed.", "info")
+    flash(f"Appointment marked as Missed.", "info")
     return redirect(request.referrer or url_for('dashboard'))
 
 @app.route('/mark_attended/<int:apt_id>', methods=['POST'])
@@ -265,19 +288,15 @@ def mark_attended(apt_id):
     if current_user.usertype != "Doctor":
         flash("Unauthorized!", "danger")
         return redirect(url_for('dashboard'))
-
     appointment = Appointments.query.get_or_404(apt_id)
     appointment.slot = 'Attended'
     db.session.commit()
-    
-    flash(f"{appointment.patient.username} marked as Attended. Prescription is now pending.", "success")
+    flash(f"Patient marked as Attended. Prescription is now pending.", "success")
     return redirect(request.referrer or url_for('index'))
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    from datetime import datetime
-
     if current_user.usertype == "Doctor":
         query = Appointments.query.filter_by(doctor=current_user.username).all()
     else:
@@ -287,13 +306,12 @@ def dashboard():
     records = MedicalRecord.query.all()
     prescribed_apt_ids = [r.apt_id for r in records]
     
-    return render_template('bookings/booking.html', query=query, page_title="Appointment Log", prescribed_apt_ids=prescribed_apt_ids)
+    return render_template('bookings/appointment_history.html', query=query, page_title="Appointment Log", prescribed_apt_ids=prescribed_apt_ids)
 
 @app.route('/upcoming_bookings')
 @login_required
 def upcoming_bookings():
     today = date.today()
-    from datetime import datetime
     now = datetime.now().time()
 
     if current_user.usertype == "Doctor":
@@ -315,14 +333,13 @@ def upcoming_bookings():
         apt_time = datetime.strptime(apt.time, '%I:%M %p').time()
         if apt.date == today and apt_time <= now:
             continue
-        # 🚨 FILTER FIX: Exclude Cancelled from Upcoming views
         if apt.slot in ['Completed', 'Missed', 'Attended', 'Cancelled'] or apt.apt_id in prescribed_apt_ids:
             continue
         upcoming_list.append(apt)
         
     upcoming_list.sort(key=lambda x: datetime.strptime(f"{x.date} {x.time}", '%Y-%m-%d %I:%M %p'))
 
-    return render_template('bookings/booking.html', query=upcoming_list, page_title="Upcoming Appointments", prescribed_apt_ids=[])
+    return render_template('bookings/appointment_history.html', query=upcoming_list, page_title="Upcoming Appointments", prescribed_apt_ids=[])
 
 @app.route('/add_record/<int:apt_id>', methods=['GET', 'POST'])
 @login_required
@@ -332,8 +349,8 @@ def add_record(apt_id):
         return redirect(url_for('dashboard'))
 
     appointment = Appointments.query.get_or_404(apt_id)
-    
     existing_record = MedicalRecord.query.filter_by(apt_id=apt_id).first()
+    
     if existing_record:
         flash("A medical record already exists for this appointment.", "warning")
         return redirect(url_for('view_record', apt_id=apt_id))
@@ -345,7 +362,6 @@ def add_record(apt_id):
         
         new_record = MedicalRecord(apt_id=apt_id, diagnosis=diagnosis, prescription=prescription, notes=notes)
         db.session.add(new_record)
-        
         appointment.slot = 'Completed'
         db.session.commit()
         
@@ -368,7 +384,7 @@ def view_record(apt_id):
          return redirect(url_for('dashboard'))
 
     if not record:
-        flash("No medical record has been generated for this appointment yet.", "info")
+        flash("No medical record has been generated yet.", "info")
         return redirect(url_for('past_records'))
         
     return render_template('records/view_record.html', appointment=appointment, record=record)
@@ -395,9 +411,8 @@ def edit_record(apt_id):
         record.diagnosis = request.form.get('diagnosis', '').strip()
         record.prescription = request.form.get('prescription', '').strip()
         record.notes = request.form.get('notes', '').strip()
-        
         db.session.commit()
-        flash(f"Medical record for {appointment.patient.username} updated successfully!", "success")
+        flash("Medical record updated successfully!", "success")
         return redirect(url_for('past_records'))
         
     return render_template('records/edit_record.html', appointment=appointment, record=record)
@@ -405,10 +420,7 @@ def edit_record(apt_id):
 @app.route('/past_records')
 @login_required
 def past_records():
-    from datetime import datetime, date
-    
     today_str = str(date.today()) 
-
     records = MedicalRecord.query.all()
     prescribed_apt_ids = [r.apt_id for r in records]
 
@@ -418,67 +430,16 @@ def past_records():
         raw_query = Appointments.query.filter_by(user_id=current_user.id).all()
     
     history_list = []
-    
-    # THE STRICT CLINICAL FILTER
     for apt in raw_query:
         is_completed = (apt.apt_id in prescribed_apt_ids) or (apt.slot == 'Completed')
         is_pending_rx = (apt.slot == 'Attended')
-        # 🚨 FILTER FIX: Ensure 'Cancelled' is strictly excluded from clinical history
         is_past_unverified = (str(apt.date) < today_str and apt.slot not in ['Completed', 'Attended', 'Missed', 'Cancelled'])
         
         if is_completed or is_pending_rx or is_past_unverified:
             history_list.append(apt)
 
     history_list.sort(key=lambda x: datetime.strptime(f"{x.date} {x.time}", '%Y-%m-%d %I:%M %p'), reverse=True)
-    
-    return render_template('bookings/booking.html', query=history_list, page_title="Patient History", is_past_record=True, prescribed_apt_ids=prescribed_apt_ids)
-
-@app.route('/edit/<int:apt_id>', methods=['POST', 'GET'])
-@login_required
-def edit(apt_id):
-    post = Appointments.query.get_or_404(apt_id)
-    doct = Doctors.query.all()
-
-    if current_user.usertype != "Doctor" and post.user_id != current_user.id:
-        flash("Unauthorized access.", "danger")
-        return redirect(url_for('upcoming_bookings'))
-
-    if request.method == "POST":
-        post.slot    = request.form.get('slot', '').strip()
-        post.disease = request.form.get('disease', '').strip()
-        new_time     = request.form.get('time', '').strip()
-        new_date     = request.form.get('date', '').strip()
-        post.dept    = request.form.get('dept', '').strip()
-        new_doctor   = request.form.get('doctor', '').strip()
-
-        if is_slot_booked(new_date, new_time, new_doctor, current_apt_id=apt_id):
-            flash(f"Update Failed: Dr. {new_doctor.capitalize()} is already booked at {new_time}.", "danger")
-            return redirect(url_for('edit', apt_id=apt_id))
-
-        post.time = new_time
-        post.date = new_date
-        post.doctor = new_doctor
-
-        db.session.commit()
-        flash("Booking updated successfully.", "success")
-        return redirect(url_for('upcoming_bookings'))
-
-    return render_template('bookings/edit.html', posts=post, doct=doct)
-
-@app.route('/delete/<int:apt_id>', methods=['POST'])
-@login_required
-def delete(apt_id):
-    appointment = Appointments.query.get_or_404(apt_id)
-
-    if current_user.usertype != "Doctor" and appointment.user_id != current_user.id:
-        flash("Unauthorized access.", "danger")
-        return redirect(url_for('upcoming_bookings'))
-
-    db.session.delete(appointment)
-    db.session.commit()
-    # Updated to stay on same page
-    flash("Booking permanently deleted from database.", "danger")
-    return redirect(request.referrer or url_for('dashboard'))
+    return render_template('bookings/appointment_history.html', query=history_list, page_title="Patient History", is_past_record=True, prescribed_apt_ids=prescribed_apt_ids)
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -502,7 +463,6 @@ def profile():
                 doc_record = Doctors.query.filter_by(email=current_user.email).first()
                 if doc_record:
                     doc_record.email = new_email
-            
             user.email = new_email
 
         if new_username and new_username != current_user.username:
@@ -548,9 +508,7 @@ def signup():
             return render_template('auth/signup.html')
 
         hashed_password = generate_password_hash(password)
-        new_user = User(
-            username=username, usertype=usertype, email=email, password=hashed_password
-        )
+        new_user = User(username=username, usertype=usertype, email=email, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
         flash("Signup successful! Please login.", "success")
@@ -586,46 +544,10 @@ def logout():
     flash("You have been logged out.", "info")
     return redirect(url_for('login'))
 
-@app.route('/search', methods=['POST', 'GET'])
-@login_required
-def search():
-    if request.method == "POST":
-        query_str = request.form.get('search', '').strip()
 
-        if not query_str:
-            flash("Please enter a search term.", "warning")
-            return redirect(request.referrer or url_for('index'))
-
-        search_term = f"%{query_str}%"
-
-        if current_user.usertype == 'Doctor':
-            results = Appointments.query.join(User).filter(
-                Appointments.doctor == current_user.username,
-                (User.username.ilike(search_term)) | 
-                (User.email.ilike(search_term)) | 
-                (User.phone.ilike(search_term))
-            ).order_by(Appointments.date.desc()).all()
-            
-            if not results:
-                flash(f"No patients found matching '{query_str}'.", "warning")
-                return redirect(request.referrer or url_for('index'))
-                
-            return render_template('bookings/booking.html', query=results, page_title=f"Patient Search Results: '{query_str}'", prescribed_apt_ids=[r.apt_id for r in MedicalRecord.query.all()])
-
-        else:
-            doctors = Doctors.query.filter(
-                (Doctors.doctorname.ilike(search_term)) |
-                (Doctors.dept.ilike(search_term))
-            ).all()
-
-            if doctors:
-                flash(f"Found {len(doctors)} matching doctor(s) or department(s). Check the Directory below!", "success")
-                return redirect(url_for('doctors'))
-            else:
-                flash(f"No doctor or department found matching '{query_str}'.", "danger")
-                return redirect(request.referrer or url_for('index'))
-
-    return redirect(url_for('index'))
+# ─────────────────────────────────────────────
+# 👑 NEW MODULAR ADMIN ROUTES (SQLAlchemy)
+# ─────────────────────────────────────────────
 
 @app.route('/admin_dashboard')
 @login_required
@@ -637,14 +559,280 @@ def admin_dashboard():
     total_doctors = Doctors.query.count()
     total_users = User.query.filter_by(usertype='Patient').count()
     total_appointments = Appointments.query.count()
-    
     recent_logs = AuditLog.query.order_by(AuditLog.tid.desc()).limit(5).all()
 
-    return render_template('admin/admin.html', 
+    return render_template('admin/admin_dashboard.html', 
                            total_doctors=total_doctors, 
                            total_users=total_users, 
                            total_appointments=total_appointments,
                            recent_logs=recent_logs)
+
+@app.route('/details')
+@login_required
+def details():
+    if current_user.usertype != "Admin":
+        flash("Unauthorized Access!", "danger")
+        return redirect(url_for('index'))
+
+    # Join AuditLog with User to get names and emails for the template safely
+    logs_data = db.session.query(AuditLog, User).outerjoin(User, AuditLog.user_id == User.id).order_by(AuditLog.tid.desc()).all()
+    
+    posts = []
+    for log, user in logs_data:
+        posts.append({
+            'tid': log.tid,
+            'pid': log.user_id,  # <--- Change this from log.pid to log.user_id
+            'action': log.action,
+            'timestamp': log.timestamp,
+            'email': user.email if user else 'Deleted/Unknown',
+            'name': user.username if user else 'Deleted/Unknown'
+        })
+
+    return render_template('admin/audit_logs.html', posts=posts)
+
+
+@app.route('/admin/doctors')
+@login_required
+def admin_doctors():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    # Build a clean list connecting User accounts and Doctor info
+    doc_users = User.query.filter_by(usertype='Doctor').all()
+    doctors_list = []
+    for u in doc_users:
+        doc_record = Doctors.query.filter_by(email=u.email).first()
+        doctors_list.append({
+            'id': u.id,
+            'username': u.username,
+            'email': u.email,
+            'dept': doc_record.dept if doc_record else ''
+        })
+
+    return render_template('admin/admin_doctors.html', doctors=doctors_list)
+
+
+@app.route('/admin/edit_doctor', methods=['POST'])
+@login_required
+def admin_edit_doctor():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    doctor_id = request.form.get('doctor_id')
+    username  = request.form.get('username')
+    email     = request.form.get('email')
+    dept      = request.form.get('dept')
+
+    u = User.query.get(doctor_id)
+    if u and u.usertype == 'Doctor':
+        old_email = u.email
+        u.username = username
+        u.email = email
+        
+        doc = Doctors.query.filter_by(email=old_email).first()
+        if doc:
+            doc.doctorname = username
+            doc.email = email
+            doc.dept = dept
+            
+        db.session.commit()
+        flash(f'Doctor {username} updated successfully.', 'success')
+
+    return redirect(url_for('admin_doctors'))
+
+
+@app.route('/admin/change_doctor_password', methods=['POST'])
+@login_required
+def admin_change_doctor_password():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    doctor_id        = request.form.get('doctor_id')
+    new_password     = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    if new_password != confirm_password:
+        flash('Passwords do not match. Please try again.', 'danger')
+        return redirect(url_for('admin_doctors'))
+
+    u = User.query.get(doctor_id)
+    if u and u.usertype == 'Doctor':
+        u.password = generate_password_hash(new_password)
+        db.session.commit()
+        flash('Doctor password updated successfully.', 'success')
+
+    return redirect(url_for('admin_doctors'))
+
+
+@app.route('/admin/delete_doctor', methods=['POST'])
+@login_required
+def admin_delete_doctor():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    doctor_id = request.form.get('doctor_id')
+    u = User.query.get(doctor_id)
+    if u and u.usertype == 'Doctor':
+        doc = Doctors.query.filter_by(email=u.email).first()
+        if doc:
+            db.session.delete(doc)
+        db.session.delete(u)
+        db.session.commit()
+        flash('Doctor account removed successfully.', 'success')
+
+    return redirect(url_for('admin_doctors'))
+
+
+@app.route('/admin/patients')
+@login_required
+def admin_patients():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    search_query = request.args.get('search', '').strip()
+    
+    query = User.query.filter_by(usertype='Patient')
+    if search_query:
+        search_term = f'%{search_query}%'
+        query = query.filter((User.username.ilike(search_term)) | (User.email.ilike(search_term)))
+    
+    patients_list = []
+    for p in query.all():
+        appt_count = Appointments.query.filter_by(user_id=p.id).count()
+        patients_list.append({
+            'id': p.id,
+            'username': p.username,
+            'email': p.email,
+            'phone': p.phone,
+            'gender': p.gender,
+            'appointment_count': appt_count
+        })
+
+    return render_template('admin/admin_patients.html', patients=patients_list, search_query=search_query)
+
+
+@app.route('/admin/appointments')
+@login_required
+def admin_appointments():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    today = date.today().isoformat()
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    
+    selected_date = request.args.get('date', today)
+    selected_doctor = request.args.get('doctor_id', '')
+    search_query = request.args.get('search', '').strip()
+
+    q = Appointments.query
+
+    if selected_date:
+        q = q.filter(Appointments.date == selected_date)
+        
+    doctor_name = ''
+    if selected_doctor:
+        doc_user = User.query.get(selected_doctor)
+        if doc_user:
+            q = q.filter(Appointments.doctor == doc_user.username)
+            doctor_name = doc_user.username
+            
+    if search_query:
+        search_term = f'%{search_query}%'
+        q = q.join(User, Appointments.user_id == User.id).filter(
+            (User.username.ilike(search_term)) | (User.email.ilike(search_term))
+        )
+
+    # Sort effectively
+    appts = q.order_by(Appointments.date.desc(), Appointments.time.asc()).all()
+
+    appt_data = []
+    for a in appts:
+        u = User.query.get(a.user_id)
+        # Try to map status cleanly
+        status = a.slot
+        if status in ['Scheduled']: status = 'Pending'
+        
+        appt_data.append({
+            'id': a.apt_id,
+            'patient_name': u.username if u else 'Unknown',
+            'patient_email': u.email if u else 'Unknown',
+            'doctor_name': a.doctor,
+            'dept': a.dept,
+            'appointment_date': a.date,
+            'time_slot': a.time,
+            'status': status
+        })
+
+    # Get doctors for dropdown
+    doc_users = User.query.filter_by(usertype='Doctor').all()
+    doctors_list = []
+    for doc in doc_users:
+        d_record = Doctors.query.filter_by(email=doc.email).first()
+        doctors_list.append({
+            'id': doc.id,
+            'username': doc.username,
+            'dept': d_record.dept if d_record else ''
+        })
+
+    return render_template('admin/admin_appointments.html',
+                           appointments=appt_data,
+                           doctors=doctors_list,
+                           selected_date=selected_date,
+                           selected_doctor=selected_doctor,
+                           search_query=search_query,
+                           today=today,
+                           yesterday=yesterday,
+                           total_appointments=Appointments.query.count(),
+                           doctor_name=doctor_name)
+
+
+@app.route('/admin/update_appointment_status', methods=['POST'])
+@login_required
+def admin_update_appointment_status():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    appointment_id = request.form.get('appointment_id')
+    status = request.form.get('status')
+    redirect_url = request.form.get('redirect_url', url_for('admin_appointments'))
+
+    # Remap pending back to scheduled to match internal system logic if needed
+    if status == 'Pending': status = 'Scheduled'
+
+    a = Appointments.query.get(appointment_id)
+    if a:
+        a.slot = status
+        db.session.commit()
+        flash(f'Appointment status updated successfully.', 'success')
+
+    return redirect(redirect_url)
+
+
+@app.route('/admin/delete_appointment', methods=['POST'])
+@login_required
+def admin_delete_appointment():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    appointment_id = request.form.get('appointment_id')
+    redirect_url = request.form.get('redirect_url', url_for('admin_appointments'))
+
+    a = Appointments.query.get(appointment_id)
+    if a:
+        db.session.delete(a)
+        db.session.commit()
+        flash('Appointment deleted permanently.', 'danger')
+
+    return redirect(redirect_url)
+
 
 @app.route('/add_staff', methods=['POST'])
 @login_required
@@ -673,21 +861,95 @@ def add_staff():
         
     db.session.commit()
     flash(f"Success! {usertype} account for {username} has been provisioned.", "success")
-    return redirect(url_for('admin_dashboard'))
+    # Redirects back to the page the form was submitted from
+    return redirect(request.referrer or url_for('admin_dashboard'))
 
-@app.route('/details')
+
+# ─────────────────────────────────────────────
+# ADMIN / STAFF MANAGEMENT
+# ─────────────────────────────────────────────
+
+@app.route('/admin/staff')
 @login_required
-def details():
-    posts = AuditLog.query.order_by(AuditLog.tid.desc()).all()
-    return render_template('admin/trigers.html', posts=posts)
+def admin_staff():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
 
-@app.route('/test')
-def test():
-    try:
-        Test.query.all()
-        return 'Database connected successfully!'
-    except Exception as e:
-        return f'Database connection failed: {str(e)}'
+    # Fetch all admins. 
+    # Optional: You can filter out the currently logged-in admin if you don't want them deleting themselves!
+    admin_users = User.query.filter_by(usertype='Admin').all()
+    
+    return render_template('admin/admin_staff.html', admins=admin_users)
+
+@app.route('/admin/edit_staff', methods=['POST'])
+@login_required
+def admin_edit_staff():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    staff_id = request.form.get('staff_id')
+    username = request.form.get('username')
+    email    = request.form.get('email')
+
+    u = User.query.get(staff_id)
+    if u and u.usertype == 'Admin':
+        u.username = username
+        u.email = email
+        db.session.commit()
+        flash(f'Administrator {username} updated successfully.', 'success')
+
+    return redirect(url_for('admin_staff'))
+
+@app.route('/admin/change_staff_password', methods=['POST'])
+@login_required
+def admin_change_staff_password():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    staff_id         = request.form.get('staff_id')
+    new_password     = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    if new_password != confirm_password:
+        flash('Passwords do not match. Please try again.', 'danger')
+        return redirect(url_for('admin_staff'))
+
+    u = User.query.get(staff_id)
+    if u and u.usertype == 'Admin':
+        u.password = generate_password_hash(new_password)
+        db.session.commit()
+        flash('Administrator password updated successfully.', 'success')
+
+    return redirect(url_for('admin_staff'))
+
+@app.route('/admin/delete_staff', methods=['POST'])
+@login_required
+def admin_delete_staff():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    staff_id = request.form.get('staff_id')
+    
+    # Safety Check: Prevent the admin from deleting themselves
+    if int(staff_id) == current_user.id:
+        flash('Safety Protocol: You cannot delete your own active session.', 'warning')
+        return redirect(url_for('admin_staff'))
+
+    u = User.query.get(staff_id)
+    if u and u.usertype == 'Admin':
+        db.session.delete(u)
+        db.session.commit()
+        flash('Administrator account removed successfully.', 'success')
+
+    return redirect(url_for('admin_staff'))
+
+# ─────────────────────────────────────────────
+# Runner
+# ─────────────────────────────────────────────
 
 if __name__ == '__main__':
     app.run(debug=os.environ.get('FLASK_DEBUG', 'true').lower() == 'true')
