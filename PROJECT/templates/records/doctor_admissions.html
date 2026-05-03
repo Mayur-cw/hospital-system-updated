@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}My Admitted Patients | HMS{% endblock %}
+
+{% block body %}
+<div class="container mt-5 mb-5">
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+          <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-primary">Doctor Dashboard</a></li>
+          <li class="breadcrumb-item active text-muted">Active Admissions</li>
+        </ol>
+      </nav>
+      <h2 class="fw-bold text-dark mb-0"><i class="fas fa-procedures text-info me-2"></i>My Admitted Patients</h2>
+      <p class="text-muted mt-1 mb-0">Monitor and authorize discharges for patients currently under your care.</p>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} shadow-sm rounded-4 border-0" role="alert">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="card shadow-sm border-0 rounded-4 mt-4">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4 text-muted small text-uppercase">Patient</th>
+            <th class="text-muted small text-uppercase">Diagnosis</th>
+            <th class="text-muted small text-uppercase">Room Assignment</th>
+            <th class="text-muted small text-uppercase">Admitted On</th>
+            <th class="text-end pe-4 text-muted small text-uppercase">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for admission in admissions %}
+          <tr>
+            <td class="ps-4 fw-bold text-dark">
+              <i class="fas fa-user-injured text-muted me-2"></i>{{ admission.patient.username }}
+            </td>
+            <td><span class="text-muted small">{{ admission.appointment.disease | truncate(30) }}</span></td>
+            <td>
+              <span class="badge bg-info text-white rounded-pill px-3 py-2 shadow-sm border border-info" style="font-size: 13px;">
+                <i class="fas fa-bed me-1"></i> Room {{ admission.room.room_number }}
+              </span>
+              <small class="text-muted d-block mt-1 fw-bold text-uppercase">{{ admission.room.ward_type }} Ward</small>
+            </td>
+            <td class="text-muted">
+                {{ admission.admission_date.strftime('%b %d, %Y') }}
+            </td>
+            <td class="text-end pe-4">
+              <!-- Discharge Action -->
+              <form action="/discharge_patient" method="POST" class="m-0" 
+                    onsubmit="return confirm('Authorize discharge for {{ admission.patient.username }}? This will generate their final hospital bill.');">
+                <input type="hidden" name="admission_id" value="{{ admission.admission_id }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-4 py-2 hover-lift">
+                  <i class="fas fa-sign-out-alt me-1"></i>Authorize Discharge
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-center py-5 text-muted">
+              <i class="fas fa-check-circle fa-3x mb-3 text-success opacity-50"></i>
+              <h5 class="fw-bold text-dark">No Active Admissions</h5>
+              <p class="mb-0">You currently have no patients admitted to the inpatient wards.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

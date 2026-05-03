@@ -45,29 +45,41 @@
       </div>
       
       <div class="receipt-body">
-        <div class="r-row"><span class="r-label">Receipt No</span><span class="r-val">#{{ invoice.bill_id }}</span></div>
-        <div class="r-row"><span class="r-label">Date Settled</span><span class="r-val">{{ invoice.paid_on.strftime('%b %d, %Y - %H:%M') }}</span></div>
-        <div class="r-row"><span class="r-label">Patient Name</span><span class="r-val">{{ invoice.appointment.patient.username }}</span></div>
-        <div class="r-row"><span class="r-label">Consulting Doctor</span><span class="r-val">Dr. {{ invoice.appointment.doctor }}</span></div>
-        <div class="r-row">
-            <span class="r-label">Payment Mode</span>
-            <span class="r-val text-uppercase text-success">
-                {% if invoice.payment_mode == 'netbanking' %}
-                    🏦 {{ invoice.bank_name }}
-                {% else %}
-                    💵 Counter Cash
-                {% endif %}
-            </span>
-        </div>
+          <div class="r-row"><span class="r-label">Receipt No</span><span class="r-val">#{{ invoice.bill_id }}</span></div>
+          <div class="r-row"><span class="r-label">Date Settled</span><span class="r-val">{{ invoice.paid_on.strftime('%b %d, %Y - %H:%M') }}</span></div>
+          <div class="r-row"><span class="r-label">Patient Name</span><span class="r-val">{{ invoice.appointment.patient.username }}</span></div>
+          <div class="r-row"><span class="r-label">Consulting Doctor</span><span class="r-val">Dr. {{ invoice.appointment.doctor }}</span></div>
+            
+          <!-- 🚨 NEW: FINANCIAL BREAKDOWN -->
+          <div class="r-row mt-3"><span class="r-label text-dark">Base Consultation Fee</span><span class="r-val">₹500.00</span></div>
+            
+          {% if invoice.appointment.admission %}
+          <div class="r-row">
+              <span class="r-label text-info">Inpatient Ward Charges ({{ invoice.appointment.admission.room.ward_type }})</span>
+              <span class="r-val">₹{{ invoice.appointment.admission.room.rate_per_day }} / day</span>
+          </div>
+          {% endif %}
         
-        <div class="bg-light p-3 rounded-3 mt-4 text-center border">
-          <div class="r-label mb-1">Total Amount Paid</div>
-          <h2 class="text-success fw-bold mb-0">₹{{ invoice.amount }}</h2>
-        </div>
-
-        <div class="barcode">||| |||| | |||||| || | ||</div>
-        <div class="text-center small text-muted mt-2">Digital Signature Verified. No physical stamp required.</div>
+          <div class="r-row border-0">
+              <span class="r-label">Payment Mode</span>
+              <span class="r-val text-uppercase text-success">
+                  {% if invoice.payment_mode == 'netbanking' %}🏦 {{ invoice.bank_name }}{% else %}💵 Counter Cash{% endif %}
+              </span>
+          </div>
+        
+          <div class="bg-light p-3 rounded-3 mt-3 text-center border">
+            <div class="r-label mb-1">Total Amount Paid</div>
+            <h2 class="text-success fw-bold mb-1">₹{{ invoice.amount }}</h2>
+            {% if invoice.appointment.admission %}
+            <small class="text-muted fst-italic">Includes consultation and cumulative room stay charges.</small>
+            {% endif %}
+          </div>
+        
+          <div class="barcode">||| |||| | |||||| || | ||</div>
+          <div class="text-center small text-muted mt-2">Digital Signature Verified. No physical stamp required.</div>
       </div>
+
+
     </div>
 
   </div>

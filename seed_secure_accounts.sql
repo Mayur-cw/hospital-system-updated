@@ -52,7 +52,6 @@ INSERT INTO user (id, username, usertype, email, password) VALUES
 (7, 'Mangesh Wagh', 'Doctor', 'mangesh@gmail.com', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
 (8, 'Pranjal', 'Doctor', 'pranjal@gmail.com', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02');
 
--- 🎓 UPGRADE: Link them into the Doctors table using ONLY their user_id (Foreign Key)
 INSERT INTO doctors (did, user_id, dept) VALUES
 (1, 4, 'Cardiologists'),
 (2, 5, 'Dermatologists'),
@@ -71,7 +70,7 @@ INSERT INTO user (id, username, usertype, email, phone, gender, password) VALUES
 (12, 'Vikram Singh',   'Patient', 'vikram.singh@gmail.com',   '9422077889', 'Male',   'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02');
 
 -- ------------------------------------------------------------------------------
--- 4. NORMALIZED APPOINTMENT DATA (Varying Statuses for UI Testing)
+-- 4. NORMALIZED APPOINTMENT DATA
 -- ------------------------------------------------------------------------------
 INSERT INTO appointments (apt_id, user_id, slot, disease, time, date, dept, doctor) VALUES
 (1, 3, 'Completed', 'Chest Pain',        '10:30 PM', '2026-05-03', 'Cardiologists',      'Siddhi Meghale'),
@@ -84,22 +83,19 @@ INSERT INTO appointments (apt_id, user_id, slot, disease, time, date, dept, doct
 (8, 9,  'Cancelled', 'Acne Treatment',   '04:30 PM', '2026-05-10', 'Dermatologists',     'Amruta');
 
 -- ------------------------------------------------------------------------------
--- 5. MEDICAL RECORDS (For 'Completed' Appointments)
+-- 5. MEDICAL RECORDS
 -- ------------------------------------------------------------------------------
 INSERT INTO medical_records (record_id, apt_id, diagnosis, prescription, notes) VALUES
 (1, 1, 'Mild Angina Pectoris, stable condition.', 'Aspirin 75mg OD for 30 days.\nAtorvastatin 10mg HS.', 'Check BP daily. Avoid heavy lifting and saturated fats.'),
 (2, 4, 'Contact Dermatitis.', 'Hydrocortisone 1% cream apply twice daily.\nCetirizine 10mg SOS for itching.', 'Keep affected area dry. Avoid suspected allergens.');
 
 -- ------------------------------------------------------------------------------
--- 6. BILLING DATA (Populating the Financial/Invoice Gateways)
+-- 6. BILLING DATA
 -- ------------------------------------------------------------------------------
 INSERT INTO billing (bill_id, apt_id, user_id, amount, status, issued_on, paid_on, payment_mode, bank_name) VALUES
--- Rehman Daket's Bills (1 Paid, 2 Unpaid)
 (1, 1, 3, 500.00, 'Paid',   '2026-04-30 11:00:00', '2026-04-30 11:05:00', 'cash', NULL),
 (2, 2, 3, 500.00, 'Unpaid', '2026-05-08 10:00:00', NULL, NULL, NULL),
 (3, 3, 3, 650.00, 'Unpaid', '2026-05-02 11:45:00', NULL, NULL, NULL),
-
--- Other Patients (Mix of Paid Netbanking, Paid Cash, Unpaid)
 (4, 4, 9,  800.00, 'Paid',   '2026-05-01 10:30:00', '2026-05-01 14:20:00', 'netbanking', 'HDFC'),
 (5, 5, 10, 500.00, 'Unpaid', '2026-05-04 16:00:00', NULL, NULL, NULL),
 (6, 6, 11, 750.00, 'Unpaid', '2026-05-05 09:00:00', NULL, NULL, NULL),
@@ -107,10 +103,27 @@ INSERT INTO billing (bill_id, apt_id, user_id, amount, status, issued_on, paid_o
 (8, 8, 9,  500.00, 'Unpaid', '2026-05-10 08:00:00', NULL, NULL, NULL);
 
 -- ------------------------------------------------------------------------------
--- 7. RESET AUTO_INCREMENT COUNTERS
+-- 7. ROOMS AND INPATIENT ADMISSIONS (New Module)
+-- ------------------------------------------------------------------------------
+INSERT INTO rooms (room_id, room_number, ward_type, rate_per_day, status) VALUES
+(1, '101-A', 'General', 1500.00, 'Available'),
+(2, '101-B', 'General', 1500.00, 'Occupied'),
+(3, '201',   'ICU',     5000.00, 'Available'),
+(4, '202',   'ICU',     5000.00, 'Occupied'),
+(5, '301',   'VIP',     8000.00, 'Available');
+
+-- 🚨 UPDATED: Added apt_id mapping (Priya Patil = apt_id 4, Arjun Sharma = apt_id 5)
+INSERT INTO admissions (admission_id, apt_id, patient_id, doctor_id, room_id, admission_date, status) VALUES
+(1, 4, 9, 1, 2, '2026-05-01 08:00:00', 'Admitted'), 
+(2, 5, 10, 3, 4, '2026-05-02 10:30:00', 'Admitted'); 
+
+-- ------------------------------------------------------------------------------
+-- 8. RESET AUTO_INCREMENT COUNTERS
 -- ------------------------------------------------------------------------------
 ALTER TABLE user AUTO_INCREMENT = 13;
 ALTER TABLE doctors AUTO_INCREMENT = 7;
 ALTER TABLE appointments AUTO_INCREMENT = 9;
 ALTER TABLE medical_records AUTO_INCREMENT = 3;
 ALTER TABLE billing AUTO_INCREMENT = 9;
+ALTER TABLE rooms AUTO_INCREMENT = 6;
+ALTER TABLE admissions AUTO_INCREMENT = 3;

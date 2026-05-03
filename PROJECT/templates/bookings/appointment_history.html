@@ -104,6 +104,29 @@ My Appointments | Hospital Management System
     {% endif %}
   {% endwith %}
 
+  <!-- 🏥 NEW: INPATIENT ADMISSION BANNER (Only shows if the patient is currently admitted) -->
+  {% if current_user.usertype == 'Patient' and active_admission %}
+  <div class="hms-panel p-4 mb-4" style="border-left: 5px solid #0dcaf0; background: linear-gradient(to right, #ffffff, #f0f9ff);">
+      <div class="d-flex justify-content-between align-items-center">
+          <div>
+              <div class="badge bg-info text-white rounded-pill px-3 py-2 mb-2 shadow-sm">
+                  <i class="fas fa-procedures me-1"></i> Active Inpatient Status
+              </div>
+              <h4 class="brand-font fw-bold text-dark mb-1">You are currently admitted to the {{ active_admission.room.ward_type }} Ward</h4>
+              <p class="text-muted mb-0">
+                  <i class="fas fa-user-md text-primary me-1"></i> Attending: <strong>Dr. {{ active_admission.doctor.user_account.username }}</strong>
+                  &nbsp;|&nbsp;
+                  <i class="fas fa-calendar-check text-success me-1"></i> Admitted: <strong>{{ active_admission.admission_date.strftime('%b %d, %Y') }}</strong>
+              </p>
+          </div>
+          <div class="text-center bg-white p-3 rounded-4 shadow-sm border border-info border-opacity-25">
+              <h3 class="fw-bold text-info mb-0">{{ active_admission.room.room_number }}</h3>
+              <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 1px;">Room No.</span>
+          </div>
+      </div>
+  </div>
+  {% endif %}
+
   <!-- ── INSTANT FILTER BAR ── -->
   <div class="hms-panel p-4 mb-4 bg-white">
     <div class="row g-3 align-items-end">
@@ -274,27 +297,41 @@ My Appointments | Hospital Management System
                           <a href="{{ url_for('doctor.view_record', apt_id=apt.apt_id) }}" class="btn btn-sm btn-primary rounded-pill fw-bold btn-action-fixed"><i class="fas fa-file-medical me-1"></i> Rx</a>
                           
                           {% if current_user.usertype == 'Patient' %}
-                              <!-- 🚨 PATIENT BILLING BUTTONS 🚨 -->
-                              {% if apt.billing and apt.billing.status == 'Paid' %}
-                                  <a href="{{ url_for('patient.view_receipt', bill_id=apt.billing.bill_id) }}" class="btn btn-sm btn-outline-success rounded-pill fw-bold shadow-sm btn-action-fixed">
-                                      <i class="fas fa-receipt me-1"></i> Receipt
-                                  </a>
+                              <!-- 🚨 PATIENT BILLING BUTTONS (SAFELY WRAPPED) 🚨 -->
+                              {% if apt.billing %}
+                                  {% if apt.billing.status == 'Paid' %}
+                                      <a href="{{ url_for('patient.view_receipt', bill_id=apt.billing.bill_id) }}" class="btn btn-sm btn-outline-success rounded-pill fw-bold shadow-sm btn-action-fixed">
+                                          <i class="fas fa-receipt me-1"></i> Receipt
+                                      </a>
+                                  {% else %}
+                                      <a href="{{ url_for('patient.view_invoice', bill_id=apt.billing.bill_id) }}" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark shadow-sm btn-action-fixed">
+                                          <i class="fas fa-credit-card me-1"></i> Pay
+                                      </a>
+                                  {% endif %}
                               {% else %}
-                                  <a href="{{ url_for('patient.view_invoice', bill_id=apt.billing.bill_id) }}" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark shadow-sm btn-action-fixed">
-                                      <i class="fas fa-credit-card me-1"></i> Pay
-                                  </a>
+                                  <!-- New state for admitted patients with no bill yet -->
+                                  <button class="btn btn-sm btn-secondary rounded-pill fw-bold shadow-sm btn-action-fixed" disabled title="Bill will be generated upon discharge">
+                                      <i class="fas fa-hourglass-half me-1"></i> Pending
+                                  </button>
                               {% endif %}
                                 
                           {% elif current_user.usertype == 'Admin' %}
-                              <!-- 🚨 ADMIN BILLING BUTTONS 🚨 -->
-                              {% if apt.billing and apt.billing.status == 'Paid' %}
-                                  <a href="{{ url_for('admin.view_receipt', bill_id=apt.billing.bill_id) }}" class="btn btn-sm btn-outline-success rounded-pill fw-bold btn-action-fixed">
-                                      <i class="fas fa-receipt me-1"></i> Receipt
-                                  </a>
+                              <!-- 🚨 ADMIN BILLING BUTTONS (SAFELY WRAPPED) 🚨 -->
+                              {% if apt.billing %}
+                                  {% if apt.billing.status == 'Paid' %}
+                                      <a href="{{ url_for('admin.view_receipt', bill_id=apt.billing.bill_id) }}" class="btn btn-sm btn-outline-success rounded-pill fw-bold btn-action-fixed">
+                                          <i class="fas fa-receipt me-1"></i> Receipt
+                                      </a>
+                                  {% else %}
+                                      <a href="{{ url_for('admin.view_invoice', bill_id=apt.billing.bill_id) }}" class="btn btn-sm btn-outline-warning rounded-pill fw-bold btn-action-fixed">
+                                          <i class="fas fa-file-invoice me-1"></i> Invoice
+                                      </a>
+                                  {% endif %}
                               {% else %}
-                                  <a href="{{ url_for('admin.view_invoice', bill_id=apt.billing.bill_id) }}" class="btn btn-sm btn-outline-warning rounded-pill fw-bold btn-action-fixed">
-                                      <i class="fas fa-file-invoice me-1"></i> Invoice
-                                  </a>
+                                  <!-- Admin state for pending bill -->
+                                  <button class="btn btn-sm btn-outline-secondary rounded-pill fw-bold btn-action-fixed" disabled title="Bill pending patient discharge">
+                                      <i class="fas fa-hourglass-half me-1"></i> Pending
+                                  </button>
                               {% endif %}
                           {% endif %}
                                 

@@ -29,7 +29,6 @@ class User(UserMixin, db.Model):
     appointments = db.relationship('Appointments', backref='patient', lazy=True, cascade="all, delete-orphan")
     
     # 🎓 UPGRADE: Establishes a 1-to-1 relationship with the Doctors table
-    # This lets us easily fetch a doctor's department using `user.doctor_profile.dept`
     doctor_profile = db.relationship('Doctors', backref='user_account', uselist=False, cascade="all, delete-orphan")
 
 
@@ -58,9 +57,6 @@ class MedicalRecord(db.Model):
 class Doctors(db.Model):
     __tablename__ = 'doctors'
     did     = db.Column(db.Integer, primary_key=True)
-    
-    # 🎓 UPGRADE: Strict 3NF setup. We dropped 'email' and 'doctorname' because 
-    # they already exist in the User table. We link them together using a Foreign Key.
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     dept    = db.Column(db.String(100), nullable=False)
 
@@ -86,5 +82,32 @@ class Billing(db.Model):
     payment_mode = db.Column(db.String(50), nullable=True)
     bank_name = db.Column(db.String(100), nullable=True)
 
-    # This creates a back-reference so we can do bill.appointment.doctor in Jinja!
     appointment = db.relationship('Appointments', backref=db.backref('billing', uselist=False))
+
+
+# 🏥 NEW MODELS: Inpatient Room Management
+class Room(db.Model):
+    __tablename__ = 'rooms'
+    room_id = db.Column(db.Integer, primary_key=True)
+    room_number = db.Column(db.String(10), unique=True, nullable=False)
+    ward_type = db.Column(db.String(50), nullable=False)
+    rate_per_day = db.Column(db.Numeric(10, 2), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='Available')
+
+    admissions = db.relationship('Admission', backref='room', lazy=True)
+
+class Admission(db.Model):
+    __tablename__ = 'admissions'
+    admission_id = db.Column(db.Integer, primary_key=True)
+    apt_id = db.Column(db.Integer, db.ForeignKey('appointments.apt_id', ondelete='CASCADE'), nullable=False) # 🚨 NEW
+    patient_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.did', ondelete='CASCADE'), nullable=False)
+    room_id = db.Column(db.Integer, db.ForeignKey('rooms.room_id', ondelete='CASCADE'), nullable=False)
+    admission_date = db.Column(db.DateTime, server_default=db.func.now())
+    discharge_date = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='Admitted')
+
+    patient = db.relationship('User', backref=db.backref('admissions', lazy=True))
+    doctor = db.relationship('Doctors', backref=db.backref('admissions', lazy=True))
+    # 🚨 NEW: Allows us to do invoice.appointment.admission in the receipt!
+    appointment = db.relationship('Appointments', backref=db.backref('admission', uselist=False))

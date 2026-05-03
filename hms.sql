@@ -17,10 +17,14 @@ DROP TRIGGER IF EXISTS billing_insertion;
 DROP TRIGGER IF EXISTS appointment_delete;
 DROP TRIGGER IF EXISTS appointment_update;
 DROP TRIGGER IF EXISTS appointment_insertion;
+DROP TRIGGER IF EXISTS admission_update;
+DROP TRIGGER IF EXISTS admission_insert;
 
 DROP TABLE IF EXISTS audit_log;
 DROP TABLE IF EXISTS billing;
 DROP TABLE IF EXISTS medical_records;
+DROP TABLE IF EXISTS admissions;
+DROP TABLE IF EXISTS rooms;
 DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS doctors;
 DROP TABLE IF EXISTS user;
@@ -33,11 +37,9 @@ DROP TABLE IF EXISTS test;
 CREATE TABLE user (
   id INT(11) NOT NULL AUTO_INCREMENT,
   username VARCHAR(50) NOT NULL,
-  -- 🎓 UPGRADE: ENUM prevents invalid roles from ever entering the database
   usertype ENUM('Admin', 'Doctor', 'Patient') NOT NULL, 
   email VARCHAR(50) NOT NULL,
   phone VARCHAR(12) DEFAULT NULL,
-  -- 🎓 UPGRADE: ENUM prevents invalid genders
   gender ENUM('Male', 'Female', 'Others') DEFAULT NULL,
   password VARCHAR(1000) NOT NULL,
   PRIMARY KEY (id),
@@ -46,7 +48,6 @@ CREATE TABLE user (
 
 CREATE TABLE doctors (
   did INT(11) NOT NULL AUTO_INCREMENT,
-  -- 🎓 UPGRADE: 3NF Normalization. Replaced redundant 'email' and 'doctorname' with Foreign Key
   user_id INT(11) NOT NULL, 
   dept VARCHAR(100) NOT NULL,
   PRIMARY KEY (did),
@@ -66,8 +67,33 @@ CREATE TABLE appointments (
   FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 🎓 UPGRADE: Query Optimization. Speeds up the time-slot availability checks.
 CREATE INDEX idx_doctor_date ON appointments(doctor, date);
+
+-- 🏥 NEW ROOM MANAGEMENT TABLES
+CREATE TABLE rooms (
+  room_id INT(11) NOT NULL AUTO_INCREMENT,
+  room_number VARCHAR(10) NOT NULL UNIQUE,
+  ward_type ENUM('General', 'ICU', 'VIP', 'Maternity') NOT NULL,
+  rate_per_day DECIMAL(10,2) NOT NULL,
+  status ENUM('Available', 'Occupied', 'Maintenance') NOT NULL DEFAULT 'Available',
+  PRIMARY KEY (room_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE admissions (
+  admission_id INT(11) NOT NULL AUTO_INCREMENT,
+  apt_id INT(11) NOT NULL,  -- 🚨 NEW: Links admission to the exact appointment
+  patient_id INT(11) NOT NULL,
+  doctor_id INT(11) NOT NULL,
+  room_id INT(11) NOT NULL,
+  admission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  discharge_date TIMESTAMP NULL DEFAULT NULL,
+  status ENUM('Admitted', 'Discharged') NOT NULL DEFAULT 'Admitted',
+  PRIMARY KEY (admission_id),
+  FOREIGN KEY (apt_id) REFERENCES appointments(apt_id) ON DELETE CASCADE, -- 🚨 NEW
+  FOREIGN KEY (patient_id) REFERENCES user(id) ON DELETE CASCADE,
+  FOREIGN KEY (doctor_id) REFERENCES doctors(did) ON DELETE CASCADE,
+  FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE medical_records (
   record_id INT(11) NOT NULL AUTO_INCREMENT,
@@ -85,7 +111,6 @@ CREATE TABLE billing (
   apt_id INT(11) NOT NULL,
   user_id INT(11) NOT NULL,
   amount DECIMAL(10,2) NOT NULL DEFAULT 500.00,
-  -- 🎓 UPGRADE: Strict billing states
   status ENUM('Paid', 'Unpaid', 'Refunded') NOT NULL DEFAULT 'Unpaid', 
   issued_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   paid_on TIMESTAMP NULL DEFAULT NULL,
@@ -116,7 +141,6 @@ CREATE TABLE test (
 -- 3. SQL VIEWS (Data Abstraction)
 -- ------------------------------------------------------------------------------
 
--- 🎓 UPGRADE: Calculates all financials natively in the DB instead of Flask
 CREATE VIEW revenue_summary AS
 SELECT 
     SUM(amount) AS gross_revenue,
@@ -124,8 +148,6 @@ SELECT
     SUM(CASE WHEN status = 'Unpaid' THEN amount ELSE 0 END) AS pending_revenue
 FROM billing;
 
--- 🎓 UPGRADE: Reconstructs the original doctors table structure for Flask compatibility 
--- so your existing models.py doesn't break due to the 3NF upgrade.
 CREATE VIEW doctor_directory_view AS
 SELECT 
     d.did, 
@@ -136,7 +158,7 @@ FROM doctors d
 JOIN user u ON d.user_id = u.id;
 
 -- ------------------------------------------------------------------------------
--- 4. MYSQL TRIGGERS (Automated Auditing)
+-- 4. MYSQL TRIGGERS (Automated Auditing & State Management)
 -- ------------------------------------------------------------------------------
 
 DELIMITER $$
@@ -191,13 +213,35 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- 🏥 NEW AUTOMATION: Auto-Toggle Room Availability
+DELIMITER $$
+CREATE TRIGGER admission_insert
+AFTER INSERT ON admissions
+FOR EACH ROW
+BEGIN
+  IF NEW.status = 'Admitted' THEN
+    UPDATE rooms SET status = 'Occupied' WHERE room_id = NEW.room_id;
+  END IF;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE TRIGGER admission_update
+AFTER UPDATE ON admissions
+FOR EACH ROW
+BEGIN
+  IF OLD.status <> NEW.status AND NEW.status = 'Discharged' THEN
+    UPDATE rooms SET status = 'Available' WHERE room_id = NEW.room_id;
+  END IF;
+END$$
+DELIMITER ;
+
 -- ------------------------------------------------------------------------------
 -- 5. STORED PROCEDURES (ACID Concurrency Control)
 -- ------------------------------------------------------------------------------
 
 DELIMITER $$
 
--- 🎓 UPGRADE: Uses row-locking to prevent double-booking race conditions
 CREATE PROCEDURE BookAppointmentSafe(
     IN p_user_id INT,
     IN p_slot VARCHAR(50),
@@ -210,16 +254,13 @@ CREATE PROCEDURE BookAppointmentSafe(
 BEGIN
     DECLARE slot_count INT;
     
-    -- Start the ACID Transaction
     START TRANSACTION;
     
-    -- Check for existing bookings and lock the rows for reading
     SELECT COUNT(*) INTO slot_count 
     FROM appointments 
     WHERE doctor = p_doctor AND date = p_date AND time = p_time AND slot NOT IN ('Cancelled', 'Missed')
     FOR UPDATE; 
     
-    -- Concurrency Control Logic
     IF slot_count > 0 THEN
         ROLLBACK;
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Concurrency Error: Time slot was just booked by another user.';

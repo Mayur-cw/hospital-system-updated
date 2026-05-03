@@ -1,0 +1,402 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Ward & Room Management | Admin Control
+{% endblock title %}
+
+{% block body %}
+<style>
+  body { background-color: var(--hms-surface); }
+  
+  /* ─── INTERACTIVE STATS / FILTERS BAR ─── */
+  .stats-bar {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px; margin-bottom: 36px;
+  }
+  .stat-chip {
+    background: #ffffff; border: 2px solid transparent;
+    border-radius: 16px; padding: 22px 26px;
+    display: flex; align-items: center; gap: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03); cursor: pointer;
+    transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative; overflow: hidden;
+  }
+  .stat-chip::after {
+    content: ''; position: absolute; right: -10%; top: 50%; transform: translateY(-50%);
+    width: 100px; height: 100px; border-radius: 50%; opacity: 0.05; pointer-events: none;
+  }
+  .stat-chip:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.06); border-color: var(--hms-border); }
+
+  /* Active Color Themes for Banners */
+  .stat-chip.chip-blue.active  { background: #eff6ff; border-color: #2563eb; }
+  .stat-chip.chip-green.active { background: #ecfdf5; border-color: #059669; }
+  .stat-chip.chip-amber.active { background: #fffbeb; border-color: #d97706; }
+  .stat-chip.chip-slate.active { background: #f1f5f9; border-color: #475569; }
+
+  /* Dimming logic for inactive filters */
+  .stats-bar.filtered .stat-chip:not(.active) { opacity: 0.5; filter: grayscale(40%); transform: scale(0.98); box-shadow: none; }
+
+  .stat-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .stat-dot.blue  { background: #2563eb; box-shadow: 0 0 0 4px #bfdbfe; }
+  .stat-dot.green { background: #059669; box-shadow: 0 0 0 4px #a7f3d0; }
+  .stat-dot.amber { background: #d97706; box-shadow: 0 0 0 4px #fde68a; }
+  .stat-dot.slate { background: #475569; box-shadow: 0 0 0 4px #cbd5e1; }
+  
+  .stat-num { font-size: 28px; font-weight: 800; font-family: 'Syne', sans-serif; line-height: 1; color: var(--hms-navy); }
+  .stat-lbl { font-size: 11px; font-weight: 700; color: var(--hms-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+  /* ─── ROOM CARD STYLING ─── */
+  .room-card {
+    background: #ffffff; border: 1px solid var(--hms-border);
+    border-radius: 16px; padding: 20px; transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02); position: relative; overflow: hidden;
+  }
+  .room-card:hover { transform: translateY(-4px); box-shadow: 0 12px 25px rgba(0,0,0,0.08); }
+  
+  .status-available { border-top: 5px solid #10b981; }
+  .status-occupied { border-top: 5px solid #f59e0b; }
+  .status-maintenance { border-top: 5px solid #64748b; }
+
+  .room-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem; flex-shrink: 0;
+  }
+  .icon-available { background: #dcfce7; color: #15803d; }
+  .icon-occupied { background: #fef3c7; color: #b45309; }
+  .icon-maintenance { background: #f1f5f9; color: #475569; }
+
+  .ward-badge {
+    font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+    padding: 4px 10px; border-radius: 50px; background: var(--hms-surface); color: var(--hms-navy);
+    border: 1px solid var(--hms-border);
+  }
+
+  /* 1. Force 5 columns on large screens */
+@media (min-width: 1400px) {
+    .row-cols-custom-5 > * {
+        flex: 0 0 auto;
+        width: 20%; /* Distributes width into exactly 5 columns */
+    }
+}
+
+/* 2. Scale down card internals for high-density view */
+.room-card {
+    padding: 15px !important; /* Reduced from 20px */
+}
+
+.room-icon {
+    width: 40px !important; 
+    height: 40px !important;
+    font-size: 1rem !important;
+}
+
+.rc-number {
+    font-size: 1.1rem !important; 
+}
+
+.ward-badge {
+    font-size: 0.6rem !important;
+    padding: 2px 8px !important;
+}
+</style>
+
+<div class="container mt-5 mb-5">
+
+  <!-- Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+          <li class="breadcrumb-item"><a href="/admin/dashboard" class="text-decoration-none text-primary">Admin Dashboard</a></li>
+          <li class="breadcrumb-item active text-muted">Room Management</li>
+        </ol>
+      </nav>
+      <h2 class="fw-bold text-dark mb-0"><i class="fas fa-procedures text-success me-2"></i>Ward & Room Control</h2>
+      <p class="text-muted mt-1 mb-0">Manage physical hospital capacity, room pricing, and active inpatient admissions.</p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+      <button class="btn btn-success rounded-pill fw-bold px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#addRoomModal">
+        <i class="fas fa-plus me-2"></i>Add New Room
+      </button>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm rounded-4 border-0 mb-4" role="alert">
+          <i class="fas fa-info-circle me-2"></i>{{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- ─── INTERACTIVE FILTER BANNERS ─── -->
+  <div class="stats-bar" id="statsContainer">
+    <!-- Total Rooms -->
+    <div class="stat-chip chip-blue active" onclick="filterRooms('All', this)">
+      <div class="stat-dot blue"></div>
+      <div>
+        <div class="stat-num">{{ rooms | length }}</div>
+        <div class="stat-lbl">Total Rooms</div>
+      </div>
+    </div>
+    <!-- Available -->
+    <div class="stat-chip chip-green" onclick="filterRooms('Available', this)">
+      <div class="stat-dot green"></div>
+      <div>
+        <div class="stat-num">{{ rooms | selectattr('status', 'equalto', 'Available') | list | length }}</div>
+        <div class="stat-lbl">Available</div>
+      </div>
+    </div>
+    <!-- Occupied -->
+    <div class="stat-chip chip-amber" onclick="filterRooms('Occupied', this)">
+      <div class="stat-dot amber"></div>
+      <div>
+        <div class="stat-num">{{ rooms | selectattr('status', 'equalto', 'Occupied') | list | length }}</div>
+        <div class="stat-lbl">Occupied</div>
+      </div>
+    </div>
+    <!-- Maintenance -->
+    <div class="stat-chip chip-slate" onclick="filterRooms('Maintenance', this)">
+      <div class="stat-dot slate"></div>
+      <div>
+        <div class="stat-num">{{ rooms | selectattr('status', 'equalto', 'Maintenance') | list | length }}</div>
+        <div class="stat-lbl">Maintenance</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room Grid -->
+  <div class="row g-3 row-cols-custom-5" id="roomGrid">
+    {% for room in rooms %}
+      <!-- col-lg-3 (4 cols) and our custom class handles the jump to 5 cols on XL screens -->
+<div class="col-md-6 col-lg-3 room-card-wrapper" data-status="{{ room.status }}">
+        <div class="room-card {% if room.status == 'Available' %}status-available{% elif room.status == 'Occupied' %}status-occupied{% else %}status-maintenance{% endif %} h-100 d-flex flex-column">
+          
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="room-icon {% if room.status == 'Available' %}icon-available{% elif room.status == 'Occupied' %}icon-occupied{% else %}icon-maintenance{% endif %}">
+              <i class="fas fa-bed"></i>
+            </div>
+            <div class="text-end">
+              <h4 class="fw-bold text-dark mb-0">{{ room.room_number }}</h4>
+              <span class="ward-badge mt-1 d-inline-block">{{ room.ward_type }}</span>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="small text-muted fw-bold text-uppercase mb-1" style="letter-spacing: 0.5px;">Status</div>
+            {% if room.status == 'Available' %}
+              <div class="text-success fw-bold"><i class="fas fa-check-circle me-1"></i>Available</div>
+            {% elif room.status == 'Occupied' %}
+              <div class="text-warning fw-bold text-dark"><i class="fas fa-user-injured me-1"></i>Occupied</div>
+            {% else %}
+              <div class="text-secondary fw-bold"><i class="fas fa-tools me-1"></i>Maintenance</div>
+            {% endif %}
+          </div>
+
+          <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+            <div class="fw-bold text-dark">₹{{ room.rate_per_day }}<span class="text-muted small fw-normal">/day</span></div>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-light border rounded-circle" style="width: 32px; height: 32px;" title="Edit Room"
+                      onclick="openEditModal('{{ room.room_id }}', '{{ room.room_number }}', '{{ room.ward_type }}', '{{ room.rate_per_day }}', '{{ room.status }}')">
+                <i class="fas fa-pen text-muted" style="font-size: 0.75rem;"></i>
+              </button>
+              {% if room.status != 'Occupied' %}
+              <button class="btn btn-sm btn-light border border-danger rounded-circle" style="width: 32px; height: 32px;" title="Delete Room"
+                      onclick="openDeleteModal('{{ room.room_id }}', '{{ room.room_number }}')">
+                <i class="fas fa-trash text-danger" style="font-size: 0.75rem;"></i>
+              </button>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    {% endfor %}
+
+    <!-- Empty Message (Hidden by default) -->
+    <div class="col-12 text-center py-5" id="emptyFilterMsg" style="display: none;">
+      <i class="fas fa-search fa-3x text-muted opacity-25 mb-3"></i>
+      <h5 class="fw-bold text-dark">No rooms found in this category</h5>
+      <p class="text-muted">Adjust your filter to view other ward inventory.</p>
+    </div>
+  </div>
+
+  <!-- ACTIVE ADMISSIONS TABLE -->
+  <div class="card shadow-sm border-0 rounded-4 mt-5">
+    <div class="card-header bg-dark text-white py-3 rounded-top-4 d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 fw-bold brand-font"><i class="fas fa-clipboard-list me-2 text-info"></i>Active Inpatient Admissions</h5>
+      <span class="badge bg-light text-dark fw-bold">{{ active_admissions | length }} Patients Admitted</span>
+    </div>
+    
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4 text-muted small text-uppercase">Patient</th>
+            <th class="text-muted small text-uppercase">Room / Ward</th>
+            <th class="text-muted small text-uppercase">Admitting Doctor</th>
+            <th class="text-muted small text-uppercase">Admission Date</th>
+            <th class="text-end pe-4 text-muted small text-uppercase">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for admission in active_admissions %}
+          <tr>
+            <td class="ps-4 fw-bold text-dark">{{ admission.patient.username }}</td>
+            <td>
+              <span class="badge bg-info text-white rounded-pill px-3 py-2 shadow-sm border border-info">
+                Room {{ admission.room.room_number }}
+              </span>
+              <small class="text-muted d-block mt-1 fw-bold text-uppercase">{{ admission.room.ward_type }} Ward</small>
+            </td>
+            <td class="text-dark">Dr. {{ admission.doctor.user_account.username }}</td>
+            <td class="text-muted">{{ admission.admission_date.strftime('%b %d, %Y') }}</td>
+            <td class="text-end pe-4">
+              <form action="/admin/discharge" method="POST" class="m-0" 
+                    onsubmit="return confirm('Officially discharge this patient? This will generate their final bill.');">
+                <input type="hidden" name="admission_id" value="{{ admission.admission_id }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-4 py-2 hover-lift">
+                  Discharge
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-center py-5 text-muted">All wards are currently empty.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Logic for Filtering -->
+<script>
+  function filterRooms(status, element) {
+    // 1. UI: Handle Banner Active State
+    document.querySelectorAll('.stat-chip').forEach(chip => chip.classList.remove('active'));
+    element.classList.add('active');
+    
+    const container = document.getElementById('statsContainer');
+    if (status === 'All') container.classList.remove('filtered');
+    else container.classList.add('filtered');
+
+    // 2. LOGIC: Filter the Grid
+    const cards = document.querySelectorAll('.room-card-wrapper');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+      if (status === 'All' || card.getAttribute('data-status') === status) {
+        card.style.display = 'block';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    // 3. UI: Show Empty State if 0 results
+    document.getElementById('emptyFilterMsg').style.display = (visibleCount === 0) ? 'block' : 'none';
+  }
+
+  function openEditModal(id, number, ward, rate, status) {
+    document.getElementById('editRoomId').value = id;
+    document.getElementById('editRoomNumber').value = number;
+    document.getElementById('editWardType').value = ward;
+    document.getElementById('editRate').value = rate;
+    const sSelect = document.getElementById('editStatus');
+    if (status === 'Occupied') {
+        sSelect.innerHTML = '<option value="Occupied" selected>Occupied (In Use)</option>';
+        sSelect.disabled = true;
+    } else {
+        sSelect.innerHTML = '<option value="Available">Available</option><option value="Maintenance">Under Maintenance</option>';
+        sSelect.disabled = false;
+        sSelect.value = status;
+    }
+    new bootstrap.Modal(document.getElementById('editRoomModal')).show();
+  }
+
+  function openDeleteModal(id, number) {
+    document.getElementById('deleteRoomId').value = id;
+    document.getElementById('deleteRoomNumber').innerText = number;
+    new bootstrap.Modal(document.getElementById('deleteRoomModal')).show();
+  }
+</script>
+
+<!-- Add Room Modal -->
+<div class="modal fade" id="addRoomModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header bg-success text-white rounded-top-4">
+        <h5 class="modal-title fw-bold">Add Hospital Room</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/admin/add_room" method="POST">
+        <div class="modal-body p-4">
+          <div class="mb-3"><label class="form-label fw-bold">Room Number</label><input type="text" class="form-control" name="room_number" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">Ward Type</label>
+            <select class="form-select" name="ward_type" required>
+              <option value="General">General Ward</option><option value="ICU">ICU</option><option value="VIP">VIP</option><option value="Maternity">Maternity</option>
+            </select>
+          </div>
+          <div class="mb-3"><label class="form-label fw-bold">Daily Rate (₹)</label><input type="number" step="0.01" class="form-control" name="rate_per_day" required></div>
+        </div>
+        <div class="modal-footer border-0 bg-light"><button type="submit" class="btn btn-success rounded-pill px-4">Save Room</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Room Modal -->
+<div class="modal fade" id="editRoomModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header bg-primary text-white rounded-top-4">
+        <h5 class="modal-title fw-bold">Edit Room</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/admin/edit_room" method="POST">
+        <div class="modal-body p-4">
+          <input type="hidden" name="room_id" id="editRoomId">
+          <div class="mb-3"><label class="form-label fw-bold">Room Number</label><input type="text" class="form-control" name="room_number" id="editRoomNumber" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">Ward Type</label>
+            <select class="form-select" name="ward_type" id="editWardType" required>
+              <option value="General">General</option><option value="ICU">ICU</option><option value="VIP">VIP</option><option value="Maternity">Maternity</option>
+            </select>
+          </div>
+          <div class="mb-3"><label class="form-label fw-bold">Daily Rate (₹)</label><input type="number" step="0.01" class="form-control" name="rate_per_day" id="editRate" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">Status</label><select class="form-select" name="status" id="editStatus" required></select></div>
+        </div>
+        <div class="modal-footer border-0 bg-light"><button type="submit" class="btn btn-primary rounded-pill px-4">Update Room</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Room Modal -->
+<div class="modal fade" id="deleteRoomModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
+      <div class="modal-header bg-danger text-white rounded-top-4">
+        <h5 class="modal-title fw-bold">Confirm Deletion</h5>
+      </div>
+      <form action="/admin/delete_room" method="POST">
+        <div class="modal-body p-4 text-center">
+          <input type="hidden" name="room_id" id="deleteRoomId">
+          <i class="fas fa-ban fa-4x text-danger mb-3 opacity-75"></i>
+          <h5>Delete Room <strong id="deleteRoomNumber"></strong>?</h5>
+        </div>
+        <div class="modal-footer border-0 justify-content-center">
+          <button type="submit" class="btn btn-danger rounded-pill px-4">Delete Permanently</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock body %}

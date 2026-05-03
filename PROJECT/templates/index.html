@@ -328,6 +328,8 @@ Home | Hospital Management System
         <div class="sidebar-card shadow-sm">
             <div class="sidebar-title"><i class="fas fa-bolt text-warning me-2"></i> Quick Navigation</div>
             <div class="d-grid gap-3">
+                
+                <!-- 1. My Schedule -->
                 <a href="/dashboard?filter=Pending" class="d-flex align-items-center justify-content-between p-3 border rounded-3 text-decoration-none bg-light" style="transition: 0.2s;" onmouseover="this.style.borderColor='var(--hms-teal)'" onmouseout="this.style.borderColor='var(--hms-border)'">
                     <div class="d-flex align-items-center gap-3">
                         <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width:36px; height:36px;"><i class="fas fa-calendar-alt"></i></div>
@@ -338,6 +340,8 @@ Home | Hospital Management System
                     </div>
                     <i class="fas fa-arrow-right text-muted" style="font-size:0.8rem;"></i>
                 </a>
+                
+                <!-- 2. Patient History -->
                 <a href="/dashboard?filter=Completed" class="d-flex align-items-center justify-content-between p-3 border rounded-3 text-decoration-none bg-light" style="transition: 0.2s;" onmouseover="this.style.borderColor='var(--hms-teal)'" onmouseout="this.style.borderColor='var(--hms-border)'">
                     <div class="d-flex align-items-center gap-3">
                         <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width:36px; height:36px;"><i class="fas fa-folder-open"></i></div>
@@ -348,10 +352,23 @@ Home | Hospital Management System
                     </div>
                     <i class="fas fa-arrow-right text-muted" style="font-size:0.8rem;"></i>
                 </a>
+
+                <!-- 🏥 3. NEW: Active Admissions -->
+                <a href="/my_admissions" class="d-flex align-items-center justify-content-between p-3 border rounded-3 text-decoration-none bg-light" style="transition: 0.2s;" onmouseover="this.style.borderColor='var(--hms-teal)'" onmouseout="this.style.borderColor='var(--hms-border)'">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width:36px; height:36px;"><i class="fas fa-procedures"></i></div>
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size:0.85rem;">Active Admissions</div>
+                            <div class="text-muted" style="font-size:0.7rem;">Manage admitted patients</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right text-muted" style="font-size:0.8rem;"></i>
+                </a>
+
             </div>
         </div>
 
-        <!-- Progress Bar -->
+        <!-- Progress Bar (Preserved from your original file) -->
         <div class="sidebar-card shadow-sm">
             <div class="sidebar-title"><i class="fas fa-chart-line text-teal me-2"></i> Today's Progress</div>
             {% if total_today > 0 %}
@@ -359,12 +376,11 @@ Home | Hospital Management System
                 <span class="text-muted fw-bold" style="font-size:0.75rem;">Patients Completed</span>
                 <span class="fw-bold text-dark fs-4 brand-font">{{ completed_count }} <span class="text-muted fs-6">/ {{ total_today }}</span></span>
             </div>
-         {% set progress = (completed_count / total_today * 100) if total_today > 0 else 0 %}
-
-<div class="progress" style="height: 8px; border-radius: 50px;">
-    <div class="progress-bar bg-teal" role="progressbar"style="width: {{ progress | int }}%; background-color: var(--hms-teal);">
-    </div>
-</div>
+            {% set progress = (completed_count / total_today * 100) if total_today > 0 else 0 %}
+            <div class="progress" style="height: 8px; border-radius: 50px;">
+                <div class="progress-bar bg-teal" role="progressbar"style="width: {{ progress | int }}%; background-color: var(--hms-teal);">
+                </div>
+            </div>
             <div class="text-muted mt-2 fw-bold" style="font-size: 0.7rem;">{{ progress | int }}% of queue cleared</div>
             {% else %}
             <div class="text-center py-2 text-muted">

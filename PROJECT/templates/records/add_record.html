@@ -13,6 +13,9 @@ Write Prescription | Hospital Management System
   .fc-icon { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
   .detail-row { border-bottom: 1px dashed var(--hms-border); padding: 12px 0; }
   .detail-row:last-child { border-bottom: none; }
+  
+  /* Toggle Switch Customization */
+  .form-check-input:checked { background-color: var(--hms-teal); border-color: var(--hms-teal); }
 </style>
 
 <div class="container mt-5 mb-5">
@@ -42,7 +45,6 @@ Write Prescription | Hospital Management System
     <!-- LEFT COLUMN: Patient Info Summary -->
     <div class="col-lg-4">
       <div class="hms-panel h-100 position-relative">
-        <!-- Decorative Header Background -->
         <div style="height: 100px; background: linear-gradient(135deg, var(--hms-navy) 0%, #1e293b 100%);"></div>
         
         <div class="px-4 pb-4" style="margin-top: -35px;">
@@ -97,11 +99,45 @@ Write Prescription | Hospital Management System
             <textarea class="form-control-modern w-100" id="prescription" name="prescription" rows="4" placeholder="List medications, dosage, and frequency (e.g., Amoxicillin 500mg, 1 tablet twice daily for 7 days)" required></textarea>
           </div>
 
-          <div class="mb-5">
+          <div class="mb-4">
             <label for="notes" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
               <i class="fas fa-clipboard text-warning me-2"></i>Additional Notes / Advice <span class="text-muted fw-normal text-lowercase">(Optional)</span>
             </label>
             <textarea class="form-control-modern w-100" id="notes" name="notes" rows="2" placeholder="e.g., Drink plenty of fluids, rest, avoid cold beverages."></textarea>
+          </div>
+
+          <!-- 🏥 NEW: INPATIENT ADMISSION TOGGLE -->
+          <div class="mb-5 bg-light p-4 rounded-4 border">
+            <div class="form-check form-switch d-flex align-items-center gap-3 ps-0 mb-0">
+              <input class="form-check-input ms-0 mt-0" type="checkbox" role="switch" id="admitToggle" onchange="toggleAdmission()" style="width: 45px; height: 24px; cursor: pointer;">
+              <label class="form-check-label fw-bold text-dark" for="admitToggle" style="cursor: pointer; font-size: 15px;">
+                <i class="fas fa-procedures text-info me-2"></i>Require Inpatient Ward Admission?
+              </label>
+            </div>
+            
+            <div id="admissionSection" style="display: none;" class="mt-4 pt-4 border-top">
+              <label for="room_id" class="form-label fw-bold text-info mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 12px;">
+                <i class="fas fa-bed me-2"></i>Select Available Bed / Room
+              </label>
+              
+              {% if available_rooms %}
+              <select class="form-control-modern w-100" id="room_id" name="room_id" style="border-color: #0dcaf0;">
+                  <option value="" selected disabled>Choose a ward...</option>
+                  {% for room in available_rooms %}
+                      <option value="{{ room.room_id }}">
+                        {{ room.ward_type }} Ward — Room {{ room.room_number }} (₹{{ room.rate_per_day }}/day)
+                      </option>
+                  {% endfor %}
+              </select>
+              <div class="small text-muted mt-2">
+                <i class="fas fa-info-circle me-1 text-info"></i> Reserving a room will admit the patient and automatically add a 1-day deposit to their invoice.
+              </div>
+              {% else %}
+              <div class="alert alert-danger mb-0 border-0 shadow-sm py-2">
+                <i class="fas fa-exclamation-triangle me-2"></i>No rooms are currently available across all wards.
+              </div>
+              {% endif %}
+            </div>
           </div>
 
           <hr class="text-muted mb-4 opacity-25">
@@ -120,4 +156,26 @@ Write Prescription | Hospital Management System
 
   </div>
 </div>
+
+<script>
+  function toggleAdmission() {
+      const section = document.getElementById('admissionSection');
+      const select = document.getElementById('room_id');
+      
+      if (document.getElementById('admitToggle').checked) {
+          // Add a smooth fade-in
+          section.style.opacity = 0;
+          section.style.display = 'block';
+          setTimeout(() => section.style.opacity = 1, 50);
+          
+          if(select) select.required = true;
+      } else {
+          section.style.display = 'none';
+          if(select) {
+            select.required = false;
+            select.value = '';
+          }
+      }
+  }
+</script>
 {% endblock body %}
