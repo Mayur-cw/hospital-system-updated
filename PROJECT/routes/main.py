@@ -104,3 +104,4 @@ def index():
 def doctors():
     all_doctors = Doctors.query.all()
     return render_template('doctor_directory.html', all_doctors=all_doctors)
+
