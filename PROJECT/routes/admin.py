@@ -84,8 +84,12 @@ def add_staff():
     new_user = User(username=username, usertype=usertype, email=email, password=hashed_password)
     db.session.add(new_user)
     
+    # 🎓 UPGRADE: Flush the session to auto-generate the new user.id before committing
+    db.session.flush()
+    
     if usertype == "Doctor":
-        new_doc = Doctors(email=email, doctorname=username, dept=dept)
+        # 🎓 UPGRADE: Insert only user_id and dept into the 3NF doctors table
+        new_doc = Doctors(user_id=new_user.id, dept=dept)
         db.session.add(new_doc)
         
     db.session.commit()
@@ -168,12 +172,13 @@ def admin_doctors():
     doc_users = User.query.filter_by(usertype='Doctor').all()
     doctors_list = []
     for u in doc_users:
-        doc_record = Doctors.query.filter_by(email=u.email).first()
+        # 🎓 UPGRADE: Query the Doctors table using the user_id foreign key
+        doc_record = Doctors.query.filter_by(user_id=u.id).first()
         doctors_list.append({
             'id': u.id,
             'username': u.username,
             'email': u.email,
-            'dept': doc_record.dept if doc_record else ''
+            'dept': doc_record.dept if doc_record else 'Unassigned'
         })
 
     return render_template('admin/admin_doctors.html', doctors=doctors_list)
@@ -192,14 +197,12 @@ def admin_edit_doctor():
 
     u = User.query.get(doctor_id)
     if u and u.usertype == 'Doctor':
-        old_email = u.email
         u.username = username
         u.email = email
         
-        doc = Doctors.query.filter_by(email=old_email).first()
+        # 🎓 UPGRADE: Query the Doctors table using the user_id foreign key to update the department
+        doc = Doctors.query.filter_by(user_id=u.id).first()
         if doc:
-            doc.doctorname = username
-            doc.email = email
             doc.dept = dept
             
         db.session.commit()
@@ -240,7 +243,8 @@ def admin_delete_doctor():
     doctor_id = request.form.get('doctor_id')
     u = User.query.get(doctor_id)
     if u and u.usertype == 'Doctor':
-        doc = Doctors.query.filter_by(email=u.email).first()
+        # 🎓 UPGRADE: Delete the associated doctor record using the user_id, then delete the user
+        doc = Doctors.query.filter_by(user_id=u.id).first()
         if doc:
             db.session.delete(doc)
         db.session.delete(u)
@@ -342,11 +346,12 @@ def admin_appointments():
     doc_users = User.query.filter_by(usertype='Doctor').all()
     doctors_list = []
     for doc in doc_users:
-        d_record = Doctors.query.filter_by(email=doc.email).first()
+        # 🎓 UPGRADE: Query the Doctors table using the user_id foreign key to get the department
+        d_record = Doctors.query.filter_by(user_id=doc.id).first()
         doctors_list.append({
             'id': doc.id,
             'username': doc.username,
-            'dept': d_record.dept if d_record else ''
+            'dept': d_record.dept if d_record else 'Unassigned'
         })
 
     return render_template('admin/admin_appointments.html',

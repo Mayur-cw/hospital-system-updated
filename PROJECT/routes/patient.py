@@ -3,6 +3,7 @@ from datetime import datetime, date
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from models import db, Appointments, Doctors, MedicalRecord, Billing
+from sqlalchemy import text # Make sure to import text at the top of your file
 
 patient_bp = Blueprint('patient', __name__)
 
@@ -41,7 +42,9 @@ def get_booked_slots():
 @patient_bp.route('/patients', methods=['POST', 'GET'])
 @login_required
 def patient_booking():
-    doct = Doctors.query.all()
+    # 🎓 UPGRADE: Map the foreign key relationship for the booking wizard dropdowns
+    raw_doctors = Doctors.query.all()
+    doct = [{'doctorname': d.user_account.username, 'dept': d.dept} for d in raw_doctors]
 
     if request.method == "POST":
         slot    = request.form.get('slot', '').strip()
@@ -75,19 +78,28 @@ def patient_booking():
             flash("Invalid date or time format.", "danger")
             return redirect(url_for('patient.patient_booking'))
 
-        if is_slot_booked(date_str, time, doctor):
-            flash(f"Slot Unavailable: Dr. {doctor.capitalize()} is already booked at {time}. Please choose another slot.", "warning")
+        # We no longer need the Python is_slot_booked() check! 
+        # The MySQL Stored Procedure handles concurrency and validation automatically.    
+        try:
+            # Call our ACID-compliant Stored Procedure
+            db.session.execute(
+                text("CALL BookAppointmentSafe(:uid, :slot, :disease, :time, :date, :dept, :doc)"),
+                {
+                    "uid": current_user.id, "slot": slot, "disease": disease, 
+                    "time": time, "date": date_str, "dept": dept, "doc": doctor
+                }
+            )
+            db.session.commit()
+            
+            # Fetch the ID of the newly created appointment for the success page
+            new_apt = Appointments.query.filter_by(user_id=current_user.id).order_by(Appointments.apt_id.desc()).first()
+            return redirect(url_for('patient.booking_success', apt_id=new_apt.apt_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            # If the procedure triggers the ROLLBACK and throws our custom error, catch it here
+            flash(f"Slot Unavailable: That time slot was just taken. Please choose another.", "warning")
             return redirect(url_for('patient.patient_booking'))
-
-        new_appointment = Appointments(
-            user_id=current_user.id, 
-            slot=slot, disease=disease, time=time,
-            date=date_str, dept=dept, doctor=doctor
-        )
-        db.session.add(new_appointment)
-        db.session.commit()
-        
-        return redirect(url_for('patient.booking_success', apt_id=new_appointment.apt_id))
 
     pre_dept = request.args.get('dept', '')
     pre_doc = request.args.get('doctor', '')

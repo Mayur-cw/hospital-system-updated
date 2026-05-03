@@ -15,8 +15,7 @@
 -- output : pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02
 -- ==============================================================================
 
-
-USE hms;
+use hms;
 
 -- ------------------------------------------------------------------------------
 -- 1. MASTER ACCOUNTS (Your Seed Data)
@@ -53,14 +52,14 @@ INSERT INTO user (id, username, usertype, email, password) VALUES
 (7, 'Mangesh Wagh', 'Doctor', 'mangesh@gmail.com', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
 (8, 'Pranjal', 'Doctor', 'pranjal@gmail.com', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02');
 
--- Link them into the public Doctors Directory
-INSERT INTO doctors (did, email, doctorname, dept) VALUES
-(1, 'anushka@gmail.com',    'Anushka',        'Cardiologists'),
-(2, 'amruta@gmail.com',     'Amruta',         'Dermatologists'),
-(3, 'aaditya@gmail.com',    'Aaditya',        'Anesthesiologists'),
-(4, 'mangesh@gmail.com',    'Mangesh Wagh',   'Endocrinologists'),
-(5, 'pranjal@gmail.com',    'Pranjal',        'Infectious Disease'),
-(6, 'drsiddhi@gmail.com',   'Siddhi Meghale', 'Cardiologists');
+-- 🎓 UPGRADE: Link them into the Doctors table using ONLY their user_id (Foreign Key)
+INSERT INTO doctors (did, user_id, dept) VALUES
+(1, 4, 'Cardiologists'),
+(2, 5, 'Dermatologists'),
+(3, 6, 'Anesthesiologists'),
+(4, 7, 'Endocrinologists'),
+(5, 8, 'Infectious Disease'),
+(6, 2, 'Cardiologists');
 
 -- ------------------------------------------------------------------------------
 -- 3. SAMPLE PATIENT ACCOUNTS (Password: mayur)

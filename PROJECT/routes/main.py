@@ -102,6 +102,10 @@ def index():
 @main_bp.route('/doctors', methods=['GET'])
 @login_required
 def doctors():
-    all_doctors = Doctors.query.all()
-    return render_template('doctor_directory.html', all_doctors=all_doctors)
-
+    # 🎓 UPGRADE: Use the SQLAlchemy relationship to map the name from the User table
+    raw_doctors = Doctors.query.all()
+    doctors_list = [
+        {'doctorname': d.user_account.username, 'dept': d.dept} 
+        for d in raw_doctors
+    ]
+    return render_template('doctor_directory.html', all_doctors=doctors_list)

@@ -64,21 +64,31 @@ def add_record(apt_id):
         prescription = request.form.get('prescription', '').strip()
         notes = request.form.get('notes', '').strip()
         
-        # 1. Create the Medical Record
-        new_record = MedicalRecord(apt_id=apt_id, diagnosis=diagnosis, prescription=prescription, notes=notes)
-        db.session.add(new_record)
-        
-        # 2. 🚨 AUTO-GENERATE THE BILL 🚨
-        new_bill = Billing(apt_id=apt_id, user_id=appointment.user_id, amount=500.00, status='Unpaid')
-        db.session.add(new_bill)
+        try:
+            # 1. Create the Medical Record
+            new_record = MedicalRecord(apt_id=apt_id, diagnosis=diagnosis, prescription=prescription, notes=notes)
+            db.session.add(new_record)
+            
+            # 2. AUTO-GENERATE THE BILL
+            new_bill = Billing(apt_id=apt_id, user_id=appointment.user_id, amount=500.00, status='Unpaid')
+            db.session.add(new_bill)
 
-        # 3. Update appointment status
-        appointment.slot = 'Completed'
-        
-        db.session.commit()
-        
-        flash("Medical record saved and Invoice generated successfully!", "success")
-        return redirect(url_for('main.index'))
+            # 3. Update appointment status
+            appointment.slot = 'Completed'
+            
+            # 🎓 DBMS POWER MOVE: Atomic Commit
+            # This ensures all three changes above are saved as a single unit of work.
+            db.session.commit()
+            
+            flash("Medical record saved and Invoice generated successfully!", "success")
+            return redirect(url_for('main.index'))
+
+        except Exception as e:
+            # 🎓 DBMS POWER MOVE: Manual Rollback
+            # If any part of the process fails, we undo everything to prevent data inconsistency.
+            db.session.rollback()
+            flash(f"System Error: Transaction failed and was rolled back. Details: {str(e)}", "danger")
+            return redirect(url_for('doctor.add_record', apt_id=apt_id))
         
     return render_template('records/add_record.html', appointment=appointment)
 

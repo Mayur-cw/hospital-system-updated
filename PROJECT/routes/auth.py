@@ -78,18 +78,11 @@ def profile():
             if existing_user:
                 flash("That email address is already in use by another account.", "danger")
                 return redirect(url_for('auth.profile'))
-            
-            if current_user.usertype == 'Doctor':
-                doc_record = Doctors.query.filter_by(email=current_user.email).first()
-                if doc_record:
-                    doc_record.email = new_email
+            # 🎓 UPGRADE: No longer need to update doctors table email! (3NF)
             user.email = new_email
 
         if new_username and new_username != current_user.username:
-            if current_user.usertype == 'Doctor':
-                doc_record = Doctors.query.filter_by(doctorname=current_user.username).first()
-                if doc_record:
-                    doc_record.doctorname = new_username
+            # 🎓 UPGRADE: No longer need to update doctors table username! (3NF)
             user.username = new_username
             
         user.phone = new_phone
@@ -104,6 +97,7 @@ def profile():
 
     doctor_info = None
     if current_user.usertype == 'Doctor':
-        doctor_info = Doctors.query.filter_by(email=current_user.email).first()
+        # 🎓 UPGRADE: Query by user_id instead of email
+        doctor_info = Doctors.query.filter_by(user_id=current_user.id).first()
 
     return render_template('auth/profile.html', doctor_info=doctor_info)

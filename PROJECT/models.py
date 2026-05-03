@@ -19,21 +19,24 @@ class User(UserMixin, db.Model):
     __tablename__ = 'user'
     id       = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), nullable=False)
-    usertype = db.Column(db.String(50), nullable=False)
+    usertype = db.Column(db.String(50), nullable=False) 
     email    = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(1000), nullable=False)
     phone    = db.Column(db.String(12), nullable=True)  
     gender   = db.Column(db.String(20), nullable=True)  
 
-    # 🚨 NEW: Establishes a 1-to-Many relationship with Appointments
-    # This allows us to use `appointment.patient.username` or `appointment.patient.phone` in Jinja!
+    # Establishes a 1-to-Many relationship with Appointments
     appointments = db.relationship('Appointments', backref='patient', lazy=True, cascade="all, delete-orphan")
+    
+    # 🎓 UPGRADE: Establishes a 1-to-1 relationship with the Doctors table
+    # This lets us easily fetch a doctor's department using `user.doctor_profile.dept`
+    doctor_profile = db.relationship('Doctors', backref='user_account', uselist=False, cascade="all, delete-orphan")
 
 
 class Appointments(db.Model):
     __tablename__ = 'appointments'
     apt_id  = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False) # 🚨 NEW FOREIGN KEY
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     slot    = db.Column(db.String(50), nullable=False)
     disease = db.Column(db.String(50), nullable=False)
     time    = db.Column(db.String(50), nullable=False)
@@ -54,17 +57,19 @@ class MedicalRecord(db.Model):
 
 class Doctors(db.Model):
     __tablename__ = 'doctors'
-    did        = db.Column(db.Integer, primary_key=True)
-    email      = db.Column(db.String(50), nullable=False)
-    doctorname = db.Column(db.String(50), nullable=False)
-    dept       = db.Column(db.String(100), nullable=False)
+    did     = db.Column(db.Integer, primary_key=True)
+    
+    # 🎓 UPGRADE: Strict 3NF setup. We dropped 'email' and 'doctorname' because 
+    # they already exist in the User table. We link them together using a Foreign Key.
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    dept    = db.Column(db.String(100), nullable=False)
 
 
-class AuditLog(db.Model): # 🚨 RENAMED FROM Trigr
+class AuditLog(db.Model): 
     __tablename__ = 'audit_log'
     tid       = db.Column(db.Integer, primary_key=True)
     apt_id    = db.Column(db.Integer, nullable=False)
-    user_id   = db.Column(db.Integer, nullable=False) # 🚨 REPLACED NAME AND EMAIL
+    user_id   = db.Column(db.Integer, nullable=False) 
     action    = db.Column(db.String(50), nullable=False)
     timestamp = db.Column(db.String(50), nullable=False)
 
@@ -78,8 +83,6 @@ class Billing(db.Model):
     status = db.Column(db.String(20), nullable=False, default='Unpaid')
     issued_on = db.Column(db.DateTime, server_default=db.func.now())
     paid_on = db.Column(db.DateTime, nullable=True)
-    
-    # Add these under your existing columns in the Billing class
     payment_mode = db.Column(db.String(50), nullable=True)
     bank_name = db.Column(db.String(100), nullable=True)
 
