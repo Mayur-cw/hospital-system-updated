@@ -5,48 +5,58 @@ Edit Prescription | Hospital Management System
 {% endblock title %}
 
 {% block body %}
+<style>
+  body { background-color: var(--hms-surface); }
+  .hms-panel { background: #ffffff; border: 1px solid var(--hms-border); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; }
+  .form-control-modern { border: 2px solid var(--hms-border); border-radius: 16px; padding: 16px 20px; font-size: 15px; transition: all 0.2s ease; background: #f8fafc; }
+  .form-control-modern:focus { border-color: var(--hms-teal); background: #ffffff; box-shadow: 0 0 0 4px rgba(0,201,167,0.1); outline: none; }
+  .fc-icon { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .detail-row { border-bottom: 1px dashed var(--hms-border); padding: 12px 0; }
+  .detail-row:last-child { border-bottom: none; }
+</style>
+
 <div class="container mt-5 mb-5">
   
   <!-- Header -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-      <h3 class="fw-bold text-primary mb-1"><i class="fas fa-user-edit me-2"></i>Edit Patient Chart</h3>
+      <h3 class="brand-font fw-bold text-dark mb-1"><i class="fas fa-user-edit me-2" style="color: var(--hms-amber);"></i>Edit Clinical Chart</h3>
       <p class="text-muted small mb-0">Update the official medical record and prescription details.</p>
     </div>
-    <a href="/past_records" class="btn btn-outline-secondary rounded-pill shadow-sm"><i class="fas fa-arrow-left me-2"></i>Back to History</a>
+    <a href="/dashboard?filter=Completed" class="btn btn-outline-secondary rounded-pill fw-bold px-4 shadow-sm"><i class="fas fa-arrow-left me-2"></i>Back to History</a>
   </div>
 
-  <div class="row">
+  <div class="row g-4">
     
     <!-- LEFT COLUMN: Patient Info Summary -->
-    <div class="col-lg-4 mb-4">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-header bg-dark text-white p-4 border-0 rounded-top-4">
-            <h5 class="fw-bold mb-0"><i class="fas fa-id-card-alt me-2 text-primary"></i>Patient Details</h5>
-        </div>
-        <div class="card-body p-4 bg-light">
+    <div class="col-lg-4">
+      <div class="hms-panel h-100 position-relative">
+        <div style="height: 100px; background: linear-gradient(135deg, var(--hms-navy) 0%, #1e293b 100%);"></div>
+        
+        <div class="px-4 pb-4" style="margin-top: -35px;">
           <div class="text-center mb-4">
-            <div class="bg-white rounded-circle shadow-sm d-inline-flex justify-content-center align-items-center text-primary border" style="width: 80px; height: 80px;">
-                <i class="fas fa-user-injured fa-3x"></i>
+            <div class="fc-icon mx-auto shadow-sm border border-white border-4" style="background: #ffffff; color: var(--hms-navy);">
+                <i class="fas fa-user-injured"></i>
             </div>
-            <h4 class="fw-bold mt-3 mb-0">{{ appointment.name }}</h4>
-            <span class="badge bg-secondary rounded-pill mt-1">Apt ID: #{{ appointment.apt_id }}</span>
+            <!-- NOTE: Keeping appointment.name as in your original source file -->
+            <h4 class="brand-font fw-bold mt-3 mb-0">{{ appointment.name }}</h4>
+            <span class="badge bg-light text-muted border rounded-pill mt-2 fw-bold" style="letter-spacing: 1px;">APT ID: #{{ appointment.apt_id }}</span>
           </div>
 
-          <ul class="list-group list-group-flush rounded-3 shadow-sm border-0">
-            <li class="list-group-item d-flex justify-content-between align-items-center bg-white p-3">
-              <span class="text-muted small fw-bold text-uppercase"><i class="fas fa-calendar-day me-2"></i>Date</span>
-              <span class="fw-bold">{{ appointment.date }}</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center bg-white p-3">
-              <span class="text-muted small fw-bold text-uppercase"><i class="fas fa-clock me-2"></i>Time</span>
+          <div class="bg-light rounded-4 p-4 mb-4">
+            <div class="detail-row d-flex justify-content-between align-items-center">
+              <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;"><i class="fas fa-calendar-day me-2 opacity-50"></i>Date</span>
+              <span class="fw-bold text-dark">{{ appointment.date }}</span>
+            </div>
+            <div class="detail-row d-flex justify-content-between align-items-center">
+              <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;"><i class="fas fa-clock me-2 opacity-50"></i>Time</span>
               <span class="fw-bold text-primary">{{ appointment.time }}</span>
-            </li>
-          </ul>
+            </div>
+          </div>
 
-          <div class="mt-4 p-3 bg-white rounded-3 shadow-sm border-start border-danger border-4">
-            <span class="text-danger small fw-bold text-uppercase d-block mb-1">Reported Reason:</span>
-            <p class="mb-0 fw-bold">{{ appointment.disease }}</p>
+          <div class="p-4 bg-danger bg-opacity-10 rounded-4 border border-danger border-opacity-25">
+            <span class="text-danger small fw-bold text-uppercase d-block mb-1" style="letter-spacing: 0.5px;"><i class="fas fa-exclamation-circle me-1"></i> Reported Reason:</span>
+            <p class="mb-0 fw-bold text-dark">{{ appointment.disease }}</p>
           </div>
         </div>
       </div>
@@ -54,41 +64,42 @@ Edit Prescription | Hospital Management System
 
     <!-- RIGHT COLUMN: The Medical Form -->
     <div class="col-lg-8">
-      <div class="card border-0 shadow-lg rounded-4">
-        <div class="card-body p-5">
+      <div class="hms-panel p-5 h-100">
+        
+        <form action="/edit_record/{{ appointment.apt_id }}" method="POST">
           
-          <form action="/edit_record/{{ appointment.apt_id }}" method="POST">
-            
-            <div class="mb-4">
-              <label for="diagnosis" class="form-label fw-bold text-dark fs-5"><i class="fas fa-stethoscope text-primary me-2"></i>Official Diagnosis <span class="text-danger">*</span></label>
-              <!-- Pre-filled with record.diagnosis -->
-              <textarea class="form-control form-control-lg bg-light border-0 shadow-sm" id="diagnosis" name="diagnosis" rows="3" required>{{ record.diagnosis }}</textarea>
-            </div>
+          <div class="mb-4">
+            <label for="diagnosis" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
+              <i class="fas fa-stethoscope text-primary me-2"></i>Official Diagnosis <span class="text-danger">*</span>
+            </label>
+            <textarea class="form-control-modern w-100" id="diagnosis" name="diagnosis" rows="3" required>{{ record.diagnosis }}</textarea>
+          </div>
 
-            <div class="mb-4">
-              <label for="prescription" class="form-label fw-bold text-dark fs-5"><i class="fas fa-pills text-success me-2"></i>Prescription & Medications <span class="text-danger">*</span></label>
-              <!-- Pre-filled with record.prescription -->
-              <textarea class="form-control form-control-lg bg-light border-0 shadow-sm" id="prescription" name="prescription" rows="4" required>{{ record.prescription }}</textarea>
-            </div>
+          <div class="mb-4">
+            <label for="prescription" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
+              <i class="fas fa-pills text-success me-2"></i>Prescription & Medications <span class="text-danger">*</span>
+            </label>
+            <textarea class="form-control-modern w-100" id="prescription" name="prescription" rows="4" required>{{ record.prescription }}</textarea>
+          </div>
 
-            <div class="mb-5">
-              <label for="notes" class="form-label fw-bold text-dark fs-5"><i class="fas fa-clipboard text-warning me-2"></i>Additional Notes / Advice</label>
-              <!-- Pre-filled with record.notes -->
-              <textarea class="form-control bg-light border-0 shadow-sm" id="notes" name="notes" rows="2">{{ record.notes }}</textarea>
-            </div>
+          <div class="mb-5">
+            <label for="notes" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
+              <i class="fas fa-clipboard text-warning me-2"></i>Additional Notes / Advice
+            </label>
+            <textarea class="form-control-modern w-100" id="notes" name="notes" rows="2">{{ record.notes }}</textarea>
+          </div>
 
-            <hr class="text-muted mb-4">
+          <hr class="text-muted mb-4 opacity-25">
 
-            <div class="d-flex justify-content-end gap-3">
-                <a href="/past_records" class="btn btn-light btn-lg px-4 fw-bold">Cancel</a>
-                <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm fw-bold">
-                    <i class="fas fa-save me-2"></i> Save Changes
-                </button>
-            </div>
+          <div class="d-flex justify-content-end gap-3">
+              <a href="/dashboard?filter=Completed" class="btn btn-light rounded-pill px-4 fw-bold border">Cancel</a>
+              <button type="submit" class="btn btn-warning rounded-pill px-5 shadow-sm fw-bold text-dark">
+                  <i class="fas fa-save me-2"></i> Save Changes
+              </button>
+          </div>
 
-          </form>
+        </form>
 
-        </div>
       </div>
     </div>
 
