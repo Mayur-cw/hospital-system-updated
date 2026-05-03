@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Receipt #{{ invoice.bill_id }} | HMS{% endblock %}
+
+{% block body %}
+<style>
+  body { background-color: var(--hms-surface); }
+  .receipt-wrapper { max-width: 600px; margin: 0 auto; }
+  
+  @media print {
+    body * { visibility: hidden; }
+    #printableArea, #printableArea * { visibility: visible; }
+    #printableArea { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; }
+    .no-print { display: none !important; }
+  }
+
+  .receipt-card { background: white; border-radius: 16px; border: 1px solid var(--hms-border); box-shadow: 0 20px 40px rgba(0,0,0,0.08); overflow: hidden; }
+  .receipt-header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center; color: white; }
+  .stamp { display: inline-block; border: 3px solid rgba(255,255,255,0.9); padding: 5px 20px; font-weight: 900; letter-spacing: 5px; font-size: 24px; transform: rotate(-5deg); margin-top: 10px; }
+  
+  .receipt-body { padding: 30px; }
+  .r-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #cbd5e1; font-size: 14px; }
+  .r-label { font-weight: 700; color: #64748b; text-transform: uppercase; font-size: 12px; }
+  .r-val { font-weight: 800; color: var(--hms-navy); }
+  
+  .barcode { font-family: 'Courier New', monospace; letter-spacing: 2px; text-align: center; margin-top: 20px; font-weight: bold; }
+</style>
+
+<div class="container mt-5 mb-5">
+  <div class="receipt-wrapper">
+    
+    <div class="d-flex justify-content-between mb-3 no-print">
+      {% if current_user.usertype == 'Admin' %}
+        <a href="{{ url_for('admin.admin_financials') }}" class="btn btn-outline-secondary btn-sm fw-bold"><i class="fas fa-arrow-left me-1"></i> Back</a>
+      {% else %}
+        <a href="{{ url_for('patient.my_bills') }}" class="btn btn-outline-secondary btn-sm fw-bold"><i class="fas fa-arrow-left me-1"></i> Back</a>
+      {% endif %}
+      <button class="btn btn-dark btn-sm fw-bold" onclick="window.print()"><i class="fas fa-print me-1"></i> Print</button>
+    </div>
+
+    <div class="receipt-card" id="printableArea">
+      <div class="receipt-header">
+        <h2 class="brand-font fw-bold mb-1">Payment Successful</h2>
+        <p class="mb-2 opacity-75">Hospital Management System</p>
+        <div class="stamp">PAID</div>
+      </div>
+      
+      <div class="receipt-body">
+        <div class="r-row"><span class="r-label">Receipt No</span><span class="r-val">#{{ invoice.bill_id }}</span></div>
+        <div class="r-row"><span class="r-label">Date Settled</span><span class="r-val">{{ invoice.paid_on.strftime('%b %d, %Y - %H:%M') }}</span></div>
+        <div class="r-row"><span class="r-label">Patient Name</span><span class="r-val">{{ invoice.appointment.patient.username }}</span></div>
+        <div class="r-row"><span class="r-label">Consulting Doctor</span><span class="r-val">Dr. {{ invoice.appointment.doctor }}</span></div>
+        <div class="r-row">
+            <span class="r-label">Payment Mode</span>
+            <span class="r-val text-uppercase text-success">
+                {% if invoice.payment_mode == 'netbanking' %}
+                    🏦 {{ invoice.bank_name }}
+                {% else %}
+                    💵 Counter Cash
+                {% endif %}
+            </span>
+        </div>
+        
+        <div class="bg-light p-3 rounded-3 mt-4 text-center border">
+          <div class="r-label mb-1">Total Amount Paid</div>
+          <h2 class="text-success fw-bold mb-0">₹{{ invoice.amount }}</h2>
+        </div>
+
+        <div class="barcode">||| |||| | |||||| || | ||</div>
+        <div class="text-center small text-muted mt-2">Digital Signature Verified. No physical stamp required.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

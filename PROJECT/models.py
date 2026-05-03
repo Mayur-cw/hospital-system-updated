@@ -78,6 +78,10 @@ class Billing(db.Model):
     status = db.Column(db.String(20), nullable=False, default='Unpaid')
     issued_on = db.Column(db.DateTime, server_default=db.func.now())
     paid_on = db.Column(db.DateTime, nullable=True)
+    
+    # Add these under your existing columns in the Billing class
+    payment_mode = db.Column(db.String(50), nullable=True)
+    bank_name = db.Column(db.String(100), nullable=True)
 
     # This creates a back-reference so we can do bill.appointment.doctor in Jinja!
     appointment = db.relationship('Appointments', backref=db.backref('billing', uselist=False))

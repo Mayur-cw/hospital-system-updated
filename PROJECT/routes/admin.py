@@ -7,6 +7,8 @@ from models import db, User, Appointments, Doctors, AuditLog, Billing
 
 admin_bp = Blueprint('admin', __name__)
 
+# ── DASHBOARD ─────────────────────────────────────────────────────────
+
 @admin_bp.route('/dashboard')
 @login_required
 def admin_dashboard():
@@ -24,6 +26,8 @@ def admin_dashboard():
                            total_users=total_users, 
                            total_appointments=total_appointments,
                            recent_logs=recent_logs)
+
+# ── AUDIT LOGS ────────────────────────────────────────────────────────
 
 @admin_bp.route('/details')
 @login_required
@@ -46,6 +50,18 @@ def details():
         })
 
     return render_template('admin/audit_logs.html', posts=posts)
+
+# ── SYSTEM STAFF ──────────────────────────────────────────────────────
+
+@admin_bp.route('/staff')
+@login_required
+def admin_staff():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('main.index'))
+
+    admin_users = User.query.filter_by(usertype='Admin').all()
+    return render_template('admin/admin_staff.html', admins=admin_users)
 
 @admin_bp.route('/add_staff', methods=['POST'])
 @login_required
@@ -75,6 +91,72 @@ def add_staff():
     db.session.commit()
     flash(f"Success! {usertype} account for {username} has been provisioned.", "success")
     return redirect(request.referrer or url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/edit_staff', methods=['POST'])
+@login_required
+def admin_edit_staff():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('main.index'))
+
+    staff_id = request.form.get('staff_id')
+    username = request.form.get('username')
+    email    = request.form.get('email')
+
+    u = User.query.get(staff_id)
+    if u and u.usertype == 'Admin':
+        u.username = username
+        u.email = email
+        db.session.commit()
+        flash(f'Administrator {username} updated successfully.', 'success')
+
+    return redirect(url_for('admin.admin_staff'))
+
+@admin_bp.route('/change_staff_password', methods=['POST'])
+@login_required
+def admin_change_staff_password():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('main.index'))
+
+    staff_id         = request.form.get('staff_id')
+    new_password     = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    if new_password != confirm_password:
+        flash('Passwords do not match. Please try again.', 'danger')
+        return redirect(url_for('admin.admin_staff'))
+
+    u = User.query.get(staff_id)
+    if u and u.usertype == 'Admin':
+        u.password = generate_password_hash(new_password)
+        db.session.commit()
+        flash('Administrator password updated successfully.', 'success')
+
+    return redirect(url_for('admin.admin_staff'))
+
+@admin_bp.route('/delete_staff', methods=['POST'])
+@login_required
+def admin_delete_staff():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('main.index'))
+
+    staff_id = request.form.get('staff_id')
+    
+    if int(staff_id) == current_user.id:
+        flash('Safety Protocol: You cannot delete your own active session.', 'warning')
+        return redirect(url_for('admin.admin_staff'))
+
+    u = User.query.get(staff_id)
+    if u and u.usertype == 'Admin':
+        db.session.delete(u)
+        db.session.commit()
+        flash('Administrator account removed successfully.', 'success')
+
+    return redirect(url_for('admin.admin_staff'))
+
+# ── DOCTORS DIRECTORY ─────────────────────────────────────────────────
 
 @admin_bp.route('/doctors')
 @login_required
@@ -167,6 +249,8 @@ def admin_delete_doctor():
 
     return redirect(url_for('admin.admin_doctors'))
 
+# ── PATIENTS DIRECTORY ────────────────────────────────────────────────
+
 @admin_bp.route('/patients')
 @login_required
 def admin_patients():
@@ -195,6 +279,8 @@ def admin_patients():
 
     return render_template('admin/admin_patients.html', patients=patients_list, search_query=search_query)
 
+# ── APPOINTMENTS ──────────────────────────────────────────────────────
+
 @admin_bp.route('/appointments')
 @login_required
 def admin_appointments():
@@ -205,13 +291,20 @@ def admin_appointments():
     today = date.today().isoformat()
     yesterday = (date.today() - timedelta(days=1)).isoformat()
     
-    selected_date = request.args.get('date', today)
-    selected_doctor = request.args.get('doctor_id', '')
+    # 1. Fetch the search query FIRST for the Smart Default logic
     search_query = request.args.get('search', '').strip()
+    
+    # 2. SMART DEFAULT: If searching, default to 'all' dates instead of today
+    default_date = 'all' if search_query else today
+    
+    # 3. Apply the default
+    selected_date = request.args.get('date', default_date)
+    selected_doctor = request.args.get('doctor_id', '')
 
     q = Appointments.query
 
-    if selected_date:
+    # 4. Only apply the date filter if it is NOT 'all'
+    if selected_date and selected_date != 'all':
         q = q.filter(Appointments.date == selected_date)
         
     doctor_name = ''
@@ -306,80 +399,8 @@ def admin_delete_appointment():
 
     return redirect(redirect_url)
 
-@admin_bp.route('/staff')
-@login_required
-def admin_staff():
-    if current_user.usertype != 'Admin':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('main.index'))
 
-    admin_users = User.query.filter_by(usertype='Admin').all()
-    return render_template('admin/admin_staff.html', admins=admin_users)
-
-@admin_bp.route('/edit_staff', methods=['POST'])
-@login_required
-def admin_edit_staff():
-    if current_user.usertype != 'Admin':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('main.index'))
-
-    staff_id = request.form.get('staff_id')
-    username = request.form.get('username')
-    email    = request.form.get('email')
-
-    u = User.query.get(staff_id)
-    if u and u.usertype == 'Admin':
-        u.username = username
-        u.email = email
-        db.session.commit()
-        flash(f'Administrator {username} updated successfully.', 'success')
-
-    return redirect(url_for('admin.admin_staff'))
-
-@admin_bp.route('/change_staff_password', methods=['POST'])
-@login_required
-def admin_change_staff_password():
-    if current_user.usertype != 'Admin':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('main.index'))
-
-    staff_id         = request.form.get('staff_id')
-    new_password     = request.form.get('new_password')
-    confirm_password = request.form.get('confirm_password')
-
-    if new_password != confirm_password:
-        flash('Passwords do not match. Please try again.', 'danger')
-        return redirect(url_for('admin.admin_staff'))
-
-    u = User.query.get(staff_id)
-    if u and u.usertype == 'Admin':
-        u.password = generate_password_hash(new_password)
-        db.session.commit()
-        flash('Administrator password updated successfully.', 'success')
-
-    return redirect(url_for('admin.admin_staff'))
-
-@admin_bp.route('/delete_staff', methods=['POST'])
-@login_required
-def admin_delete_staff():
-    if current_user.usertype != 'Admin':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('main.index'))
-
-    staff_id = request.form.get('staff_id')
-    
-    if int(staff_id) == current_user.id:
-        flash('Safety Protocol: You cannot delete your own active session.', 'warning')
-        return redirect(url_for('admin.admin_staff'))
-
-    u = User.query.get(staff_id)
-    if u and u.usertype == 'Admin':
-        db.session.delete(u)
-        db.session.commit()
-        flash('Administrator account removed successfully.', 'success')
-
-    return redirect(url_for('admin.admin_staff'))
-
+# ── FINANCIALS & BILLING ──────────────────────────────────────────────
 
 @admin_bp.route('/financials')
 @login_required
@@ -399,3 +420,26 @@ def admin_financials():
                            bills=all_bills, 
                            total_collected=total_collected, 
                            pending_revenue=pending_revenue)
+
+@admin_bp.route('/financials/<int:bill_id>/invoice')
+@login_required
+def view_invoice(bill_id):
+    """Admin read-only view of an unpaid invoice."""
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('main.index'))
+        
+    invoice = Billing.query.get_or_404(bill_id)
+    return render_template('admin/admin_view_invoice.html', invoice=invoice)
+
+@admin_bp.route('/financials/<int:bill_id>/receipt')
+@login_required
+def view_receipt(bill_id):
+    """Admin read-only view of a paid receipt."""
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('main.index'))
+        
+    invoice = Billing.query.get_or_404(bill_id)
+    # Reusing the bookings/receipt.html template. The HTML handles the back button based on current_user!
+    return render_template('bookings/receipt.html', invoice=invoice)

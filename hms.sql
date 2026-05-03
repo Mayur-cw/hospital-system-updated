@@ -1,6 +1,7 @@
 -- ==============================================================================
 -- Hospital Management System (HMS) Database
 -- MySQL Version - Fully Normalized (3NF) Core Schema
+-- Includes Billing, Payment Modes, and Audit Triggers
 -- ==============================================================================
 
 -- Create and select database
@@ -8,14 +9,15 @@ CREATE DATABASE IF NOT EXISTS hms;
 USE hms;
 
 -- ------------------------------------------------------------------------------
--- 1. DROP TABLES (Reverse Dependency Order to avoid Foreign Key errors)
+-- 1. DROP TABLES (Strict Reverse Dependency Order to prevent FK errors)
 -- ------------------------------------------------------------------------------
-DROP TABLE IF EXISTS medical_records;
 DROP TABLE IF EXISTS audit_log;
+DROP TABLE IF EXISTS billing;
+DROP TABLE IF EXISTS medical_records;
 DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS doctors;
-DROP TABLE IF EXISTS test;
 DROP TABLE IF EXISTS user;
+DROP TABLE IF EXISTS test;
 
 -- ------------------------------------------------------------------------------
 -- 2. CREATE TABLES
@@ -41,7 +43,7 @@ CREATE TABLE doctors (
   PRIMARY KEY (did)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 🚨 NORMALIZED APPOINTMENTS TABLE (No redundant name, email, phone, or gender)
+-- NORMALIZED APPOINTMENTS TABLE
 CREATE TABLE appointments (
   apt_id INT(11) NOT NULL AUTO_INCREMENT,
   user_id INT(11) NOT NULL,            
@@ -66,6 +68,7 @@ CREATE TABLE medical_records (
   FOREIGN KEY (apt_id) REFERENCES appointments(apt_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- BILLING TABLE (Includes Payment Modes & Bank Data)
 CREATE TABLE billing (
   bill_id INT(11) NOT NULL AUTO_INCREMENT,
   apt_id INT(11) NOT NULL,
@@ -74,12 +77,14 @@ CREATE TABLE billing (
   status VARCHAR(20) NOT NULL DEFAULT 'Unpaid',
   issued_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   paid_on TIMESTAMP NULL DEFAULT NULL,
+  payment_mode VARCHAR(50) DEFAULT NULL,
+  bank_name VARCHAR(100) DEFAULT NULL,
   PRIMARY KEY (bill_id),
   FOREIGN KEY (apt_id) REFERENCES appointments(apt_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 🚨 RENAMED AND NORMALIZED AUDIT LOG
+-- RENAMED AND NORMALIZED AUDIT LOG
 CREATE TABLE audit_log (
   tid INT(11) NOT NULL AUTO_INCREMENT,
   apt_id INT(11) NOT NULL,
@@ -98,7 +103,7 @@ CREATE TABLE test (
 
 
 -- ------------------------------------------------------------------------------
--- 3. MYSQL TRIGGERS (Updated for audit_log and user_id)
+-- 3. MYSQL TRIGGERS
 -- ------------------------------------------------------------------------------
 
 -- Trigger: Log every new appointment INSERT

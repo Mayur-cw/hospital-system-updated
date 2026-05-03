@@ -6,6 +6,8 @@ from models import db, Appointments, Doctors, MedicalRecord, Billing
 
 patient_bp = Blueprint('patient', __name__)
 
+# ── UTILITIES ────────────────────────────────────────────────────────
+
 def is_slot_booked(requested_date, requested_time, target_doctor, current_apt_id=None):
     query = Appointments.query.filter_by(date=requested_date, time=requested_time, doctor=target_doctor)
     if current_apt_id:
@@ -32,6 +34,9 @@ def get_booked_slots():
     bookings = query.all()
     booked_times = [b.time for b in bookings if b.slot not in ['Cancelled', 'Missed']]
     return jsonify({'booked_times': booked_times})
+
+
+# ── APPOINTMENT BOOKING ──────────────────────────────────────────────
 
 @patient_bp.route('/patients', methods=['POST', 'GET'])
 @login_required
@@ -97,6 +102,9 @@ def booking_success(apt_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for('main.index'))
     return render_template('bookings/booking_success.html', appointment=appointment)
+
+
+# ── DASHBOARDS & HISTORY ─────────────────────────────────────────────
 
 @patient_bp.route('/dashboard')
 @login_required
@@ -170,7 +178,8 @@ def past_records():
     return render_template('bookings/appointment_history.html', query=history_list, page_title="Patient History", is_past_record=True, prescribed_apt_ids=prescribed_apt_ids)
 
 
-#New route to display patient's bills and allow payment
+# ── BILLING & PAYMENT GATEWAY ────────────────────────────────────────
+
 @patient_bp.route('/my_bills')
 @login_required
 def my_bills():
@@ -183,23 +192,66 @@ def my_bills():
     
     return render_template('bookings/my_bills.html', invoices=my_invoices)
 
-@patient_bp.route('/pay_bill/<int:bill_id>', methods=['POST'])
+@patient_bp.route('/bills/<int:bill_id>/invoice')
 @login_required
-def pay_bill(bill_id):
+def view_invoice(bill_id):
+    """View the pending invoice and select a payment method."""
     if current_user.usertype != 'Patient':
         return redirect(url_for('main.index'))
-
-    bill = Billing.query.get_or_404(bill_id)
-    
-    # Security check to ensure they only pay their own bills
-    if bill.user_id != current_user.id:
+        
+    invoice = Billing.query.get_or_404(bill_id)
+    if invoice.user_id != current_user.id:
         flash("Security Alert: Invalid billing ID.", "danger")
         return redirect(url_for('patient.my_bills'))
         
-    # Process "Payment"
-    bill.status = 'Paid'
-    bill.paid_on = db.func.now()
-    db.session.commit()
+    if invoice.status == 'Paid':
+        return redirect(url_for('patient.view_receipt', bill_id=bill_id))
+        
+    return render_template('bookings/pay_invoice.html', invoice=invoice)
+
+@patient_bp.route('/bills/<int:bill_id>/pay', methods=['POST'])
+@login_required
+def process_payment(bill_id):
+    """Process the simulated payment gateway submission."""
+    if current_user.usertype != 'Patient':
+        return redirect(url_for('main.index'))
+
+    invoice = Billing.query.get_or_404(bill_id)
+    if invoice.user_id != current_user.id:
+        return redirect(url_for('patient.my_bills'))
+
+    # Extract payment data from the interactive frontend form
+    payment_mode = request.form.get('payment_mode')
+    bank_name = request.form.get('bank_name', None)
+
+    if not payment_mode:
+        flash("Error: Please select a valid payment method.", "warning")
+        return redirect(url_for('patient.view_invoice', bill_id=bill_id))
+
+    # Update database
+    invoice.status = 'Paid'
+    invoice.paid_on = db.func.now()
+    invoice.payment_mode = payment_mode
+    invoice.bank_name = bank_name if payment_mode == 'netbanking' else None
     
-    flash("Payment processed successfully! Your account is settled.", "success")
-    return redirect(url_for('patient.my_bills'))
+    db.session.commit()
+    flash("Transaction successful! Your receipt is ready.", "success")
+    
+    return redirect(url_for('patient.view_receipt', bill_id=bill_id))
+
+@patient_bp.route('/bills/<int:bill_id>/receipt')
+@login_required
+def view_receipt(bill_id):
+    """View the final printable receipt after successful payment."""
+    invoice = Billing.query.get_or_404(bill_id)
+    
+    # Allow Admins OR the specific Patient to view the receipt
+    if current_user.usertype == 'Patient' and invoice.user_id != current_user.id:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('patient.my_bills'))
+        
+    if invoice.status != 'Paid':
+        flash('This invoice has not been settled yet.', 'warning')
+        return redirect(url_for('patient.view_invoice', bill_id=bill_id))
+        
+    return render_template('bookings/receipt.html', invoice=invoice)

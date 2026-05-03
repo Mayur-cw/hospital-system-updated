@@ -1,35 +1,59 @@
 {% extends 'base.html' %}
-
 {% block title %}My Bills | Hospital Management System{% endblock %}
 
 {% block body %}
 <style>
   body { background-color: var(--hms-surface); }
-  .hms-panel { background: #ffffff; border: 1px solid var(--hms-border); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; }
-  .bill-card { border: 2px solid var(--hms-border); border-radius: 16px; padding: 20px; transition: all 0.2s ease; background: white; }
+  .bill-card { border: 2px solid var(--hms-border); border-radius: 16px; padding: 24px; transition: all 0.2s ease; background: white; }
   .bill-card:hover { border-color: var(--hms-primary); box-shadow: var(--shadow-md); transform: translateY(-3px); }
-  
-  .status-badge { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; border-radius: 50px; }
-  .status-paid { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+
+  .status-badge { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 14px; border-radius: 50px; display: inline-flex; align-items: center; gap: 5px; }
+  .status-paid    { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
   .status-unpaid { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-  
-  .bill-amount { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--hms-navy); }
+
+  .bill-amount { font-family: 'Syne', sans-serif; font-size: 1.9rem; font-weight: 800; color: var(--hms-navy); }
+
+  .btn-invoice {
+    background: linear-gradient(135deg, #f59e0b, #b45309);
+    color: white; border: none; border-radius: 10px;
+    padding: 10px 22px; font-weight: 800; font-size: 13px;
+    cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 7px;
+    text-decoration: none;
+  }
+  .btn-invoice:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(245,158,11,0.35); color: white; }
+
+  .btn-receipt {
+    background: linear-gradient(135deg, #10b981, #047857);
+    color: white; border: none; border-radius: 10px;
+    padding: 10px 22px; font-weight: 800; font-size: 13px;
+    cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 7px;
+    text-decoration: none;
+  }
+  .btn-receipt:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16,185,129,0.35); color: white; }
+
+  .mode-chip { display: inline-flex; align-items: center; gap: 4px; background: #f1f5f9; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700; color: #475569; }
 </style>
 
 <div class="container mt-5 mb-5">
-  
+
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h2 class="brand-font text-dark mb-1"><i class="fas fa-file-invoice-dollar me-2 text-primary"></i>My Invoices</h2>
       <p class="text-muted mb-0">Manage and settle your medical consultation fees.</p>
     </div>
-    <a href="{{ url_for('patient.dashboard') }}" class="btn btn-outline-secondary rounded-pill fw-bold"><i class="fas fa-list me-2"></i>View Appointments</a>
+    <a href="{{ url_for('patient.dashboard') }}" class="btn btn-outline-secondary rounded-pill fw-bold">
+      <i class="fas fa-list me-2"></i>View Appointments
+    </a>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       {% for category, message in messages %}
-        <div class="alert alert-{{ category }} shadow-sm rounded-4 border-0 mb-4"><i class="fas fa-info-circle me-2"></i>{{ message }}</div>
+        <div class="alert alert-{{ category }} shadow-sm rounded-4 border-0 mb-4">
+          <i class="fas fa-info-circle me-2"></i>{{ message }}
+        </div>
       {% endfor %}
     {% endif %}
   {% endwith %}
@@ -38,46 +62,71 @@
     {% for invoice in invoices %}
       <div class="col-lg-6">
         <div class="bill-card">
+
           <div class="d-flex justify-content-between align-items-start mb-3 border-bottom pb-3">
             <div>
               <div class="text-muted small fw-bold text-uppercase" style="letter-spacing: 1px;">Invoice #{{ invoice.bill_id }}</div>
               <h5 class="fw-bold text-dark mt-1 mb-0">Dr. {{ invoice.appointment.doctor | capitalize }}</h5>
               <div class="small text-muted">{{ invoice.appointment.dept }} Consultation</div>
+              <div class="text-muted small mt-2">
+                <i class="fas fa-calendar-alt me-1"></i>{{ invoice.appointment.date }}
+                &nbsp;·&nbsp;
+                <i class="fas fa-hashtag me-1"></i>Appt #{{ invoice.appointment.apt_id }}
+              </div>
+              
+              <!-- Shows the payment mode chip if paid -->
+              {% if invoice.status == 'Paid' and invoice.payment_mode %}
+                <div class="mt-2">
+                  <span class="mode-chip">
+                    {% if invoice.payment_mode == 'netbanking' %}
+                      🏦 {% if invoice.bank_name %}{{ invoice.bank_name }}{% else %}Net Banking{% endif %}
+                    {% elif invoice.payment_mode == 'cash' %}
+                      💵 Cash
+                    {% else %}
+                      {{ invoice.payment_mode | capitalize }}
+                    {% endif %}
+                  </span>
+                </div>
+              {% endif %}
             </div>
-            <div class="text-end">
+            <div>
               {% if invoice.status == 'Paid' %}
-                <div class="status-badge status-paid"><i class="fas fa-check-circle me-1"></i>Paid</div>
+                <span class="status-badge status-paid"><i class="fas fa-check-circle"></i>Paid</span>
               {% else %}
-                <div class="status-badge status-unpaid"><i class="fas fa-exclamation-circle me-1"></i>Unpaid</div>
+                <span class="status-badge status-unpaid"><i class="fas fa-exclamation-circle"></i>Unpaid</span>
               {% endif %}
             </div>
           </div>
-          
-          <div class="d-flex justify-content-between align-items-center mt-3">
+
+          <div class="d-flex justify-content-between align-items-center mt-2">
             <div>
               <div class="text-muted small fw-bold text-uppercase">Total Amount</div>
               <div class="bill-amount">₹{{ invoice.amount }}</div>
             </div>
-            
             <div>
+              <!-- 🚨 ROUTES TO THE NEW GATEWAY AND RECEIPT 🚨 -->
               {% if invoice.status == 'Paid' %}
-                <div class="text-muted small text-end"><i class="fas fa-calendar-check me-1"></i>Settled on:<br><span class="fw-bold text-dark">{{ invoice.paid_on.strftime('%b %d, %Y') }}</span></div>
+                <a href="{{ url_for('patient.view_receipt', bill_id=invoice.bill_id) }}" class="btn-receipt">
+                  <i class="fas fa-receipt"></i> View Receipt
+                </a>
+                <div class="text-muted small text-center mt-2">
+                  Paid on {{ invoice.paid_on.strftime('%d %b %Y') }}
+                </div>
               {% else %}
-                <form action="{{ url_for('patient.pay_bill', bill_id=invoice.bill_id) }}" method="POST">
-                  <button type="submit" class="btn btn-primary rounded-pill fw-bold shadow-sm px-4 py-2">
-                    <i class="fas fa-credit-card me-2"></i>Pay Securely
-                  </button>
-                </form>
+                <a href="{{ url_for('patient.view_invoice', bill_id=invoice.bill_id) }}" class="btn-invoice">
+                  <i class="fas fa-credit-card"></i> Pay Invoice
+                </a>
               {% endif %}
             </div>
           </div>
+
         </div>
       </div>
     {% else %}
       <div class="col-12 text-center py-5">
         <i class="fas fa-receipt fa-4x text-muted opacity-25 mb-3"></i>
         <h5 class="fw-bold text-dark">No billing history found</h5>
-        <p class="text-muted">You do not have any invoices yet. Bills are generated automatically after a doctor consultation.</p>
+        <p class="text-muted">Bills are generated automatically after a doctor consultation.</p>
       </div>
     {% endfor %}
   </div>

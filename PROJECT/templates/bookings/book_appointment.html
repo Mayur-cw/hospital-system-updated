@@ -178,8 +178,10 @@ Book Appointment | Hospital Management System
           <!-- THE FORM -->
           <form action="/patients" method="POST" id="bookingForm">
             <input type="hidden" name="slot" value="Scheduled">
-            <input type="hidden" id="selected_doctor" name="doctor" required>
-            <input type="hidden" id="selected_time" name="time" required>
+            <!-- 🚨 FIXED: Removed required from hidden fields and added selected_dept -->
+            <input type="hidden" id="selected_doctor" name="doctor">
+            <input type="hidden" id="selected_dept" name="dept"> 
+            <input type="hidden" id="selected_time" name="time">
             
             <!-- ========================================== -->
             <!-- STEP 1: SELECT SPECIALIST                  -->
@@ -197,7 +199,8 @@ Book Appointment | Hospital Management System
                   <label for="dept" class="pf-label">Filter by Department</label>
                   <div class="pf-input-wrap">
                     <i class="fas fa-stethoscope pf-ico"></i>
-                    <select id="dept" name="dept" required onchange="filterDoctorCards(true)">
+                    <!-- 🚨 FIXED: Removed name="dept" and required to prevent silent failure -->
+                    <select id="dept" onchange="filterDoctorCards(true)">
                       <option value="" disabled hidden selected>View All Departments...</option>
                       {% for d in doct %}
                         <option value="{{ d.dept }}">{{ d.dept | capitalize }}</option>
@@ -242,6 +245,7 @@ Book Appointment | Hospital Management System
                   <label for="date" class="pf-label">Choose Date</label>
                   <div class="pf-input-wrap mb-4">
                     <i class="fas fa-calendar-day pf-ico"></i>
+                    <!-- Notice: Date is visible in Step 2, but we validate it via JS before moving to Step 3 -->
                     <input type="date" id="date" name="date" required onchange="checkAvailableSlots()">
                   </div>
 
@@ -303,20 +307,22 @@ Book Appointment | Hospital Management System
               </div>
 
               <!-- PERSONAL DETAILS -->
-              <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-user text-primary me-2"></i>Patient Information</h6>
+              <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-user text-primary me-2"></i>Patient Information (Read-Only)</h6>
               <div class="row mb-3">
                 <div class="col-md-6 mb-3">
                   <label for="name" class="pf-label">Full Name</label>
                   <div class="pf-input-wrap">
                     <i class="fas fa-user pf-ico"></i>
-                    <input type="text" id="name" name="name" value="{{ current_user.username }}" required>
+                    <!-- 🚨 BUG 3 FIX: Added readonly and grayed-out style -->
+                    <input type="text" id="name" name="name" value="{{ current_user.username }}" readonly style="background-color: var(--surface); color: var(--text-hint);">
                   </div>
                 </div>
                 <div class="col-md-6 mb-3">
                   <label for="number" class="pf-label">Phone Number</label>
                   <div class="pf-input-wrap">
                     <i class="fas fa-phone pf-ico"></i>
-                    <input type="text" id="number" name="number" value="{{ current_user.phone if current_user.phone != None else '' }}" pattern="\d{10}" title="10-digit number" required>
+                    <!-- 🚨 BUG 3 FIX: Added readonly and fallback text -->
+                    <input type="text" id="number" name="number" value="{{ current_user.phone or 'Update in Profile' }}" readonly style="background-color: var(--surface); color: var(--text-hint);">
                   </div>
                 </div>
               </div>
@@ -326,15 +332,17 @@ Book Appointment | Hospital Management System
                   <label for="email" class="pf-label">Email Address</label>
                   <div class="pf-input-wrap">
                     <i class="fas fa-lock pf-ico"></i>
-                    <input type="email" id="email" name="email" value="{{ current_user.email }}" readonly>
+                    <!-- 🚨 BUG 3 FIX: Grayed-out style -->
+                    <input type="email" id="email" name="email" value="{{ current_user.email }}" readonly style="background-color: var(--surface); color: var(--text-hint);">
                   </div>
                 </div>
                 <div class="col-md-6 mb-3">
                   <label for="gender" class="pf-label">Gender</label>
                   <div class="pf-input-wrap">
                     <i class="fas fa-venus-mars pf-ico"></i>
-                    <select id="gender" name="gender" required>
-                      <option value="" {% if not current_user.gender %}selected{% endif %} disabled hidden>Select Gender</option>
+                    <!-- 🚨 BUG 3 FIX: Changed to disabled select -->
+                    <select id="gender" name="gender" disabled style="background-color: var(--surface); color: var(--text-hint); pointer-events: none;">
+                      <option value="" {% if not current_user.gender %}selected{% endif %} disabled hidden>Update in Profile</option>
                       <option value="Male" {% if current_user.gender == 'Male' %}selected{% endif %}>Male</option>
                       <option value="Female" {% if current_user.gender == 'Female' %}selected{% endif %}>Female</option>
                       <option value="Others" {% if current_user.gender == 'Others' %}selected{% endif %}>Others</option>
@@ -350,7 +358,7 @@ Book Appointment | Hospital Management System
                   <label for="disease" class="pf-label">Symptoms / Reason for Visit</label>
                   <div class="pf-input-wrap">
                     <i class="fas fa-notes-medical pf-ico align-top"></i>
-                    <textarea id="disease" name="disease" rows="3" placeholder="Briefly describe what you are experiencing..." required></textarea>
+                    <textarea id="disease" name="disease" rows="3" placeholder="Briefly describe what you are experiencing..." autocomplete="off" required></textarea>
                   </div>
                 </div>
               </div>
@@ -364,7 +372,7 @@ Book Appointment | Hospital Management System
                 </button>
               </div>
             </div>
-
+            
           </form>
         </div>
       </div>
@@ -403,7 +411,7 @@ Book Appointment | Hospital Management System
   function saveState() {
     sessionStorage.setItem('wiz_step',   getCurrentStep());
     sessionStorage.setItem('wiz_doctor', document.getElementById('selected_doctor').value);
-    sessionStorage.setItem('wiz_dept',   document.getElementById('dept').value);
+    sessionStorage.setItem('wiz_dept',   document.getElementById('selected_dept').value);
     sessionStorage.setItem('wiz_date',   document.getElementById('date').value);
     sessionStorage.setItem('wiz_time',   document.getElementById('selected_time').value);
   }
@@ -414,8 +422,20 @@ Book Appointment | Hospital Management System
 
   // ── ON LOAD ───────────────────────────────────────────
   document.addEventListener("DOMContentLoaded", function() {
+    
+    // 🚨 BUG 2 FIX: Force reset wizard if coming from a fresh link
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('new')) {
+      clearState();
+      // This cleans the URL instantly so it looks nice and professional
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
     // FIX: use local date so IST users don't see yesterday as selectable
+    document.getElementById("date").setAttribute("min", getLocalDateStr());
+
+
+    // use local date so IST users don't see yesterday as selectable
     document.getElementById("date").setAttribute("min", getLocalDateStr());
 
     // Clear state on successful form submit
@@ -433,7 +453,8 @@ Book Appointment | Hospital Management System
     if (savedStep && parseInt(savedStep) > 1 && savedDoctor) {
       // Restore dept + doctor card
       if (savedDept) {
-        document.getElementById('dept').value = savedDept;
+        document.getElementById('dept').value = savedDept; // visual update
+        document.getElementById('selected_dept').value = savedDept; // hidden input update
         filterDoctorCards(false);
       }
       const targetCard = document.querySelector(`.doc-wrapper[data-doc="${savedDoctor}"] .doc-card`);
@@ -466,7 +487,7 @@ Book Appointment | Hospital Management System
         if (savedDate) checkAvailableSlots();
       }
 
-      return; // skip auto-skip logic below if restoring
+      return; 
     }
 
     // ── AUTO-SKIP (from doctor directory) ──
@@ -475,6 +496,7 @@ Book Appointment | Hospital Management System
 
     if (initDept && initDoc) {
       document.getElementById('dept').value = initDept;
+      document.getElementById('selected_dept').value = initDept;
       filterDoctorCards(false);
 
       const targetWrapper = document.querySelector(`.doc-wrapper[data-doc="${initDoc}"]`);
@@ -494,6 +516,7 @@ Book Appointment | Hospital Management System
 
     if (isManual) {
       document.getElementById('selected_doctor').value = "";
+      document.getElementById('selected_dept').value = "";
       document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('selected'));
       document.getElementById('selected_time').value = "";
       document.getElementById('slot-container').innerHTML = '<div class="text-center text-muted w-100" style="grid-column: 1 / -1; padding: 2rem 0;"><i class="fas fa-calendar-check fa-2x mb-2 opacity-50"></i><p class="mb-0 small">Please select a Date above to view slots.</p></div>';
@@ -507,8 +530,13 @@ Book Appointment | Hospital Management System
   function selectDoctorCard(docName, cardElement) {
     document.querySelectorAll('.doc-card').forEach(c => c.classList.remove('selected'));
     cardElement.classList.add('selected');
+    
+    // 🚨 FIXED: Update both the visible display and the hidden form inputs
     document.getElementById('selected_doctor').value = docName;
     document.getElementById('doc-name-display').innerText = 'Dr. ' + docName;
+    
+    const deptName = cardElement.closest('.doc-wrapper').getAttribute('data-dept');
+    document.getElementById('selected_dept').value = deptName;
 
     if (document.getElementById('date').value) {
       checkAvailableSlots();
@@ -528,8 +556,7 @@ Book Appointment | Hospital Management System
       if (!document.getElementById('selected_time').value){ alert('Please select an available Time Slot.'); return; }
 
       const docName   = document.getElementById('selected_doctor').value;
-      const deptSelect = document.getElementById('dept');
-      const deptName  = deptSelect.options[deptSelect.selectedIndex].text;
+      const deptName  = document.getElementById('selected_dept').value;
       const dateVal   = document.getElementById('date').value;
       const timeVal   = document.getElementById('selected_time').value;
       populateSummary(docName, deptName, dateVal, timeVal);
@@ -579,7 +606,7 @@ Book Appointment | Hospital Management System
       slotContainer.innerHTML = '';
 
       const now        = new Date();
-      const todayStr   = getLocalDateStr(); // FIX: use local date helper
+      const todayStr   = getLocalDateStr(); 
       const isToday    = (dateStr === todayStr);
 
       allSlots.forEach(slot => {
