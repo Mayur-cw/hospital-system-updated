@@ -49,10 +49,10 @@
           <div class="r-row"><span class="r-label">Date Settled</span><span class="r-val">{{ invoice.paid_on.strftime('%b %d, %Y - %H:%M') }}</span></div>
           <div class="r-row"><span class="r-label">Patient Name</span><span class="r-val">{{ invoice.appointment.patient.username }}</span></div>
           <div class="r-row"><span class="r-label">Consulting Doctor</span><span class="r-val">Dr. {{ invoice.appointment.doctor }}</span></div>
-            
+
           <!-- 🚨 NEW: FINANCIAL BREAKDOWN -->
           <div class="r-row mt-3"><span class="r-label text-dark">Base Consultation Fee</span><span class="r-val">₹500.00</span></div>
-            
+
           {% if invoice.appointment.admission %}
           <div class="r-row">
               <span class="r-label text-info">Inpatient Ward Charges ({{ invoice.appointment.admission.room.ward_type }})</span>
@@ -78,7 +78,6 @@
           <div class="barcode">||| |||| | |||||| || | ||</div>
           <div class="text-center small text-muted mt-2">Digital Signature Verified. No physical stamp required.</div>
       </div>
-
 
     </div>
 
