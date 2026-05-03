@@ -66,6 +66,19 @@ CREATE TABLE medical_records (
   FOREIGN KEY (apt_id) REFERENCES appointments(apt_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE billing (
+  bill_id INT(11) NOT NULL AUTO_INCREMENT,
+  apt_id INT(11) NOT NULL,
+  user_id INT(11) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL DEFAULT 500.00,
+  status VARCHAR(20) NOT NULL DEFAULT 'Unpaid',
+  issued_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  paid_on TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (bill_id),
+  FOREIGN KEY (apt_id) REFERENCES appointments(apt_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- 🚨 RENAMED AND NORMALIZED AUDIT LOG
 CREATE TABLE audit_log (
   tid INT(11) NOT NULL AUTO_INCREMENT,
@@ -118,5 +131,29 @@ FOR EACH ROW
 BEGIN
   INSERT INTO audit_log (apt_id, user_id, action, timestamp)
   VALUES (OLD.apt_id, OLD.user_id, 'APPOINTMENT CANCELLED', NOW());
+END$$
+DELIMITER ;
+
+-- Trigger: Log when a new bill is generated
+DELIMITER $$
+CREATE TRIGGER billing_insertion
+AFTER INSERT ON billing
+FOR EACH ROW
+BEGIN
+  INSERT INTO audit_log (apt_id, user_id, action, timestamp)
+  VALUES (NEW.apt_id, NEW.user_id, 'BILL GENERATED', NOW());
+END$$
+DELIMITER ;
+
+-- Trigger: Log when a bill is paid
+DELIMITER $$
+CREATE TRIGGER billing_update
+AFTER UPDATE ON billing
+FOR EACH ROW
+BEGIN
+  IF OLD.status <> NEW.status AND NEW.status = 'Paid' THEN
+    INSERT INTO audit_log (apt_id, user_id, action, timestamp)
+    VALUES (NEW.apt_id, NEW.user_id, 'BILL PAID', NOW());
+  END IF;
 END$$
 DELIMITER ;

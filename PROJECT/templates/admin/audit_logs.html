@@ -30,7 +30,7 @@ Database Logs | Hospital Management System
       <p class="text-muted mb-0">Automated system logs recorded by MySQL triggers for patient data modifications.</p>
     </div>
     <div class="col-md-4 text-md-end">
-        <a href="/admin_dashboard" class="hms-btn hms-btn-ghost"><i class="fas fa-arrow-left me-2"></i>Back to Dashboard</a>
+        <a href="/admin/dashboard" class="hms-btn hms-btn-ghost"><i class="fas fa-arrow-left me-2"></i>Back to Dashboard</a>
     </div>
   </div>
 
@@ -54,11 +54,15 @@ Database Logs | Hospital Management System
               <td class="border-bottom text-muted" style="font-size: 14px;">{{ post.email }}</td>
               <td class="border-bottom fw-bold" style="font-size: 14px;">{{ post.name }}</td>
               <td class="border-bottom">
-                {% if 'INSERTED' in post.action.upper() %}
+                {% if 'INSERTED' in post.action.upper() or 'BOOKED' in post.action.upper() %}
                   <span class="hms-badge hms-badge-success">{{ post.action | upper }}</span>
+                {% elif 'GENERATED' in post.action.upper() %}
+                  <span class="hms-badge hms-badge-teal" style="background:#e0f2fe; color:#0369a1;">{{ post.action | upper }}</span>
+                {% elif 'PAID' in post.action.upper() %}
+                  <span class="hms-badge hms-badge-success" style="background:#dcfce7; color:#15803d;">{{ post.action | upper }}</span>
                 {% elif 'UPDATED' in post.action.upper() %}
                   <span class="hms-badge hms-badge-warning">{{ post.action | upper }}</span>
-                {% elif 'DELETED' in post.action.upper() %}
+                {% elif 'DELETED' in post.action.upper() or 'CANCELLED' in post.action.upper() %}
                   <span class="hms-badge hms-badge-danger">{{ post.action | upper }}</span>
                 {% else %}
                   <span class="hms-badge hms-badge-neutral">{{ post.action | upper }}</span>

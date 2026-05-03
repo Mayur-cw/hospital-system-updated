@@ -2,7 +2,7 @@
 from datetime import datetime, date
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from models import db, Appointments, Doctors, MedicalRecord
+from models import db, Appointments, Doctors, MedicalRecord, Billing
 
 patient_bp = Blueprint('patient', __name__)
 
@@ -168,3 +168,38 @@ def past_records():
 
     history_list.sort(key=lambda x: datetime.strptime(f"{x.date} {x.time}", '%Y-%m-%d %I:%M %p'), reverse=True)
     return render_template('bookings/appointment_history.html', query=history_list, page_title="Patient History", is_past_record=True, prescribed_apt_ids=prescribed_apt_ids)
+
+
+#New route to display patient's bills and allow payment
+@patient_bp.route('/my_bills')
+@login_required
+def my_bills():
+    if current_user.usertype != 'Patient':
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.index'))
+    
+    # Fetch all bills for this specific patient, newest first
+    my_invoices = Billing.query.filter_by(user_id=current_user.id).order_by(Billing.issued_on.desc()).all()
+    
+    return render_template('bookings/my_bills.html', invoices=my_invoices)
+
+@patient_bp.route('/pay_bill/<int:bill_id>', methods=['POST'])
+@login_required
+def pay_bill(bill_id):
+    if current_user.usertype != 'Patient':
+        return redirect(url_for('main.index'))
+
+    bill = Billing.query.get_or_404(bill_id)
+    
+    # Security check to ensure they only pay their own bills
+    if bill.user_id != current_user.id:
+        flash("Security Alert: Invalid billing ID.", "danger")
+        return redirect(url_for('patient.my_bills'))
+        
+    # Process "Payment"
+    bill.status = 'Paid'
+    bill.paid_on = db.func.now()
+    db.session.commit()
+    
+    flash("Payment processed successfully! Your account is settled.", "success")
+    return redirect(url_for('patient.my_bills'))

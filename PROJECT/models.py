@@ -67,3 +67,17 @@ class AuditLog(db.Model): # 🚨 RENAMED FROM Trigr
     user_id   = db.Column(db.Integer, nullable=False) # 🚨 REPLACED NAME AND EMAIL
     action    = db.Column(db.String(50), nullable=False)
     timestamp = db.Column(db.String(50), nullable=False)
+
+
+class Billing(db.Model):
+    __tablename__ = 'billing'
+    bill_id = db.Column(db.Integer, primary_key=True)
+    apt_id = db.Column(db.Integer, db.ForeignKey('appointments.apt_id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False, default=500.00)
+    status = db.Column(db.String(20), nullable=False, default='Unpaid')
+    issued_on = db.Column(db.DateTime, server_default=db.func.now())
+    paid_on = db.Column(db.DateTime, nullable=True)
+
+    # This creates a back-reference so we can do bill.appointment.doctor in Jinja!
+    appointment = db.relationship('Appointments', backref=db.backref('billing', uselist=False))

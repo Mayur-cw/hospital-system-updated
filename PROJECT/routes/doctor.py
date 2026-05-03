@@ -1,7 +1,7 @@
 # routes/doctor.py
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from models import db, Appointments, MedicalRecord
+from models import db, Appointments, MedicalRecord, Billing
 
 doctor_bp = Blueprint('doctor', __name__)
 
@@ -64,12 +64,20 @@ def add_record(apt_id):
         prescription = request.form.get('prescription', '').strip()
         notes = request.form.get('notes', '').strip()
         
+        # 1. Create the Medical Record
         new_record = MedicalRecord(apt_id=apt_id, diagnosis=diagnosis, prescription=prescription, notes=notes)
         db.session.add(new_record)
+        
+        # 2. 🚨 AUTO-GENERATE THE BILL 🚨
+        new_bill = Billing(apt_id=apt_id, user_id=appointment.user_id, amount=500.00, status='Unpaid')
+        db.session.add(new_bill)
+
+        # 3. Update appointment status
         appointment.slot = 'Completed'
+        
         db.session.commit()
         
-        flash("Medical record saved successfully!", "success")
+        flash("Medical record saved and Invoice generated successfully!", "success")
         return redirect(url_for('main.index'))
         
     return render_template('records/add_record.html', appointment=appointment)

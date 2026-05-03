@@ -250,38 +250,59 @@ My Appointments | Hospital Management System
               </td>
               
               <td class="text-end pe-4">
-                <div class="d-flex gap-2 justify-content-end">
-                  
-                  <!-- DOCTOR ACTIONS -->
-                  {% if current_user.usertype == 'Doctor' %}
-                      {% if apt.apt_id in prescribed_apt_ids or apt.slot == 'Completed' %}
-                          <a href="/view_record/{{ apt.apt_id }}" class="btn btn-sm btn-outline-primary rounded-pill fw-bold">View Record</a>
-                          <a href="/edit_record/{{ apt.apt_id }}" class="btn btn-sm btn-outline-secondary rounded-pill"><i class="fas fa-edit"></i></a>
-                      {% elif apt.slot == 'Attended' %}
-                          <a href="/add_record/{{ apt.apt_id }}" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark"><i class="fas fa-notes-medical me-1"></i> Add Rx</a>
-                      {% elif apt.slot == 'Scheduled' %}
-                          <form action="/cancel_apt/{{ apt.apt_id }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to cancel this appointment?');">
-                              <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold">Cancel</button>
-                          </form>
-                      {% else %}
-                          <span class="text-muted small fst-italic">No actions</span>
-                      {% endif %}
-                  
-                  <!-- PATIENT ACTIONS -->
-                  {% else %}
-                      {% if apt.apt_id in prescribed_apt_ids or apt.slot == 'Completed' %}
-                          <a href="/view_record/{{ apt.apt_id }}" class="btn btn-sm btn-primary rounded-pill fw-bold"><i class="fas fa-file-medical me-1"></i> Rx</a>
-                      {% elif apt.slot == 'Scheduled' %}
-                          <form action="/cancel_apt/{{ apt.apt_id }}" method="POST" class="m-0" onsubmit="return confirm('Cancel your appointment?');">
-                              <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold"><i class="fas fa-times me-1"></i> Cancel</button>
-                          </form>
-                      {% else %}
-                          <span class="text-muted small fst-italic">No actions</span>
-                      {% endif %}
-                  {% endif %}
-
-                </div>
-              </td>
+              <div class="d-flex gap-2 justify-content-end align-items-center">
+                {% if current_user.usertype == 'Doctor' %}
+                    <!-- DOCTOR ACTIONS -->
+                    {% if apt.apt_id in prescribed_apt_ids or apt.slot == 'Completed' %}
+                        <a href="{{ url_for('doctor.view_record', apt_id=apt.apt_id) }}" class="btn btn-sm btn-outline-primary rounded-pill fw-bold">View Record</a>
+                        <a href="{{ url_for('doctor.edit_record', apt_id=apt.apt_id) }}" class="btn btn-sm btn-outline-secondary rounded-pill"><i class="fas fa-edit"></i></a>
+                    {% elif apt.slot == 'Attended' %}
+                        <a href="{{ url_for('doctor.add_record', apt_id=apt.apt_id) }}" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark"><i class="fas fa-notes-medical me-1"></i> Add Rx</a>
+                    {% elif apt.slot == 'Scheduled' %}
+                        <form action="{{ url_for('doctor.cancel_apt', apt_id=apt.apt_id) }}" method="POST" class="m-0" onsubmit="return confirm('Cancel this appointment?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold">Cancel</button>
+                        </form>
+                    {% endif %}
+                {% else %}
+                    <!-- PATIENT & ADMIN ACTIONS -->
+                    {% if apt.apt_id in prescribed_apt_ids or apt.slot == 'Completed' %}
+                        <a href="{{ url_for('doctor.view_record', apt_id=apt.apt_id) }}" class="btn btn-sm btn-primary rounded-pill fw-bold"><i class="fas fa-file-medical me-1"></i> Rx</a>
+                        
+                        {% if current_user.usertype == 'Patient' %}
+                            <!-- 🚨 CONDITIONAL BILLING BUTTONS FOR PATIENT 🚨 -->
+                            {% if apt.billing and apt.billing.status == 'Paid' %}
+                                <a href="{{ url_for('patient.my_bills') }}" class="btn btn-sm btn-outline-success rounded-pill fw-bold shadow-sm">
+                                    <i class="fas fa-file-invoice-dollar me-1"></i> Receipt
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('patient.my_bills') }}" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark shadow-sm">
+                                    <i class="fas fa-credit-card me-1"></i>  Invoice 
+                                </a>
+                            {% endif %}
+                              
+                        {% elif current_user.usertype == 'Admin' %}
+                            <!-- 🚨 CONDITIONAL BILLING BUTTONS FOR ADMIN 🚨 -->
+                            {% if apt.billing and apt.billing.status == 'Paid' %}
+                                <a href="{{ url_for('admin.admin_financials') }}" class="btn btn-sm btn-outline-success rounded-pill fw-bold">
+                                    <i class="fas fa-receipt me-1"></i> Paid
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('admin.admin_financials') }}" class="btn btn-sm btn-outline-warning rounded-pill fw-bold">
+                                    <i class="fas fa-receipt me-1"></i> Unpaid
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                              
+                    {% elif apt.slot == 'Scheduled' %}
+                        <form action="{{ url_for('doctor.cancel_apt', apt_id=apt.apt_id) }}" method="POST" class="m-0" onsubmit="return confirm('Cancel your appointment?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold"><i class="fas fa-times me-1"></i> Cancel</button>
+                        </form>
+                    {% else %}
+                        <span class="text-muted small fst-italic">No actions</span>
+                    {% endif %}
+                {% endif %}
+              </div>
+            </td>
             </tr>
           {% else %}
             <tr id="noRecordsInitial">

@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
-from models import db, User, Appointments, Doctors, AuditLog
+from models import db, User, Appointments, Doctors, AuditLog, Billing
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -379,3 +379,23 @@ def admin_delete_staff():
         flash('Administrator account removed successfully.', 'success')
 
     return redirect(url_for('admin.admin_staff'))
+
+
+@admin_bp.route('/financials')
+@login_required
+def admin_financials():
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('main.index'))
+
+    # Fetch all bills across the whole hospital
+    all_bills = Billing.query.order_by(Billing.issued_on.desc()).all()
+    
+    # Calculate some quick revenue stats for the dashboard
+    total_collected = sum(bill.amount for bill in all_bills if bill.status == 'Paid')
+    pending_revenue = sum(bill.amount for bill in all_bills if bill.status == 'Unpaid')
+    
+    return render_template('admin/admin_financials.html', 
+                           bills=all_bills, 
+                           total_collected=total_collected, 
+                           pending_revenue=pending_revenue)

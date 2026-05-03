@@ -96,8 +96,9 @@ Admin Control Center | Hospital Management System
         <p class="opacity-75 mb-0 fs-5">Overview of hospital statistics and recent system activity.</p>
       </div>
       <div class="col-md-4 text-md-end mt-3 mt-md-0">
-        <a href="/details" class="btn btn-outline-light rounded-pill fw-bold px-4 py-2">
-          <i class="fas fa-list-alt me-2"></i>Full Audit Logs
+        <!-- 🚨 CHANGED: Now points to the Financials dashboard using url_for -->
+        <a href="{{ url_for('admin.admin_financials') }}" class="btn btn-outline-light rounded-pill fw-bold px-4 py-2">
+          <i class="fas fa-file-invoice-dollar me-2"></i>Financials & Billing
         </a>
       </div>
     </div>
@@ -123,7 +124,7 @@ Admin Control Center | Hospital Management System
     
     <!-- Appointments -->
     <div class="col-lg-3 col-md-6">
-      <a href="/admin/appointments" class="text-decoration-none">
+      <a href="{{ url_for('admin.admin_appointments') }}" class="text-decoration-none">
         <div class="stat-card grad-blue text-white p-4 h-100 d-flex flex-column justify-content-between shadow-sm">
           <div class="d-flex justify-content-between align-items-start mb-4">
             <h6 class="text-uppercase fw-bold mb-0" style="font-size: 13px; letter-spacing: 1px; color: rgba(255,255,255,0.85);">Appointments</h6>
@@ -136,7 +137,7 @@ Admin Control Center | Hospital Management System
 
     <!-- Doctors -->
     <div class="col-lg-3 col-md-6">
-      <a href="/admin/doctors" class="text-decoration-none">
+      <a href="{{ url_for('admin.admin_doctors') }}" class="text-decoration-none">
         <div class="stat-card grad-emerald text-white p-4 h-100 d-flex flex-column justify-content-between shadow-sm">
           <div class="d-flex justify-content-between align-items-start mb-4">
             <h6 class="text-uppercase fw-bold mb-0" style="font-size: 13px; letter-spacing: 1px; color: rgba(255,255,255,0.85);">Doctors</h6>
@@ -149,7 +150,7 @@ Admin Control Center | Hospital Management System
 
     <!-- Patients -->
     <div class="col-lg-3 col-md-6">
-      <a href="/admin/patients" class="text-decoration-none">
+      <a href="{{ url_for('admin.admin_patients') }}" class="text-decoration-none">
         <div class="stat-card grad-cyan text-white p-4 h-100 d-flex flex-column justify-content-between shadow-sm">
           <div class="d-flex justify-content-between align-items-start mb-4">
             <h6 class="text-uppercase fw-bold mb-0" style="font-size: 13px; letter-spacing: 1px; color: rgba(255,255,255,0.85);">Patients</h6>
@@ -162,7 +163,7 @@ Admin Control Center | Hospital Management System
 
     <!-- System Staff -->
     <div class="col-lg-3 col-md-6">
-      <a href="/admin/staff" class="text-decoration-none">
+      <a href="{{ url_for('admin.admin_staff') }}" class="text-decoration-none">
         <div class="stat-card grad-purple text-white p-4 h-100 d-flex flex-column justify-content-between shadow-sm">
           <div class="d-flex justify-content-between align-items-start mb-4">
             <h6 class="text-uppercase fw-bold mb-0" style="font-size: 13px; letter-spacing: 1px; color: rgba(255,255,255,0.85);">System Staff</h6>
@@ -227,7 +228,8 @@ Admin Control Center | Hospital Management System
           </table>
         </div>
         <div class="bg-light text-center py-3 border-top mt-auto">
-            <a href="/details" class="text-decoration-none fw-bold" style="color: var(--hms-teal);">View Complete Audit Log <i class="fas fa-arrow-right ms-1"></i></a>
+            <!-- 🚨 CHANGED: Fixed dynamic URL for details route -->
+            <a href="{{ url_for('admin.details') }}" class="text-decoration-none fw-bold" style="color: var(--hms-teal);">View Complete Audit Log <i class="fas fa-arrow-right ms-1"></i></a>
         </div>
       </div>
     </div>

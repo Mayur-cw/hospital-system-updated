@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Hospital Financials | Admin{% endblock %}
+
+{% block body %}
+<style>
+  .stat-filter-card {
+    border: none; border-radius: 20px; cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    position: relative; overflow: hidden;
+  }
+  .stat-filter-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+  .stat-filter-card.inactive-filter { filter: grayscale(80%) opacity(0.4); transform: scale(0.96); }
+
+  .grad-all { background: linear-gradient(135deg, #0b1d35 0%, #1e293b 100%); }
+
+  .status-badge { font-size: 11px; font-weight: 800; text-transform: uppercase; padding: 6px 12px; border-radius: 50px; }
+  .status-paid { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+  .status-unpaid { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+</style>
+
+<div class="container mt-5 mb-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="brand-font fw-bold text-dark mb-0"><i class="fas fa-file-invoice-dollar text-primary me-2"></i>Revenue & Billing</h2>
+    <span class="badge bg-secondary rounded-pill px-3" id="rowCountLabel">{{ bills | length }} Records</span>
+  </div>
+  
+  <!-- Rearranged 3-Column Layout: Gross -> Paid -> Unpaid -->
+  <div class="row mb-5 g-4">
+    <!-- Card 1: Gross (All Transactions) -->
+    <div class="col-lg-4">
+      <div class="stat-filter-card grad-all text-white p-4 h-100" id="filter-All" onclick="filterBills('All')">
+        <h6 class="text-uppercase fw-bold opacity-75 small">Gross Revenue</h6>
+        <h2 class="mb-0 fw-bold">₹{{ total_collected + pending_revenue }}</h2>
+        <div class="mt-2 small opacity-75"><i class="fas fa-list me-1"></i> All Transactions</div>
+      </div>
+    </div>
+
+    <!-- Card 2: Paid -->
+    <div class="col-lg-4">
+      <div class="stat-filter-card bg-success text-white p-4 h-100" id="filter-Paid" onclick="filterBills('Paid')">
+        <h6 class="text-uppercase fw-bold opacity-75 small">Total Collected</h6>
+        <h2 class="mb-0 fw-bold">₹{{ total_collected }}</h2>
+        <div class="mt-2 small opacity-75"><i class="fas fa-check-circle me-1"></i> Paid Invoices</div>
+      </div>
+    </div>
+
+    <!-- Card 3: Unpaid -->
+    <div class="col-lg-4">
+      <div class="stat-filter-card bg-warning text-dark p-4 h-100" id="filter-Unpaid" onclick="filterBills('Unpaid')">
+        <h6 class="text-uppercase fw-bold opacity-75 small">Pending Revenue</h6>
+        <h2 class="mb-0 fw-bold">₹{{ pending_revenue }}</h2>
+        <div class="mt-2 small opacity-75"><i class="fas fa-clock me-1"></i> Unpaid Invoices</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Billing Table -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
+        <span class="fw-bold text-muted small text-uppercase"><i class="fas fa-history me-1"></i>Financial Record Log</span>
+        <button class="btn btn-sm btn-outline-secondary rounded-pill fw-bold" onclick="filterBills('All')">Reset View</button>
+    </div>
+    <div class="table-responsive p-0">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-white">
+          <tr class="text-muted small text-uppercase" style="font-size: 11px; letter-spacing: 1px;">
+            <th class="ps-4">Bill ID</th>
+            <th>Patient</th>
+            <th>Consultation</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th class="pe-4 text-end">Generated On</th>
+          </tr>
+        </thead>
+        <tbody id="billingTableBody">
+          {% for bill in bills %}
+          <tr class="bill-row" data-status="{{ bill.status }}">
+            <td class="ps-4 fw-bold text-muted">#{{ bill.bill_id }}</td>
+            <td class="fw-bold text-dark">{{ bill.appointment.patient.username }}</td>
+            <td>
+                <div class="fw-bold" style="font-size: 13px;">Dr. {{ bill.appointment.doctor }}</div>
+                <div class="text-muted small">{{ bill.appointment.dept }}</div>
+            </td>
+            <td class="fw-bold text-dark">₹{{ bill.amount }}</td>
+            <td>
+              {% if bill.status == 'Paid' %}
+                <span class="status-badge status-paid"><i class="fas fa-check-circle me-1"></i>Paid</span>
+              {% else %}
+                <span class="status-badge status-unpaid"><i class="fas fa-exclamation-circle me-1"></i>Unpaid</span>
+              {% endif %}
+            </td>
+            <td class="pe-4 text-end small text-muted">{{ bill.issued_on.strftime('%Y-%m-%d') }}</td>
+          </tr>
+          {% endfor %}
+          <tr id="emptyMsg" style="display: none;">
+            <td colspan="6" class="text-center py-5 text-muted">
+                <i class="fas fa-filter fa-3x mb-3 opacity-25"></i>
+                <h5 class="fw-bold">No records match this status</h5>
+                <button class="btn btn-link text-decoration-none" onclick="filterBills('All')">Show all results</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function filterBills(targetStatus) {
+    const cards = ['Paid', 'Unpaid', 'All'];
+    cards.forEach(status => {
+      const card = document.getElementById('filter-' + status);
+      if (targetStatus === status) {
+        card.classList.remove('inactive-filter');
+      } else {
+        card.classList.add('inactive-filter');
+      }
+    });
+
+    const rows = document.querySelectorAll('.bill-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const rowStatus = row.getAttribute('data-status');
+      if (targetStatus === 'All' || rowStatus === targetStatus) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    document.getElementById('rowCountLabel').innerText = visibleCount + ' Records';
+    document.getElementById('emptyMsg').style.display = (visibleCount === 0) ? '' : 'none';
+  }
+</script>
+{% endblock %}
