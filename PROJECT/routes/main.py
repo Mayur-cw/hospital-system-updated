@@ -100,7 +100,7 @@ def index():
     return render_template('index.html')
 
 @main_bp.route('/doctors', methods=['GET'])
-@login_required
+
 def doctors():
     # 🎓 UPGRADE: Use the SQLAlchemy relationship to map the name from the User table
     raw_doctors = Doctors.query.all()
