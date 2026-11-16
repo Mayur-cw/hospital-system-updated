@@ -65,25 +65,60 @@ Login | Hospital Management System
           {% if demo_only %}
           <!-- Synthetic Demo Credentials Box -->
           <div class="mt-4 pt-3 border-top">
-            <div class="small fw-bold text-muted text-uppercase mb-2 text-center" style="letter-spacing: 0.05em;">
-              <i class="fas fa-bolt text-warning me-1"></i> Quick 1-Click Demo Login
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="small fw-bold text-muted text-uppercase" style="letter-spacing: 0.05em;">
+                <i class="fas fa-bolt text-warning me-1"></i> Quick 1-Click Demo Login
+              </span>
+              <span class="badge bg-light text-muted border">Synthetic IDs</span>
             </div>
-            <div class="d-grid gap-2">
-              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-2 px-3 font-monospace d-flex justify-content-between align-items-center" onclick="fillLogin('admin@hospital.local', 'AdminPass@2026')">
-                <span><span class="badge bg-dark me-2">Admin</span> admin@hospital.local</span>
+            
+            <!-- Administration -->
+            <div class="mb-2">
+              <button type="button" class="btn btn-outline-dark btn-sm text-start py-2 px-3 font-monospace w-100 d-flex justify-content-between align-items-center rounded-3 shadow-none hover-shadow" onclick="fillLogin('admin@hospital.local', 'AdminPass@2026')">
+                <span><span class="badge bg-dark me-2">Admin</span> <strong>admin@hospital.local</strong> (Dr. Amit Mehta)</span>
                 <i class="fas fa-arrow-right text-muted small"></i>
               </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-2 px-3 font-monospace d-flex justify-content-between align-items-center" onclick="fillLogin('dr.sharma@hospital.local', 'DoctorPass@2026')">
-                <span><span class="badge bg-primary me-2">Doctor</span> dr.sharma@hospital.local</span>
-                <i class="fas fa-arrow-right text-muted small"></i>
+            </div>
+
+            <!-- Doctors / Specialists -->
+            <div class="small fw-bold text-muted text-uppercase mt-3 mb-1" style="font-size: 11px;">
+              <i class="fas fa-user-md text-primary me-1"></i> Specialist Doctors
+            </div>
+            <div class="d-grid gap-1 mb-2">
+              <button type="button" class="btn btn-outline-primary btn-sm text-start py-1 px-3 font-monospace d-flex justify-content-between align-items-center rounded-3 shadow-none" onclick="fillLogin('dr.sharma@hospital.local', 'DoctorPass@2026')">
+                <span><span class="badge bg-primary me-2">Cardiology</span> dr.sharma@hospital.local (Dr. Rajesh)</span>
+                <i class="fas fa-sign-in-alt text-primary small"></i>
               </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-2 px-3 font-monospace d-flex justify-content-between align-items-center" onclick="fillLogin('receptionist@hospital.local', 'StaffPass@2026')">
-                <span><span class="badge bg-info text-white me-2">Reception</span> receptionist@hospital.local</span>
-                <i class="fas fa-arrow-right text-muted small"></i>
+              <button type="button" class="btn btn-outline-primary btn-sm text-start py-1 px-3 font-monospace d-flex justify-content-between align-items-center rounded-3 shadow-none" onclick="fillLogin('dr.patel@hospital.local', 'DoctorPass@2026')">
+                <span><span class="badge bg-info text-dark me-2">Dermatology</span> dr.patel@hospital.local (Dr. Ananya)</span>
+                <i class="fas fa-sign-in-alt text-primary small"></i>
               </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-2 px-3 font-monospace d-flex justify-content-between align-items-center" onclick="fillLogin('patient1@hospital.local', 'PatientPass@2026')">
-                <span><span class="badge bg-success me-2">Patient</span> patient1@hospital.local</span>
-                <i class="fas fa-arrow-right text-muted small"></i>
+              <button type="button" class="btn btn-outline-primary btn-sm text-start py-1 px-3 font-monospace d-flex justify-content-between align-items-center rounded-3 shadow-none" onclick="fillLogin('dr.verma@hospital.local', 'DoctorPass@2026')">
+                <span><span class="badge bg-secondary me-2">Medicine / ICU</span> dr.verma@hospital.local (Dr. Vikram)</span>
+                <i class="fas fa-sign-in-alt text-primary small"></i>
+              </button>
+            </div>
+
+            <!-- Patients -->
+            <div class="small fw-bold text-muted text-uppercase mt-3 mb-1" style="font-size: 11px;">
+              <i class="fas fa-user text-success me-1"></i> Demo Patients
+            </div>
+            <div class="d-grid gap-1">
+              <button type="button" class="btn btn-outline-success btn-sm text-start py-1 px-3 font-monospace d-flex justify-content-between align-items-center rounded-3 shadow-none" onclick="fillLogin('patient1@hospital.local', 'PatientPass@2026')">
+                <span><span class="badge bg-success me-2">OPD</span> patient1@hospital.local (Aarav Mehta)</span>
+                <i class="fas fa-sign-in-alt text-success small"></i>
+              </button>
+              <button type="button" class="btn btn-outline-success btn-sm text-start py-1 px-3 font-monospace d-flex justify-content-between align-items-center rounded-3 shadow-none" onclick="fillLogin('patient2@hospital.local', 'PatientPass@2026')">
+                <span><span class="badge bg-success me-2">VIP Room</span> patient2@hospital.local (Pooja Nair)</span>
+                <i class="fas fa-sign-in-alt text-success small"></i>
+              </button>
+              <button type="button" class="btn btn-outline-success btn-sm text-start py-1 px-3 font-monospace d-flex justify-content-between align-items-center rounded-3 shadow-none" onclick="fillLogin('patient3@hospital.local', 'PatientPass@2026')">
+                <span><span class="badge bg-warning text-dark me-2">ICU Bed</span> patient3@hospital.local (Sunil Deshmukh)</span>
+                <i class="fas fa-sign-in-alt text-success small"></i>
+              </button>
+              <button type="button" class="btn btn-outline-success btn-sm text-start py-1 px-3 font-monospace d-flex justify-content-between align-items-center rounded-3 shadow-none" onclick="fillLogin('mayur132005@gmail.com', 'PatientPass@2026')">
+                <span><span class="badge bg-dark me-2">Patient</span> mayur132005@gmail.com (Mayur W.)</span>
+                <i class="fas fa-sign-in-alt text-success small"></i>
               </button>
             </div>
           </div>

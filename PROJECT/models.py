@@ -111,7 +111,7 @@ class AuditLog(db.Model):
     tid       = db.Column(db.Integer, primary_key=True)
     apt_id    = db.Column(db.Integer, nullable=True)
     user_id   = db.Column(db.Integer, nullable=False) 
-    action    = db.Column(db.String(100), nullable=False)
+    action    = db.Column(db.String(255), nullable=False)
     timestamp = db.Column(db.String(50), nullable=False)
 
 
