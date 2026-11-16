@@ -12,20 +12,29 @@ patient_bp = Blueprint('patient', __name__)
 
 # ── UTILITIES ────────────────────────────────────────────────────────
 
-@patient_bp.route('/get_booked_slots', methods=['POST'])
-@login_required
+@patient_bp.route('/get_booked_slots', methods=['GET', 'POST'])
 def get_booked_slots():
-    data = request.get_json() or {}
-    req_date = data.get('date')
-    req_doctor = data.get('doctor')
-    current_apt_id = data.get('current_pid') 
+    """Return booked time slots for a given doctor and date to prevent booking collisions."""
+    if request.method == 'GET':
+        req_date = request.args.get('date', '').strip()
+        req_doctor = request.args.get('doctor', '').strip()
+        current_apt_id = request.args.get('current_pid')
+    else:
+        data = request.get_json(silent=True) or request.form or {}
+        req_date = data.get('date', '').strip() if data.get('date') else ''
+        req_doctor = data.get('doctor', '').strip() if data.get('doctor') else ''
+        current_apt_id = data.get('current_pid')
 
     if not req_date or not req_doctor:
         return jsonify({'booked_times': []})
 
     query = Appointments.query.filter_by(date=req_date, doctor=req_doctor)
     if current_apt_id:
-        query = query.filter(Appointments.apt_id != current_apt_id)
+        try:
+            current_apt_id = int(current_apt_id)
+            query = query.filter(Appointments.apt_id != current_apt_id)
+        except (ValueError, TypeError):
+            pass
 
     bookings = query.all()
     booked_times = [b.time for b in bookings if b.slot not in ['Cancelled', 'Missed']]

@@ -182,14 +182,15 @@ Edit Booking | Hospital Management System
 
     slotContainer.innerHTML = '<span class="text-primary small"><i class="fas fa-spinner fa-spin me-1"></i> Loading availability...</span>';
 
-    fetch('/get_booked_slots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            date: dateStr, 
-            doctor: doctorStr,
-            current_pid: "{{ posts.apt_id }}" 
-        })
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const lookupUrl = `/get_booked_slots?date=${encodeURIComponent(dateStr)}&doctor=${encodeURIComponent(doctorStr)}&current_pid={{ posts.apt_id }}`;
+
+    fetch(lookupUrl, {
+        method: 'GET',
+        headers: { 
+            'Accept': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
     })
     .then(response => response.json())
     .then(data => {

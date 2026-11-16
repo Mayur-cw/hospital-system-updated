@@ -66,27 +66,34 @@ Login | Hospital Management System
           <!-- Synthetic Demo Credentials Box -->
           <div class="mt-4 pt-3 border-top">
             <div class="small fw-bold text-muted text-uppercase mb-2 text-center" style="letter-spacing: 0.05em;">
-              <i class="fas fa-key text-warning me-1"></i> Quick Demo Access
+              <i class="fas fa-bolt text-warning me-1"></i> Quick 1-Click Demo Login
             </div>
-            <div class="d-grid gap-1">
-              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-1 px-2 font-monospace" style="font-size: 0.78rem;" onclick="fillLogin('admin@hospital.local', 'AdminPass@2026')">
-                <span class="badge bg-dark me-1">Admin</span> admin@hospital.local
+            <div class="d-grid gap-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-2 px-3 font-monospace d-flex justify-content-between align-items-center" onclick="fillLogin('admin@hospital.local', 'AdminPass@2026')">
+                <span><span class="badge bg-dark me-2">Admin</span> admin@hospital.local</span>
+                <i class="fas fa-arrow-right text-muted small"></i>
               </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-1 px-2 font-monospace" style="font-size: 0.78rem;" onclick="fillLogin('dr.sharma@hospital.local', 'DoctorPass@2026')">
-                <span class="badge bg-primary me-1">Doctor</span> dr.sharma@hospital.local
+              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-2 px-3 font-monospace d-flex justify-content-between align-items-center" onclick="fillLogin('dr.sharma@hospital.local', 'DoctorPass@2026')">
+                <span><span class="badge bg-primary me-2">Doctor</span> dr.sharma@hospital.local</span>
+                <i class="fas fa-arrow-right text-muted small"></i>
               </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-1 px-2 font-monospace" style="font-size: 0.78rem;" onclick="fillLogin('receptionist@hospital.local', 'StaffPass@2026')">
-                <span class="badge bg-info text-white me-1">Reception</span> receptionist@hospital.local
+              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-2 px-3 font-monospace d-flex justify-content-between align-items-center" onclick="fillLogin('receptionist@hospital.local', 'StaffPass@2026')">
+                <span><span class="badge bg-info text-white me-2">Reception</span> receptionist@hospital.local</span>
+                <i class="fas fa-arrow-right text-muted small"></i>
               </button>
-              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-1 px-2 font-monospace" style="font-size: 0.78rem;" onclick="fillLogin('patient1@hospital.local', 'PatientPass@2026')">
-                <span class="badge bg-success me-1">Patient</span> patient1@hospital.local
+              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-2 px-3 font-monospace d-flex justify-content-between align-items-center" onclick="fillLogin('patient1@hospital.local', 'PatientPass@2026')">
+                <span><span class="badge bg-success me-2">Patient</span> patient1@hospital.local</span>
+                <i class="fas fa-arrow-right text-muted small"></i>
               </button>
             </div>
           </div>
           <script>
             function fillLogin(email, pass) {
-              document.getElementById('email').value = email;
-              document.getElementById('password').value = pass;
+              const emailEl = document.getElementById('email');
+              const passEl = document.getElementById('password');
+              emailEl.value = email;
+              passEl.value = pass;
+              emailEl.form.submit();
             }
           </script>
           {% endif %}

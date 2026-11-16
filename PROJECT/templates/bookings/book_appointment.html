@@ -596,10 +596,15 @@ Book Appointment | Hospital Management System
 
     slotContainer.innerHTML = '<div class="text-center text-primary w-100 fw-bold py-4" style="grid-column: 1 / -1;"><i class="fas fa-circle-notch fa-spin me-2"></i> Scanning schedule...</div>';
 
-    fetch('/get_booked_slots', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: dateStr, doctor: doctorStr })
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const lookupUrl = `/get_booked_slots?date=${encodeURIComponent(dateStr)}&doctor=${encodeURIComponent(doctorStr)}`;
+
+    fetch(lookupUrl, {
+      method: 'GET',
+      headers: { 
+        'Accept': 'application/json',
+        'X-CSRFToken': csrfToken
+      }
     })
     .then(r => r.json())
     .then(data => {

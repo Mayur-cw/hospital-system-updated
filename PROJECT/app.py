@@ -57,6 +57,10 @@ def create_app(config_class=Config):
     app.register_blueprint(reception_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
+    # Exempt idempotent slot lookup from CSRF
+    if 'patient.get_booked_slots' in app.view_functions:
+        csrf.exempt(app.view_functions['patient.get_booked_slots'])
+
     # Global Context Processor
     @app.context_processor
     def inject_globals():
