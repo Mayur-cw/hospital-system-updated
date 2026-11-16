@@ -307,7 +307,7 @@ My Appointments | Hospital Management System
                   {% else %}
                       <!-- PATIENT & ADMIN ACTIONS -->
                       {% if apt.apt_id in prescribed_apt_ids or apt.slot == 'Completed' %}
-                          <a href="{{ url_for('doctor.view_record', apt_id=apt.apt_id) }}" class="btn btn-sm btn-primary rounded-pill fw-bold btn-action-fixed"><i class="fas fa-file-medical me-1"></i> Rx</a>
+                          <a href="{{ url_for('doctor.view_record', apt_id=apt.apt_id) }}" class="btn btn-sm btn-primary rounded-pill fw-bold btn-action-fixed"><i class="fas fa-file-prescription me-1"></i> View Rx</a>
                           
                           {% if current_user.usertype == 'Patient' %}
                               <!-- 🚨 PATIENT BILLING BUTTONS (SAFELY WRAPPED) 🚨 -->

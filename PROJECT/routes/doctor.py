@@ -16,12 +16,6 @@ doctor_bp = Blueprint('doctor', __name__)
 def appointments_workspace():
     return redirect(url_for('patient.dashboard'))
 
-@doctor_bp.route('/view_record/<int:rec_id>')
-@doctor_bp.route('/doctor/view_record/<int:rec_id>')
-@login_required
-def view_record_redirect(rec_id):
-    return redirect(url_for('patient.view_record', id=rec_id))
-
 @doctor_bp.route('/cancel_apt/<int:apt_id>', methods=['POST'])
 @login_required
 def cancel_apt(apt_id):
@@ -158,6 +152,7 @@ def discharge_patient():
     return redirect(url_for('doctor.my_admissions'))
 
 @doctor_bp.route('/view_record/<int:apt_id>')
+@doctor_bp.route('/doctor/view_record/<int:apt_id>')
 @login_required
 def view_record(apt_id):
     appointment = Appointments.query.get_or_404(apt_id)
