@@ -869,26 +869,16 @@ Home | Hospital Management System
 </style>
 
 <!-- =========================================================== -->
-<!-- 🏥 PUBLIC / LOGGED OUT VIEW (WORLD-CLASS HOSPITAL PORTAL) -->
+<!-- 🏥 PUBLIC / LOGGED OUT VIEW (ORIGINAL CLEAN LANDING)        -->
 <!-- =========================================================== -->
 {% else %}
 
 <style>
-  /* ── 24x7 EMERGENCY DISPATCH TICKER ── */
-  .emergency-ribbon {
-    background: linear-gradient(90deg, #991b1b 0%, #b91c1c 50%, #991b1b 100%);
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding: 10px 0;
-    box-shadow: 0 4px 15px rgba(185, 28, 28, 0.25);
-  }
-
-  /* ── PREMIER HERO CONTAINER ── */
+  /* Premium Centered Hero with Background Image */
   .public-hero-centered {
     position: relative;
-    padding: 90px 0 140px; 
+    /* Clean Spacing */
+    padding: 70px 0px 0px; 
     background: url('static/images/bg1.jpg') center/cover no-repeat;
     background-attachment: fixed;
     text-align: center;
@@ -898,7 +888,7 @@ Home | Hospital Management System
   .hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(13, 148, 136, 0.65) 100%);
+    background: linear-gradient(135deg, rgba(11, 29, 53, 0.75) 0%, rgba(0, 201, 167, 0.45) 100%);
     z-index: 1;
   }
 
@@ -907,42 +897,42 @@ Home | Hospital Management System
     z-index: 2;
   }
 
-  /* ── ELEVATED TRI-CARD PILLARS ── */
+  /* Upgraded Overlapping Cards */
   .hms-card-overlap {
     background: #ffffff;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    border-radius: 24px;
-    padding: 40px 32px;
+    border: none;
+    border-radius: 20px;
+    padding: 40px 30px;
     text-align: center;
     height: 100%;
     display: flex;
     flex-direction: column;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 20px 40px -15px rgba(0,0,0,0.08);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
   }
 
   .hms-card-overlap:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.18);
+    transform: translateY(-12px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
   }
 
   .card-icon-wrapper {
-    width: 80px;
-    height: 80px;
-    border-radius: 20px;
+    width: 75px;
+    height: 75px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    font-size: 30px;
     margin: 0 auto 24px;
     transition: transform 0.3s ease;
   }
 
   .hms-card-overlap:hover .card-icon-wrapper {
-    transform: scale(1.1) rotate(2deg);
+    transform: scale(1.1);
   }
 
-  /* ── HERO BUTTONS ── */
+  /* 🚨 HERO BUTTONS: CLEAR LOGIN & SIGNUP IN FRONT 🚨 */
   .hero-btn-primary {
     background: #ffffff;
     color: var(--hms-navy);
@@ -954,141 +944,75 @@ Home | Hospital Management System
     font-weight: 700;
     text-decoration: none;
     transition: all 0.2s ease;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25); 
+    display: inline-flex;
+    align-items: center;
   }
   
   .hero-btn-primary:hover {
     background: #f8f9fa;
     transform: translateY(-3px);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.35);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.3);
     color: var(--hms-teal);
   }
 
   .hero-btn-outline {
-    background: rgba(15, 23, 42, 0.45); 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(11, 29, 53, 0.4); 
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: #ffffff;
-    border: 2px solid rgba(255,255,255,0.8);
-    padding: 12px 34px;
+    border: 2px solid #ffffff;
+    padding: 12px 36px;
     border-radius: 50px;
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 600;
     text-decoration: none;
     transition: all 0.2s ease;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    display: inline-flex;
+    align-items: center;
   }
 
   .hero-btn-outline:hover {
     border-color: #ffffff;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.15);
     transform: translateY(-3px);
     color: #ffffff;
-  }
-
-  .hero-btn-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-    color: #ffffff;
-    border: none;
-    padding: 14px 34px;
-    border-radius: 50px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
-  }
-  .hero-btn-danger:hover {
-    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-    color: #ffffff;
-    transform: translateY(-3px);
-  }
-
-  /* ── STATS COUNTER STRIP ── */
-  .trust-strip {
-    background: #ffffff;
-    border-top: 1px solid var(--hms-border);
-    border-bottom: 1px solid var(--hms-border);
-    padding: 35px 0;
-  }
-  .stat-number {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: clamp(32px, 3.5vw, 42px);
-    font-weight: 800;
-    color: var(--hms-navy);
-    line-height: 1;
-  }
-
-  /* ── SPECIALTY DEPARTMENT CARD ── */
-  .specialty-card {
-    background: #ffffff;
-    border: 1px solid var(--hms-border);
-    border-radius: 20px;
-    padding: 28px;
-    height: 100%;
-    transition: all 0.25s ease;
-  }
-  .specialty-card:hover {
-    transform: translateY(-5px);
-    border-color: var(--hms-teal);
-    box-shadow: 0 15px 35px rgba(13, 148, 136, 0.1);
   }
 </style>
 
-<!-- 🚨 24x7 EMERGENCY & TRAUMA TICKER 🚨 -->
-<div class="emergency-ribbon">
-  <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div class="d-flex align-items-center gap-2">
-      <span class="badge bg-white text-danger fw-bold px-2 py-1 text-uppercase" style="font-size: 10px; letter-spacing: 1px;">24/7 EMERGENCY</span>
-      <span>Trauma Hotline & Ambulance: <strong>+91 (0240) 233 1111</strong> or <strong>108</strong></span>
-    </div>
-    <div class="d-none d-md-flex align-items-center gap-3 small">
-      <span><i class="fas fa-heartbeat me-1"></i> Cardiac Cath Lab 24x7</span>
-      <span>&bull;</span>
-      <span><i class="fas fa-procedures me-1"></i> ICU & Modular OT Active</span>
-      <span>&bull;</span>
-      <span><i class="fas fa-tint me-1"></i> Blood Bank Ready</span>
-    </div>
-  </div>
-</div>
-
-<!-- 🚨 PRESTIGIOUS HERO SECTION 🚨 -->
+<!-- 🚨 CENTERED HERO SECTION 🚨 -->
 <div class="public-hero-centered">
   <div class="hero-overlay"></div>
   
   <div class="container public-hero-content">
     
-    <!-- Accreditation Pill -->
+    <!-- Top Pill -->
     <div class="anim-1 mb-4">
-      <span class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-pill text-white fw-bold shadow-sm" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(10px); font-size: 12px; letter-spacing: 1px;">
-        <i class="fas fa-certificate text-warning"></i>
-        <span>NABH ACCREDITED &bull; ISO 9001:2015 MULTI-SPECIALTY HOSPITAL</span>
+      <span class="d-inline-block px-4 py-2 rounded-pill text-white fw-bold shadow-sm" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(8px); font-size: 12px; letter-spacing: 0.5px;">
+        Dr. Hedgewar Memorial Hospital & Research Centre
       </span>
     </div>
     
     <!-- Main Title -->
-    <h1 class="public-hero-title anim-2 mb-3 text-white brand-font" style="font-size: clamp(38px, 5.5vw, 64px); letter-spacing: -1px; line-height: 1.15;">
-      HEDGEWAR HOSPITAL<br>
-      <span style="color: var(--hms-teal); text-shadow: 0 0 30px rgba(0,201,167,0.4);">Medical Center & Research Institute</span>
+    <h1 class="public-hero-title anim-2 mb-4 text-white brand-font" style="font-size: clamp(40px, 6vw, 65px); letter-spacing: -1px; line-height: 1.2;">
+      HOSPITAL MANAGEMENT<br>
+      <span style="color: var(--hms-teal); text-shadow: 0 0 20px rgba(0,201,167,0.4);">SYSTEM</span>
     </h1>
     
     <!-- Description -->
-    <p class="anim-3 mx-auto mb-5 text-white text-opacity-90" style="max-width: 750px; font-size: 19px; line-height: 1.6;">
-      Delivering compassionate, patient-first healing with 50+ board-certified super specialists, advanced modular surgical suites, 24x7 intensive care, and transparent healthcare operations.
+    <p class="anim-3 mx-auto mb-5 text-white opacity-75" style="max-width: 650px; font-size: 20px; line-height: 1.4;">
+      <i><b>Smart, Secure, and Seamless Hospital Management.</b></i>
     </p>
     
-    <!-- Action Buttons -->
-    <div class="d-flex justify-content-center gap-3 flex-wrap anim-4 mt-2 pb-2">
-      <a href="/login" class="hero-btn-primary">
-        <i class="fas fa-calendar-plus me-2 text-primary"></i>Book Consultation
+    <!-- Action Buttons: Clear Login and Signup in Front -->
+    <div class="d-flex justify-content-center gap-4 flex-wrap anim-4 mt-3 pb-3">
+      <a href="/signup" class="hero-btn-primary">
+        <i class="fas fa-user-plus me-2"></i>Create Account
       </a>
-      <a href="/doctors" class="hero-btn-outline">
-        <i class="fas fa-user-md me-2"></i>Find a Specialist
-      </a>
-      <a href="tel:108" class="hero-btn-danger">
-        <i class="fas fa-ambulance me-2"></i>Emergency: 108
+      <a href="/login" class="hero-btn-outline">
+        <i class="fas fa-sign-in-alt me-2"></i>Login
       </a>
     </div>
   </div>
@@ -1103,254 +1027,95 @@ Home | Hospital Management System
   </div>
 </div>
 
-<!-- 🚨 LIFTED TRI-PILLAR HOSPITAL CARDS 🚨 -->
-<div class="container" style="margin-top: -85px; position: relative; z-index: 10; margin-bottom: 70px;">
+<!-- 🚨 LIFTED FEATURE CARDS 🚨 -->
+<div class="container" style="margin-top: -85px; position: relative; z-index: 10; margin-bottom: 80px;">
   <div class="row g-4 justify-content-center anim-4">
     
-    <!-- 1. 24x7 Emergency Care -->
-    <div class="col-md-4">
-      <div class="hms-card-overlap" style="border-top: 5px solid #ef4444;">
-        <div class="card-icon-wrapper" style="background:#fee2e2;color:#dc2626;">
-          <i class="fas fa-ambulance"></i>
-        </div>
-        <h4 class="brand-font fw-bold text-dark mb-2">24x7 Emergency & Trauma</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">
-          Immediate critical triage, multi-specialty trauma surgeons, dedicated resuscitation bays, and 24x7 cardiac catheterization readiness.
-        </p>
-        <a href="tel:108" class="btn w-100 py-2 rounded-pill mt-auto fw-bold text-white shadow-sm" style="background: #dc2626;">
-          <i class="fas fa-phone-alt me-1"></i> Emergency: 108
-        </a>
-      </div>
-    </div>
-
-    <!-- 2. Outpatient Scheduling -->
+    <!-- Smart Appointments -->
     <div class="col-md-4">
       <div class="hms-card-overlap" style="border-top: 5px solid var(--hms-teal);">
         <div class="card-icon-wrapper" style="background:var(--hms-teal-soft);color:#0f766e;">
           <i class="fas fa-calendar-check"></i>
         </div>
-        <h4 class="brand-font fw-bold text-dark mb-2">Specialist Consultations</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">
-          Direct conflict-free appointment booking across Cardiology, Orthopedics, Pediatrics, Dermatology, and Internal Medicine.
-        </p>
-        <a href="/login" class="btn w-100 py-2 rounded-pill mt-auto fw-bold text-white shadow-sm" style="background: var(--hms-teal);">
-          <i class="fas fa-calendar-plus me-1"></i> Book Appointment
-        </a>
+        <h4 class="brand-font fw-bold text-dark mb-3">Smart Appointments</h4>
+        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">Conflict-free slot booking seamlessly integrated with verified specialist doctors.</p>
+        <a href="/login" class="hms-btn hms-btn-ghost w-100 py-2 rounded-pill mt-auto" style="background: var(--hms-teal); color: white; border: none; box-shadow: 0 4px 10px rgba(0,201,167,0.3);">Login to Book</a>
       </div>
     </div>
 
-    <!-- 3. Inpatient & Digital Portal -->
+    <!-- Specialist Directory -->
     <div class="col-md-4">
       <div class="hms-card-overlap" style="border-top: 5px solid #3b82f6;">
         <div class="card-icon-wrapper" style="background:#eff6ff;color:#1d4ed8;">
-          <i class="fas fa-file-medical-alt"></i>
+          <i class="fas fa-user-md"></i>
         </div>
-        <h4 class="brand-font fw-bold text-dark mb-2">Inpatient Care & Portal</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">
-          View active room admissions, track tentative recovery, request discharge review, settle room bills, and access signed prescriptions.
-        </p>
-        <a href="/login" class="btn w-100 py-2 rounded-pill mt-auto fw-bold text-white shadow-sm" style="background: #3b82f6;">
-          <i class="fas fa-user-lock me-1"></i> Patient Portal Login
-        </a>
+        <h4 class="brand-font fw-bold text-dark mb-3">Specialist Directory</h4>
+        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">Browse our verified roster of medical professionals across Cardiology, Dermatology, and Medicine.</p>
+        <a href="/doctors" class="hms-btn w-100 py-2 rounded-pill mt-auto" style="background: #3b82f6; color: white; border: none; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">View Doctors</a>
+      </div>
+    </div>
+
+    <!-- Past Records -->
+    <div class="col-md-4">
+      <div class="hms-card-overlap" style="border-top: 5px solid #8b5cf6;">
+        <div class="card-icon-wrapper" style="background:#f5f3ff;color:#6d28d9;">
+          <i class="fas fa-notes-medical"></i>
+        </div>
+        <h4 class="brand-font fw-bold text-dark mb-3">Past Records</h4>
+        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">View your previous completed visits, signed clinical notes, and verified prescriptions.</p>
+        <a href="/login" class="hms-btn hms-btn-ghost w-100 py-2 rounded-pill mt-auto" style="background: #8b5cf6; color: white; border: none; box-shadow: 0 4px 10px rgba(139,92,246,0.3);">Login to View</a>
       </div>
     </div>
 
   </div>
 </div>
 
-<!-- 🚨 INSTITUTIONAL TRUST METRICS 🚨 -->
-<section class="trust-strip mb-5">
-  <div class="container">
-    <div class="row g-4 text-center">
-      <div class="col-6 col-md-3">
-        <div class="stat-number">50+</div>
-        <div class="text-muted small fw-bold text-uppercase mt-1" style="letter-spacing: 1px;">Super Specialists</div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="stat-number">150+</div>
-        <div class="text-muted small fw-bold text-uppercase mt-1" style="letter-spacing: 1px;">Inpatient & ICU Beds</div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="stat-number">99.4%</div>
-        <div class="text-muted small fw-bold text-uppercase mt-1" style="letter-spacing: 1px;">Clinical Recovery Index</div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="stat-number">24/7</div>
-        <div class="text-muted small fw-bold text-uppercase mt-1" style="letter-spacing: 1px;">Emergency & Diagnostics</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 🚨 CENTERS OF EXCELLENCE / SPECIALTY DEPARTMENTS 🚨 -->
-<div class="container mb-5 pb-3">
-  <div class="text-center mb-5">
-    <div class="badge bg-light text-primary rounded-pill px-3 py-2 fw-bold text-uppercase mb-2 shadow-sm">
-      <i class="fas fa-hospital-symbol me-1"></i> Clinical Centers of Excellence
-    </div>
-    <h2 class="brand-font fw-bold text-dark" style="font-size: clamp(28px, 4vw, 42px);">
-      Comprehensive Multi-Specialty Care
-    </h2>
-    <p class="text-muted mx-auto" style="max-width: 600px;">
-      State-of-the-art diagnostic facilities and internationally trained clinicians delivering advanced medical, surgical, and intensive care.
-    </p>
-  </div>
-
-  <div class="row g-4">
-    <!-- Department 1: Cardiology -->
-    <div class="col-md-6 col-lg-4">
-      <div class="specialty-card">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <div class="rounded-3 d-flex align-items-center justify-content-center text-danger" style="width: 50px; height: 50px; background: #fee2e2; font-size: 24px;">
-            <i class="fas fa-heartbeat"></i>
-          </div>
-          <div>
-            <h5 class="brand-font fw-bold text-dark mb-0">Cardiology & CCU</h5>
-            <small class="text-muted">Interventional & Preventive</small>
-          </div>
-        </div>
-        <p class="text-muted small mb-3" style="line-height: 1.6;">
-          Full-spectrum cardiac catheterization, coronary angiography, 2D echocardiography, and dedicated 24x7 Cardiac Intensive Care Unit.
-        </p>
-        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
-          View Specialists <i class="fas fa-arrow-right ms-1"></i>
-        </a>
-      </div>
-    </div>
-
-    <!-- Department 2: Critical Care -->
-    <div class="col-md-6 col-lg-4">
-      <div class="specialty-card">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <div class="rounded-3 d-flex align-items-center justify-content-center text-info" style="width: 50px; height: 50px; background: #e0f2fe; font-size: 24px;">
-            <i class="fas fa-procedures"></i>
-          </div>
-          <div>
-            <h5 class="brand-font fw-bold text-dark mb-0">Critical Care & ICU</h5>
-            <small class="text-muted">Intensive Life Support</small>
-          </div>
-        </div>
-        <p class="text-muted small mb-3" style="line-height: 1.6;">
-          Modular ICUs with laminar airflow, advanced invasive ventilators, continuous hemodynamic monitoring, and 24x7 intensivist coverage.
-        </p>
-        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
-          Explore Inpatient Care <i class="fas fa-arrow-right ms-1"></i>
-        </a>
-      </div>
-    </div>
-
-    <!-- Department 3: Orthopedics -->
-    <div class="col-md-6 col-lg-4">
-      <div class="specialty-card">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <div class="rounded-3 d-flex align-items-center justify-content-center text-warning" style="width: 50px; height: 50px; background: #fef3c7; font-size: 24px;">
-            <i class="fas fa-bone"></i>
-          </div>
-          <div>
-            <h5 class="brand-font fw-bold text-dark mb-0">Orthopedics & Trauma</h5>
-            <small class="text-muted">Joints & Reconstruction</small>
-          </div>
-        </div>
-        <p class="text-muted small mb-3" style="line-height: 1.6;">
-          Computer-assisted joint arthroplasty, arthroscopic keyhole surgery, pediatric orthopedics, and complex fracture management.
-        </p>
-        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
-          View Specialists <i class="fas fa-arrow-right ms-1"></i>
-        </a>
-      </div>
-    </div>
-
-    <!-- Department 4: Internal Medicine -->
-    <div class="col-md-6 col-lg-4">
-      <div class="specialty-card">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <div class="rounded-3 d-flex align-items-center justify-content-center text-success" style="width: 50px; height: 50px; background: #dcfce7; font-size: 24px;">
-            <i class="fas fa-stethoscope"></i>
-          </div>
-          <div>
-            <h5 class="brand-font fw-bold text-dark mb-0">Internal Medicine</h5>
-            <small class="text-muted">Diagnostic Therapeutics</small>
-          </div>
-        </div>
-        <p class="text-muted small mb-3" style="line-height: 1.6;">
-          Evidence-based diagnosis and management of infectious diseases, metabolic disorders, hypertension, diabetes, and geriatrics.
-        </p>
-        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
-          View Specialists <i class="fas fa-arrow-right ms-1"></i>
-        </a>
-      </div>
-    </div>
-
-    <!-- Department 5: Pediatrics -->
-    <div class="col-md-6 col-lg-4">
-      <div class="specialty-card">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <div class="rounded-3 d-flex align-items-center justify-content-center text-primary" style="width: 50px; height: 50px; background: #dbeafe; font-size: 24px;">
-            <i class="fas fa-baby"></i>
-          </div>
-          <div>
-            <h5 class="brand-font fw-bold text-dark mb-0">Pediatrics & NICU</h5>
-            <small class="text-muted">Neonatal & Child Health</small>
-          </div>
-        </div>
-        <p class="text-muted small mb-3" style="line-height: 1.6;">
-          Level-III Neonatal Intensive Care, high-risk newborn care, comprehensive immunization, pediatric pulmonology, and child development.
-        </p>
-        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
-          View Specialists <i class="fas fa-arrow-right ms-1"></i>
-        </a>
-      </div>
-    </div>
-
-    <!-- Department 6: Dermatology -->
-    <div class="col-md-6 col-lg-4">
-      <div class="specialty-card">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: #f3e8ff; color: #9333ea; font-size: 24px;">
-            <i class="fas fa-allergies"></i>
-          </div>
-          <div>
-            <h5 class="brand-font fw-bold text-dark mb-0">Dermatology</h5>
-            <small class="text-muted">Clinical & Phototherapy</small>
-          </div>
-        </div>
-        <p class="text-muted small mb-3" style="line-height: 1.6;">
-          Diagnosis and advanced treatment of acute skin infections, chronic psoriasis, allergy patch tests, and dermatosurgical care.
-        </p>
-        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
-          View Specialists <i class="fas fa-arrow-right ms-1"></i>
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 🚨 PATIENT & VISITOR ASSURANCE BANNER 🚨 -->
-<div class="container mb-5 pb-4">
-  <div class="p-5 rounded-4 text-white shadow-lg position-relative overflow-hidden" style="background: linear-gradient(135deg, var(--hms-navy) 0%, #1e293b 100%);">
-    <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size: 25px 25px; pointer-events: none;"></div>
+<!-- 🚨 DATABASE & SYSTEM CAPABILITIES 🚨 -->
+<div class="container mb-5 pb-4 anim-3">
+  <div class="hms-card p-5" style="background: var(--hms-navy); border: none; overflow: hidden; position: relative; border-radius: 24px;">
     
-    <div class="row align-items-center position-relative z-index-2">
-      <div class="col-lg-8 mb-4 mb-lg-0">
-        <span class="badge bg-teal text-white rounded-pill px-3 py-1 fw-bold text-uppercase small mb-2" style="background: var(--hms-teal);">
-          <i class="fas fa-shield-alt me-1"></i> Cashless Insurance & TPA Desk
-        </span>
-        <h3 class="brand-font fw-bold text-white mb-2">Hassle-Free Cashless Mediclaim & Transparent Billing</h3>
-        <p class="text-white text-opacity-75 mb-0" style="max-width: 650px; font-size: 15px; line-height: 1.6;">
-          Empanelled with Star Health, HDFC ERGO, ICICI Lombard, New India Assurance, Max Bupa, and CGHS. Our dedicated TPA desk coordinates pre-authorizations and claims directly with your insurer.
-        </p>
+    <!-- Decorative subtle grid background inside the card -->
+    <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size: 30px 30px; pointer-events: none;"></div>
+    
+    <div class="row align-items-center mb-5 position-relative z-index-2">
+      <div class="col text-center">
+        <h2 class="brand-font text-white mb-2">Hospital Management Core Capabilities</h2>
+        <p class="text-white opacity-50 mb-0" style="font-size: 16px;">Enterprise clinical workflows, role-based security, and verified audit logging</p>
       </div>
-      <div class="col-lg-4 text-lg-end">
-        <div class="d-flex flex-column gap-2">
-          <a href="/login" class="btn btn-light rounded-pill px-4 py-2 fw-bold text-dark shadow-sm">
-            <i class="fas fa-file-invoice-dollar me-2 text-success"></i>Patient Billing Portal
-          </a>
-          <a href="/doctors" class="btn btn-outline-light rounded-pill px-4 py-2 fw-bold">
-            <i class="fas fa-user-md me-2"></i>Browse Doctor Roster
-          </a>
+    </div>
+    
+    <div class="row g-4 position-relative z-index-2">
+      <div class="col-md-4">
+        <div class="text-center px-2">
+          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(245,158,11,0.1); color:var(--hms-amber); width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(245,158,11,0.2);"><i class="fas fa-bolt"></i></div>
+          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Automated Audit Logs</div>
+          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
+            Real-time immutable audit trail for clinical diagnoses, inpatient admissions, and financial settlements.
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-4">
+        <div class="text-center px-2">
+          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(16,185,129,0.1); color:var(--hms-success); width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(16,185,129,0.2);"><i class="fas fa-shield-alt"></i></div>
+          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Role-Based Security</div>
+          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
+            Strict routing protocols separating Doctor, Patient, and Admin privileges using session security.
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-4">
+        <div class="text-center px-2">
+          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(96,165,250,0.1); color:#60a5fa; width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(96,165,250,0.2);"><i class="fas fa-network-wired"></i></div>
+          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Relational Integrity</div>
+          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
+            Optimized schemas with foreign key constraints ensuring conflict-free scheduling and bed allocations.
+          </div>
         </div>
       </div>
     </div>
+    
   </div>
 </div>
 
