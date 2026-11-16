@@ -114,13 +114,22 @@ def index():
             upcoming_list.sort(key=lambda x: datetime.strptime(f"{x.date} {x.time}", '%Y-%m-%d %I:%M %p'))
             upcoming_appointments = upcoming_list[:5]
             
+            # 💳 Pending / Unpaid Invoices
+            unpaid_bills = Billing.query.filter_by(
+                user_id=current_user.id,
+                status='Unpaid'
+            ).order_by(Billing.issued_on.desc()).all()
+            total_unpaid = sum((b.amount for b in unpaid_bills if b.amount), Decimal('0.00'))
+
             return render_template('index.html', 
                                 upcoming_appointments=upcoming_appointments, 
                                 today_date=today.strftime('%A, %b %d, %Y'),
                                 active_admission=active_admission,
                                 stay_days=stay_days,
                                 est_total=est_total,
-                                admission_bill=admission_bill)
+                                admission_bill=admission_bill,
+                                unpaid_bills=unpaid_bills,
+                                total_unpaid=total_unpaid)
 
     return render_template('index.html')
 

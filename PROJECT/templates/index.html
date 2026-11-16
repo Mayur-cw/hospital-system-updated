@@ -769,6 +769,98 @@ Home | Hospital Management System
     </div>
     {% endif %}
     {% endif %}
+  {% elif unpaid_bills %}
+    <!-- 💳 STAGE: UNPAID BILLS / OUTSTANDING HOSPITAL DUES -->
+    <div class="hms-panel mb-5 p-4 p-md-5 anim-1 border-start border-4 border-danger shadow-lg" style="background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4 pb-4 border-bottom">
+        <div class="d-flex align-items-center gap-3">
+          <div class="rounded-4 d-flex align-items-center justify-content-center shadow-sm text-white flex-shrink-0" style="width: 64px; height: 64px; font-size: 28px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+            <i class="fas fa-file-invoice-dollar"></i>
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+              <span class="badge bg-danger text-white rounded-pill px-3 py-1 fw-bold text-uppercase" style="letter-spacing: 0.5px;">
+                <i class="fas fa-exclamation-circle me-1"></i> Payment Action Required
+              </span>
+              <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-1 fw-bold">
+                {{ unpaid_bills|length }} Unpaid Invoice{% if unpaid_bills|length > 1 %}s{% endif %}
+              </span>
+            </div>
+            <h2 class="brand-font fw-bold text-dark mb-0">
+              Outstanding Hospital Bill{% if unpaid_bills|length > 1 %}s{% endif %} Awaiting Settlement
+            </h2>
+            <p class="text-muted mb-0 small mt-1">
+              You have pending hospital fees. Please settle your bill{% if unpaid_bills|length > 1 %}s{% endif %} to maintain clear medical accounts and priority appointment desk access.
+            </p>
+          </div>
+        </div>
+
+        <div class="text-md-end bg-white p-3 rounded-4 shadow-sm border border-danger border-opacity-25 flex-shrink-0">
+          <div class="small text-muted fw-bold text-uppercase" style="letter-spacing: 1px;">Total Amount Due</div>
+          <h3 class="fw-bold text-danger mb-0">₹{{ total_unpaid }}</h3>
+          <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2 py-0 small">{{ unpaid_bills|length }} Pending Invoice{% if unpaid_bills|length > 1 %}s{% endif %}</span>
+        </div>
+      </div>
+
+      <!-- Unpaid Invoices Summary Cards -->
+      <div class="row g-3 py-4">
+        {% for bill in unpaid_bills[:3] %}
+        <div class="col-md-{{ 12 if unpaid_bills[:3]|length == 1 else (6 if unpaid_bills[:3]|length == 2 else 4) }}">
+          <div class="p-3 bg-white rounded-4 border shadow-sm h-100 d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-light text-muted border rounded-pill px-2 py-1 small fw-bold">#INV-{{ "%05d" % bill.bill_id }}</span>
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2 py-1 small fw-bold">Unpaid</span>
+              </div>
+              <div class="fw-bold text-dark fs-6">
+                {% if bill.appointment and bill.appointment.doctor %}
+                  Consultation: Dr. {{ bill.appointment.doctor }}
+                {% elif bill.appointment and bill.appointment.dept %}
+                  {{ bill.appointment.dept }} Department
+                {% else %}
+                  Hospital Medical Services
+                {% endif %}
+              </div>
+              <div class="small text-muted mt-1">
+                <i class="fas fa-calendar-alt me-1 text-primary"></i> 
+                {{ bill.issued_on.strftime('%b %d, %Y') if bill.issued_on else 'Recent' }}
+                {% if bill.appointment and bill.appointment.disease %}
+                  &bull; <span class="text-truncate">{{ bill.appointment.disease }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="pt-3 mt-2 border-top d-flex justify-content-between align-items-center">
+              <div>
+                <span class="small text-muted d-block" style="font-size: 11px;">Fee Amount</span>
+                <span class="fw-bold text-danger fs-5">₹{{ bill.amount }}</span>
+              </div>
+              <a href="{{ url_for('patient.view_invoice', bill_id=bill.bill_id) }}" class="btn btn-sm btn-danger rounded-pill px-3 py-1 fw-bold shadow-sm d-flex align-items-center gap-1 hover-lift">
+                <i class="fas fa-credit-card"></i> Pay Now
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Action Row -->
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <a href="{{ url_for('patient.view_invoice', bill_id=unpaid_bills[0].bill_id) }}" class="btn btn-danger btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg hover-lift d-flex align-items-center gap-2">
+          <i class="fas fa-credit-card"></i>
+          <span>Pay Earliest Bill (₹{{ unpaid_bills[0].amount }})</span>
+        </a>
+
+        <a href="{{ url_for('patient.my_bills') }}" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2">
+          <i class="fas fa-receipt"></i>
+          <span>View All Invoices ({{ unpaid_bills|length }})</span>
+        </a>
+
+        <div class="ms-auto small text-muted d-flex align-items-center gap-2">
+          <i class="fas fa-shield-alt text-success fs-6"></i>
+          <span>Instant receipt generation & medical record synchronization</span>
+        </div>
+      </div>
+    </div>
   {% endif %}
 
   <div class="row g-4 mb-5">
