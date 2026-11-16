@@ -1,8 +1,9 @@
 # routes/main.py
 from datetime import date, datetime
+from decimal import Decimal
 from flask import Blueprint, render_template, request, redirect, url_for
 from flask_login import login_required, current_user
-from models import Appointments, MedicalRecord, Doctors
+from models import Appointments, MedicalRecord, Doctors, Admission, Billing
 
 main_bp = Blueprint('main', __name__)
 
@@ -76,6 +77,23 @@ def index():
         elif current_user.usertype == 'Patient':
             today = date.today()
             now = datetime.now().time()
+            
+            # 🏥 Inpatient Admission & Room Tracking
+            active_admission = Admission.query.filter_by(
+                patient_id=current_user.id,
+                status='Admitted'
+            ).order_by(Admission.admission_date.desc()).first()
+
+            admission_bill = None
+            stay_days = 1
+            est_total = Decimal('0.00')
+            if active_admission:
+                adm_date = active_admission.admission_date or datetime.now()
+                delta = datetime.now() - adm_date
+                stay_days = max(1, delta.days)
+                rate = Decimal(str(active_admission.room.rate_per_day))
+                est_total = Decimal('500.00') + (Decimal(stay_days) * rate)
+                admission_bill = Billing.query.filter_by(apt_id=active_admission.apt_id).first()
                 
             raw_upcoming = Appointments.query.filter(
                 Appointments.user_id == current_user.id,
@@ -95,7 +113,11 @@ def index():
             
             return render_template('index.html', 
                                 upcoming_appointments=upcoming_appointments, 
-                                today_date=today.strftime('%A, %b %d, %Y'))
+                                today_date=today.strftime('%A, %b %d, %Y'),
+                                active_admission=active_admission,
+                                stay_days=stay_days,
+                                est_total=est_total,
+                                admission_bill=admission_bill)
 
     return render_template('index.html')
 

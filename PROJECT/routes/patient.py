@@ -6,6 +6,7 @@ from flask_login import login_required, current_user
 from models import db, Appointments, Doctors, MedicalRecord, Billing, Admission
 from services.scheduling import SchedulingService
 from services.billing import BillingService
+from services.inpatient import InpatientService
 from authorization import can_access_invoice
 
 patient_bp = Blueprint('patient', __name__)
@@ -251,3 +252,43 @@ def view_receipt(bill_id):
         return redirect(url_for('patient.view_invoice', bill_id=bill_id))
         
     return render_template('bookings/receipt.html', invoice=invoice)
+
+
+@patient_bp.route('/request_discharge/<int:admission_id>', methods=['POST'])
+@login_required
+def request_discharge(admission_id):
+    if current_user.usertype != 'Patient':
+        flash("Unauthorized action.", "danger")
+        return redirect(url_for('main.index'))
+
+    notes = request.form.get('notes', '').strip()
+    success, message = InpatientService.request_discharge(
+        admission_id=admission_id,
+        patient_user=current_user,
+        notes=notes
+    )
+    flash(message, "success" if success else "warning")
+    return redirect(url_for('main.index'))
+
+
+@patient_bp.route('/inpatient_pay/<int:admission_id>')
+@login_required
+def inpatient_pay(admission_id):
+    if current_user.usertype != 'Patient':
+        flash("Unauthorized action.", "danger")
+        return redirect(url_for('main.index'))
+
+    admission = Admission.query.get_or_404(admission_id)
+    if admission.patient_id != current_user.id:
+        flash("Access Denied: You cannot view invoices for another patient.", "danger")
+        return redirect(url_for('main.index'))
+
+    bill = InpatientService.get_or_create_interim_bill(admission_id)
+    if not bill:
+        flash("Unable to locate or generate inpatient invoice.", "danger")
+        return redirect(url_for('main.index'))
+
+    if bill.status == 'Paid':
+        return redirect(url_for('patient.view_receipt', bill_id=bill.bill_id))
+    return redirect(url_for('patient.view_invoice', bill_id=bill.bill_id))
+

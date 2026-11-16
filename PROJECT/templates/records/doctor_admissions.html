@@ -38,9 +38,19 @@
         </thead>
         <tbody>
           {% for admission in admissions %}
-          <tr>
+          <tr {% if admission.discharge_requested %}style="background: #fffbeb;"{% endif %}>
             <td class="ps-4 fw-bold text-dark">
               <i class="fas fa-user-injured text-muted me-2"></i>{{ admission.patient.username }}
+              {% if admission.discharge_requested %}
+              <div class="mt-1">
+                <span class="badge bg-warning text-dark rounded-pill px-2 py-1 small fw-bold shadow-sm">
+                  <i class="fas fa-bell me-1"></i> Patient Requested Discharge
+                </span>
+                {% if admission.discharge_notes %}
+                <div class="small text-muted fst-italic mt-1" style="font-size: 11px;">"{{ admission.discharge_notes }}"</div>
+                {% endif %}
+              </div>
+              {% endif %}
             </td>
             <td><span class="text-muted small">{{ admission.appointment.disease | truncate(30) }}</span></td>
             <td>

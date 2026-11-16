@@ -51,3 +51,51 @@ def test_t_disch_001_repeated_discharge_is_idempotent(app_no_csrf):
         bills_after_second = Billing.query.filter_by(apt_id=1).all()
         assert len(bills_after_second) == 1
         assert bills_after_second[0].amount == Decimal('2900.00')
+
+
+def test_t_disch_002_patient_discharge_request_and_interim_bill(app_no_csrf):
+    """
+    T-DISCH-002: Patient can request discharge review, generating audit event and
+    enabling interim bill settlement prior to clinician clearance.
+    """
+    with app_no_csrf.app_context():
+        patient = User.query.get(4)
+        room = Room.query.get(2)
+        room.status = 'Occupied'
+
+        adm = Admission(
+            apt_id=2,
+            patient_id=patient.id,
+            doctor_id=1,
+            room_id=room.room_id,
+            admission_date=datetime.now() - timedelta(days=2),
+            status='Admitted'
+        )
+        db.session.add(adm)
+        db.session.commit()
+
+        # 1. Patient requests discharge
+        success, msg = InpatientService.request_discharge(
+            admission_id=adm.admission_id,
+            patient_user=patient,
+            notes="Recovered well, request clearance"
+        )
+        assert success is True
+        assert adm.discharge_requested is True
+        assert adm.discharge_notes == "Recovered well, request clearance"
+
+        # 2. Get interim bill
+        bill = InpatientService.get_or_create_interim_bill(adm.admission_id)
+        assert bill is not None
+        assert bill.status == 'Unpaid'
+        # Rs. 500 consultation + (2 days * 1200) = 2900
+        assert bill.amount >= Decimal('500.00')
+
+        # 3. Doctor authorizes final discharge
+        doc = User.query.get(2)
+        disch_ok, disch_msg, final_bill = InpatientService.discharge_patient(adm.admission_id, doc, "Cleared")
+        assert disch_ok is True
+        assert adm.status == 'Discharged'
+        assert adm.discharge_requested is False
+        assert room.status == 'Available'
+

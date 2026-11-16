@@ -104,24 +104,47 @@ My Appointments | Hospital Management System
     {% endif %}
   {% endwith %}
 
-  <!-- 🏥 NEW: INPATIENT ADMISSION BANNER (Only shows if the patient is currently admitted) -->
+  <!-- 🏥 INPATIENT ADMISSION BANNER -->
   {% if current_user.usertype == 'Patient' and active_admission %}
   <div class="hms-panel p-4 mb-4" style="border-left: 5px solid #0dcaf0; background: linear-gradient(to right, #ffffff, #f0f9ff);">
-      <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
           <div>
-              <div class="badge bg-info text-white rounded-pill px-3 py-2 mb-2 shadow-sm">
-                  <i class="fas fa-procedures me-1"></i> Active Inpatient Status
+              <div class="d-flex align-items-center gap-2 mb-2">
+                  <span class="badge bg-info text-white rounded-pill px-3 py-1 fw-bold shadow-sm">
+                      <i class="fas fa-procedures me-1"></i> Active Inpatient Status
+                  </span>
+                  {% if active_admission.discharge_requested %}
+                  <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold shadow-sm">
+                      <i class="fas fa-hourglass-half me-1"></i> Discharge Requested (Under Review)
+                  </span>
+                  {% endif %}
               </div>
-              <h4 class="brand-font fw-bold text-dark mb-1">You are currently admitted to the {{ active_admission.room.ward_type }} Ward</h4>
-              <p class="text-muted mb-0">
-                  <i class="fas fa-user-md text-primary me-1"></i> Attending: <strong>Dr. {{ active_admission.doctor.user_account.username }}</strong>
+              <h4 class="brand-font fw-bold text-dark mb-1">You are currently admitted in Room {{ active_admission.room.room_number }} ({{ active_admission.room.ward_type }} Ward)</h4>
+              <p class="text-muted mb-0 small">
+                  <i class="fas fa-user-md text-primary me-1"></i> Attending: <strong>{% if active_admission.doctor.user_account.username.lower().startswith('dr') %}{{ active_admission.doctor.user_account.username }}{% else %}Dr. {{ active_admission.doctor.user_account.username }}{% endif %}</strong>
                   &nbsp;|&nbsp;
-                  <i class="fas fa-calendar-check text-success me-1"></i> Admitted: <strong>{{ active_admission.admission_date.strftime('%b %d, %Y') }}</strong>
+                  <i class="fas fa-calendar-check text-success me-1"></i> Admitted: <strong>{{ active_admission.admission_date.strftime('%b %d, %Y') if active_admission.admission_date else 'Active' }}</strong>
+                  &nbsp;|&nbsp;
+                  <i class="fas fa-tag text-info me-1"></i> Rate: <strong>₹{{ active_admission.room.rate_per_day }}/day</strong>
               </p>
           </div>
-          <div class="text-center bg-white p-3 rounded-4 shadow-sm border border-info border-opacity-25">
-              <h3 class="fw-bold text-info mb-0">{{ active_admission.room.room_number }}</h3>
-              <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 1px;">Room No.</span>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+              <a href="{{ url_for('patient.inpatient_pay', admission_id=active_admission.admission_id) }}" class="btn btn-sm btn-success rounded-pill px-3 py-2 fw-bold shadow-sm">
+                  <i class="fas fa-credit-card me-1"></i> Pay Fees
+              </a>
+              {% if not active_admission.discharge_requested %}
+              <form action="{{ url_for('patient.request_discharge', admission_id=active_admission.admission_id) }}" method="POST" class="d-inline" onsubmit="return confirm('Request discharge from Room {{ active_admission.room.room_number }}? Your attending physician will be notified.');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-2 fw-bold shadow-sm">
+                      <i class="fas fa-sign-out-alt me-1"></i> Request Discharge
+                  </button>
+              </form>
+              {% else %}
+              <span class="badge bg-secondary text-white rounded-pill px-3 py-2 small">Discharge Requested</span>
+              {% endif %}
+              <a href="{{ url_for('doctor.view_record', apt_id=active_admission.apt_id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-2 fw-bold shadow-sm">
+                  <i class="fas fa-file-prescription me-1"></i> View Rx
+              </a>
           </div>
       </div>
   </div>

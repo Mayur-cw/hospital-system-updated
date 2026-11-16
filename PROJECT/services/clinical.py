@@ -46,9 +46,22 @@ class ClinicalService:
                     )
                     room.status = 'Occupied'
                     db.session.add(admission)
+
+                    # Initial admission deposit invoice (consultation + 1-day room tariff)
+                    existing_bill = Billing.query.filter_by(apt_id=apt_id).first()
+                    if not existing_bill:
+                        deposit_amount = Decimal('500.00') + Decimal(str(room.rate_per_day))
+                        bill = Billing(
+                            apt_id=apt_id,
+                            user_id=appointment.user_id,
+                            amount=deposit_amount,
+                            status='Unpaid'
+                        )
+                        db.session.add(bill)
+
                     appointment.slot = 'Completed'
                     db.session.commit()
-                    return True, "Medical record signed and Patient Admitted to Room. Final invoice will be calculated upon discharge.", record
+                    return True, "Medical record signed and Patient Admitted to Room. Admission deposit invoice generated.", record
 
             # Standard Outpatient Logic (Create Rs. 500 consultation invoice)
             existing_bill = Billing.query.filter_by(apt_id=apt_id).first()

@@ -22,6 +22,7 @@ class InpatientService:
         now = datetime.now()
         admission.status = 'Discharged'
         admission.discharge_date = now
+        admission.discharge_requested = False
         if discharge_summary:
             admission.discharge_summary = discharge_summary
 
@@ -65,3 +66,63 @@ class InpatientService:
 
         db.session.commit()
         return True, f"Patient {admission.patient.username} discharged successfully! Final bill of Rs.{total_bill_amount} generated.", bill
+
+    @staticmethod
+    def request_discharge(admission_id, patient_user, notes=None):
+        """
+        Patient-initiated request for discharge review. Sets admission flag
+        and records patient notes for the attending physician.
+        """
+        admission = Admission.query.get(admission_id)
+        if not admission:
+            return False, "Admission record not found."
+        
+        if admission.patient_id != patient_user.id:
+            return False, "Access Denied: You cannot request discharge for another patient."
+            
+        if admission.status == 'Discharged':
+            return False, "You are already discharged from this inpatient stay."
+            
+        admission.discharge_requested = True
+        admission.discharge_requested_at = datetime.now()
+        if notes:
+            admission.discharge_notes = notes.strip()
+            
+        # Log patient discharge request
+        audit = AuditLog(
+            apt_id=admission.apt_id,
+            user_id=patient_user.id,
+            action=f"DISCHARGE REQUESTED by Patient {patient_user.username} (Room: {admission.room.room_number})",
+            timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        )
+        db.session.add(audit)
+        db.session.commit()
+        return True, "Your discharge request has been submitted to your attending medical team. Clearance rounds will be conducted shortly."
+
+    @staticmethod
+    def get_or_create_interim_bill(admission_id):
+        """
+        Retrieves or generates an interim invoice for an active inpatient admission
+        so the patient can review and settle fees at any point.
+        """
+        admission = Admission.query.get(admission_id)
+        if not admission:
+            return None
+            
+        bill = Billing.query.filter_by(apt_id=admission.apt_id).first()
+        if not bill:
+            now = datetime.now()
+            delta = now - admission.admission_date
+            days = max(1, delta.days)
+            rate_per_day = Decimal(str(admission.room.rate_per_day))
+            total_amount = Decimal('500.00') + (Decimal(days) * rate_per_day)
+            
+            bill = Billing(
+                apt_id=admission.apt_id,
+                user_id=admission.patient_id,
+                amount=total_amount,
+                status='Unpaid'
+            )
+            db.session.add(bill)
+            db.session.commit()
+        return bill
