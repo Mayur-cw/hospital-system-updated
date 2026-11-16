@@ -3,7 +3,7 @@
 **Local Preview URL:** `http://127.0.0.1:5001/`  
 **Health Check Endpoint:** `http://127.0.0.1:5001/health`  
 **Host & Port:** `127.0.0.1:5001` (Port 5000 in use by system service; dynamically routed to 5001)  
-**Process ID / Task:** Background Daemon Task `task-578` (Port 5001)  
+**Process ID / Task:** Background Daemon Task `task-757` (Port 5001)  
 **Python Runtime:** `.venv/bin/python` (Python 3.9.6)  
 **Database:** SQLite `instance/hms_dev.db` (Normalized 3NF schema, initialized with safe synthetic dataset)  
 **Security Mode:** `DEMO_ONLY=True`, `FLASK_DEBUG=False`, `WTF_CSRF_ENABLED=True`
