@@ -4,7 +4,7 @@ from models import db, MedicalRecord, ClinicalNoteRevision, Appointments, Billin
 
 class ClinicalService:
     @staticmethod
-    def save_medical_record(apt_id, diagnosis, prescription, notes, doctor_user, action='sign', room_id=None):
+    def save_medical_record(apt_id, diagnosis, prescription, notes, doctor_user, action='sign', room_id=None, tentative_days=3):
         """Create a new signed or draft clinical record."""
         appointment = Appointments.query.get(apt_id)
         if not appointment:
@@ -42,26 +42,26 @@ class ClinicalService:
                         patient_id=appointment.user_id,
                         doctor_id=doc_did,
                         room_id=room.room_id,
-                        status='Admitted'
+                        status='Admitted',
+                        tentative_days=int(tentative_days or 3)
                     )
                     room.status = 'Occupied'
                     db.session.add(admission)
 
-                    # Initial admission deposit invoice (consultation + 1-day room tariff)
+                    # Initial visit consultation fee settled; Room rent will be billed upon doctor discharge clearance
                     existing_bill = Billing.query.filter_by(apt_id=apt_id).first()
                     if not existing_bill:
-                        deposit_amount = Decimal('500.00') + Decimal(str(room.rate_per_day))
                         bill = Billing(
                             apt_id=apt_id,
                             user_id=appointment.user_id,
-                            amount=deposit_amount,
-                            status='Unpaid'
+                            amount=Decimal('500.00'),
+                            status='Paid'
                         )
                         db.session.add(bill)
 
                     appointment.slot = 'Completed'
                     db.session.commit()
-                    return True, "Medical record signed and Patient Admitted to Room. Admission deposit invoice generated.", record
+                    return True, f"Medical record signed and Patient Admitted to Room {room.room_number} (Tentative: {tentative_days} days). Inpatient room rent will be billed upon doctor discharge approval.", record
 
             # Standard Outpatient Logic (Create Rs. 500 consultation invoice)
             existing_bill = Billing.query.filter_by(apt_id=apt_id).first()

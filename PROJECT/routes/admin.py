@@ -461,8 +461,10 @@ def admin_rooms():
 
     all_rooms = Room.query.order_by(Room.room_number).all()
     
-    # 🚨 NEW: Fetch active admissions to display in the UI table
+    # 🏥 Active Admissions & Discharge Settlement Queues
     active_admissions = Admission.query.filter_by(status='Admitted').order_by(Admission.admission_date.desc()).all()
+    pending_billing_admissions = Admission.query.filter_by(status='Billing Pending').order_by(Admission.discharge_approved_at.desc()).all()
+    completed_discharges = Admission.query.filter_by(status='Discharged').order_by(Admission.discharge_date.desc()).limit(15).all()
     
     total_rooms = len(all_rooms)
     available_rooms = sum(1 for r in all_rooms if r.status == 'Available')
@@ -472,6 +474,8 @@ def admin_rooms():
     return render_template('admin/admin_rooms.html', 
                            rooms=all_rooms,
                            active_admissions=active_admissions,
+                           pending_billing_admissions=pending_billing_admissions,
+                           completed_discharges=completed_discharges,
                            total_rooms=total_rooms,
                            available_rooms=available_rooms,
                            occupied_rooms=occupied_rooms,
@@ -564,6 +568,17 @@ def discharge_patient():
         discharge_summary=summary
     )
     
+    flash(message, "success" if success else "warning")
+    return redirect(url_for('admin.admin_rooms'))
+
+@admin_bp.route('/confirm_discharge/<int:admission_id>', methods=['POST'])
+@login_required
+def confirm_discharge(admission_id):
+    if current_user.usertype not in ('Admin', 'Cashier', 'Receptionist'):
+        flash("Unauthorized access. Admin privileges required.", "danger")
+        return redirect(url_for('main.index'))
+
+    success, message = InpatientService.admin_confirm_discharge(admission_id, current_user)
     flash(message, "success" if success else "warning")
     return redirect(url_for('admin.admin_rooms'))
 

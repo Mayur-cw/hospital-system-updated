@@ -116,8 +116,17 @@ erDiagram
         int room_id FK
         datetime admission_date
         datetime discharge_date
-        string status "Admitted | Discharged"
+        string status "Admitted | Billing Pending | Discharged"
         string discharge_summary
+        int tentative_days
+        boolean discharge_approved
+        datetime discharge_approved_at
+        string discharge_rejection_reason
+        int actual_days
+        string stay_extended_notes
+        boolean discharge_requested
+        datetime discharge_requested_at
+        string discharge_notes
     }
 
     BILLING {

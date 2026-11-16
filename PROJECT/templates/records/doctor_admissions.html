@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}My Admitted Patients | HMS{% endblock %}
+{% block title %}My Inpatient Admissions | Hedgewar Hospital{% endblock %}
 
 {% block body %}
 <div class="container mt-5 mb-5">
@@ -7,78 +7,257 @@
     <div class="col-md-8">
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-1">
-          <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-primary">Doctor Dashboard</a></li>
-          <li class="breadcrumb-item active text-muted">Active Admissions</li>
+          <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-primary">Physician Portal</a></li>
+          <li class="breadcrumb-item active text-muted">Inpatient Care & Discharge Management</li>
         </ol>
       </nav>
-      <h2 class="fw-bold text-dark mb-0"><i class="fas fa-procedures text-info me-2"></i>My Admitted Patients</h2>
-      <p class="text-muted mt-1 mb-0">Monitor and authorize discharges for patients currently under your care.</p>
+      <h2 class="fw-bold text-dark mb-0 brand-font">
+        <i class="fas fa-procedures text-info me-2"></i>My Inpatient Ward Admissions
+      </h2>
+      <p class="text-muted mt-1 mb-0">Manage clinical care plans, evaluate early discharge requests, extend stay durations, and authorize discharge summaries.</p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+      <a href="/dashboard" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
+        <i class="fas fa-arrow-left me-1"></i> Back to Clinic
+      </a>
     </div>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       {% for category, message in messages %}
-        <div class="alert alert-{{ category }} shadow-sm rounded-4 border-0" role="alert">{{ message }}</div>
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm rounded-4 border-0 mb-4" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
       {% endfor %}
     {% endif %}
   {% endwith %}
 
-  <div class="card shadow-sm border-0 rounded-4 mt-4">
+  <div class="card shadow-sm border-0 rounded-4 mt-3 overflow-hidden">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="bg-light">
           <tr>
-            <th class="ps-4 text-muted small text-uppercase">Patient</th>
-            <th class="text-muted small text-uppercase">Diagnosis</th>
-            <th class="text-muted small text-uppercase">Room Assignment</th>
-            <th class="text-muted small text-uppercase">Admitted On</th>
-            <th class="text-end pe-4 text-muted small text-uppercase">Action</th>
+            <th class="ps-4 text-muted small text-uppercase py-3">Patient & Details</th>
+            <th class="text-muted small text-uppercase py-3">Room / Bed</th>
+            <th class="text-muted small text-uppercase py-3">Tentative Stay & Timeline</th>
+            <th class="text-muted small text-uppercase py-3">Status / Alerts</th>
+            <th class="text-end pe-4 text-muted small text-uppercase py-3">Clinical Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for admission in admissions %}
-          <tr {% if admission.discharge_requested %}style="background: #fffbeb;"{% endif %}>
-            <td class="ps-4 fw-bold text-dark">
-              <i class="fas fa-user-injured text-muted me-2"></i>{{ admission.patient.username }}
-              {% if admission.discharge_requested %}
-              <div class="mt-1">
-                <span class="badge bg-warning text-dark rounded-pill px-2 py-1 small fw-bold shadow-sm">
-                  <i class="fas fa-bell me-1"></i> Patient Requested Discharge
+          <tr {% if admission.discharge_requested %}style="background: #fffbeb;"{% elif admission.status == 'Billing Pending' %}style="background: #f8fafc;"{% endif %}>
+            <!-- 1. Patient Info -->
+            <td class="ps-4 py-3">
+              <div class="fw-bold text-dark fs-6">{{ admission.patient.username }}</div>
+              <div class="small text-muted">
+                <span class="badge bg-light text-dark border rounded-pill">{{ admission.patient.mrn or 'MRN-2026-0001' }}</span>
+                &bull; {{ admission.appointment.disease | truncate(25) }}
+              </div>
+            </td>
+
+            <!-- 2. Room Assignment -->
+            <td class="py-3">
+              <span class="badge bg-info text-white rounded-pill px-3 py-1 shadow-sm border border-info fw-bold">
+                <i class="fas fa-bed me-1"></i> Room {{ admission.room.room_number }}
+              </span>
+              <div class="small text-muted d-block mt-1 fw-bold text-uppercase" style="font-size: 11px;">
+                {{ admission.room.ward_type }} Ward &bull; ₹{{ admission.room.rate_per_day }}/day
+              </div>
+            </td>
+
+            <!-- 3. Stay & Timeline -->
+            <td class="py-3">
+              <div class="small fw-bold text-dark">
+                <i class="fas fa-calendar-check text-success me-1"></i> Admitted: {{ admission.admission_date.strftime('%b %d, %Y') if admission.admission_date else 'Active' }}
+              </div>
+              <div class="small text-muted mt-1">
+                Tentative: <strong class="text-primary">{{ admission.tentative_days or 3 }} Days</strong>
+                {% if admission.stay_extended_notes %}
+                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-2 py-0 ms-1">Extended</span>
+                {% endif %}
+              </div>
+              {% if admission.stay_extended_notes %}
+              <div class="small text-muted fst-italic mt-1" style="font-size: 11px;">"{{ admission.stay_extended_notes }}"</div>
+              {% endif %}
+            </td>
+
+            <!-- 4. Status / Alerts -->
+            <td class="py-3">
+              {% if admission.status == 'Billing Pending' %}
+                <span class="badge bg-secondary text-white rounded-pill px-3 py-2 fw-bold shadow-sm">
+                  <i class="fas fa-check-circle me-1"></i> Discharge Approved
+                </span>
+                <div class="small text-muted mt-1">Settlement Pending ({{ admission.actual_days or 1 }} days)</div>
+              {% elif admission.discharge_requested %}
+                <span class="badge bg-warning text-dark rounded-pill px-3 py-2 fw-bold shadow-sm">
+                  <i class="fas fa-bell me-1"></i> Early Discharge Requested
                 </span>
                 {% if admission.discharge_notes %}
-                <div class="small text-muted fst-italic mt-1" style="font-size: 11px;">"{{ admission.discharge_notes }}"</div>
+                <div class="small text-dark fst-italic mt-1" style="font-size: 11px;">Patient: "{{ admission.discharge_notes }}"</div>
                 {% endif %}
+              {% elif admission.discharge_rejection_reason %}
+                <span class="badge bg-info bg-opacity-10 text-info border rounded-pill px-3 py-1 small">
+                  Continued Care Monitored
+                </span>
+                <div class="small text-muted fst-italic mt-1" style="font-size: 11px;">Rejection Note: "{{ admission.discharge_rejection_reason | truncate(35) }}"</div>
+              {% else %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1 fw-bold">
+                  <i class="fas fa-heartbeat me-1"></i> Active Care
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- 5. Actions -->
+            <td class="text-end pe-4 py-3">
+              {% if admission.status == 'Admitted' %}
+              <div class="d-flex justify-content-end gap-2 align-items-center flex-wrap">
+                
+                <!-- Approve Discharge Button -->
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill fw-bold px-3 py-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#approveDischargeModal{{ admission.admission_id }}">
+                  <i class="fas fa-check-circle me-1"></i> Approve Discharge
+                </button>
+
+                <!-- If patient requested early discharge, allow doctor to reject -->
+                {% if admission.discharge_requested %}
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3 py-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#rejectDischargeModal{{ admission.admission_id }}">
+                  <i class="fas fa-times-circle me-1"></i> Reject Early Request
+                </button>
+                {% endif %}
+
+                <!-- Extend Stay Button -->
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-bold px-3 py-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#extendStayModal{{ admission.admission_id }}">
+                  <i class="fas fa-plus-circle me-1"></i> Extend Stay
+                </button>
+
+              </div>
+              {% elif admission.status == 'Billing Pending' %}
+              <div class="text-muted small fw-bold">
+                <i class="fas fa-clock text-warning me-1"></i> Bill Generated &bull; Awaiting Checkout
               </div>
               {% endif %}
             </td>
-            <td><span class="text-muted small">{{ admission.appointment.disease | truncate(30) }}</span></td>
-            <td>
-              <span class="badge bg-info text-white rounded-pill px-3 py-2 shadow-sm border border-info" style="font-size: 13px;">
-                <i class="fas fa-bed me-1"></i> Room {{ admission.room.room_number }}
-              </span>
-              <small class="text-muted d-block mt-1 fw-bold text-uppercase">{{ admission.room.ward_type }} Ward</small>
-            </td>
-            <td class="text-muted">
-                {{ admission.admission_date.strftime('%b %d, %Y') }}
-            </td>
-            <td class="text-end pe-4">
-              <!-- Discharge Action -->
-              <form action="/discharge_patient" method="POST" class="m-0" 
-                    onsubmit="return confirm('Authorize discharge for {{ admission.patient.username }}? This will generate their final hospital bill.');">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="admission_id" value="{{ admission.admission_id }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-4 py-2 hover-lift">
-                  <i class="fas fa-sign-out-alt me-1"></i>Authorize Discharge
-                </button>
-              </form>
-            </td>
           </tr>
+
+          <!-- MODAL 1: APPROVE DISCHARGE -->
+          <div class="modal fade" id="approveDischargeModal{{ admission.admission_id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+                <div class="modal-header bg-success text-white p-4">
+                  <div>
+                    <h5 class="modal-title fw-bold mb-0">Authorize Clinical Discharge</h5>
+                    <div class="small text-white text-opacity-75">Patient: {{ admission.patient.username }} &bull; Room {{ admission.room.room_number }}</div>
+                  </div>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/discharge_patient" method="POST">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <input type="hidden" name="admission_id" value="{{ admission.admission_id }}">
+                  <div class="modal-body p-4 text-start">
+                    <p class="text-muted small mb-3">
+                      Authorizing clinical discharge calculates the final room rent based on actual days in care and generates the room invoice for frontdesk/patient settlement.
+                    </p>
+                    <div class="mb-3">
+                      <label class="form-label fw-bold text-dark small text-uppercase">Discharge Clinical Summary / Instructions</label>
+                      <textarea class="form-control rounded-3" name="discharge_summary" rows="3" placeholder="e.g. Condition stable, afebrile, discharged with 5-day oral antibiotics course. Review in OPD in 1 week." required></textarea>
+                    </div>
+                    <div class="p-3 bg-light rounded-3 border small text-muted">
+                      <i class="fas fa-info-circle text-info me-1"></i> Upon authorization, patient is moved from <strong>Admitted</strong> to <strong>Billing Pending</strong> until fee settlement.
+                    </div>
+                  </div>
+                  <div class="modal-footer bg-light p-3 border-top d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                      <i class="fas fa-check-circle me-1"></i> Authorize & Generate Bill
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODAL 2: REJECT EARLY DISCHARGE -->
+          {% if admission.discharge_requested %}
+          <div class="modal fade" id="rejectDischargeModal{{ admission.admission_id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+                <div class="modal-header bg-danger text-white p-4">
+                  <div>
+                    <h5 class="modal-title fw-bold mb-0">Reject Early Discharge Request</h5>
+                    <div class="small text-white text-opacity-75">Patient: {{ admission.patient.username }} &bull; Room {{ admission.room.room_number }}</div>
+                  </div>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/doctor/reject_discharge" method="POST">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <input type="hidden" name="admission_id" value="{{ admission.admission_id }}">
+                  <div class="modal-body p-4 text-start">
+                    <div class="alert alert-light border small text-dark mb-3">
+                      <strong>Patient's Request Note:</strong> "{{ admission.discharge_notes or 'Early discharge requested.' }}"
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label fw-bold text-dark small text-uppercase">Clinical Reason for Refusal</label>
+                      <textarea class="form-control rounded-3" name="reason" rows="3" placeholder="e.g. Clinical assessment shows persisting fever and elevated inflammatory markers. Early discharge is clinically unsafe; continue IV therapy." required></textarea>
+                    </div>
+                    <div class="small text-muted">
+                      This clinical advice will be displayed immediately on the patient's portal so they understand the medical decision.
+                    </div>
+                  </div>
+                  <div class="modal-footer bg-light p-3 border-top d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
+                      <i class="fas fa-times-circle me-1"></i> Confirm Rejection
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- MODAL 3: EXTEND STAY -->
+          <div class="modal fade" id="extendStayModal{{ admission.admission_id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+                <div class="modal-header bg-primary text-white p-4">
+                  <div>
+                    <h5 class="modal-title fw-bold mb-0">Extend Inpatient Stay</h5>
+                    <div class="small text-white text-opacity-75">Patient: {{ admission.patient.username }} &bull; Room {{ admission.room.room_number }}</div>
+                  </div>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/doctor/extend_stay" method="POST">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <input type="hidden" name="admission_id" value="{{ admission.admission_id }}">
+                  <div class="modal-body p-4 text-start">
+                    <div class="mb-3">
+                      <label class="form-label fw-bold text-dark small text-uppercase">Additional Days to Add</label>
+                      <input type="number" class="form-control rounded-3" name="additional_days" value="2" min="1" max="30" required>
+                      <div class="small text-muted mt-1">Current Tentative: {{ admission.tentative_days or 3 }} Days</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label fw-bold text-dark small text-uppercase">Clinical Explanation / Notes</label>
+                      <textarea class="form-control rounded-3" name="notes" rows="3" placeholder="e.g. Requires 2 more days of antibiotic course and oxygen titration."></textarea>
+                    </div>
+                  </div>
+                  <div class="modal-footer bg-light p-3 border-top d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                      <i class="fas fa-plus-circle me-1"></i> Update Care Plan
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
           {% else %}
           <tr>
             <td colspan="5" class="text-center py-5 text-muted">
               <i class="fas fa-check-circle fa-3x mb-3 text-success opacity-50"></i>
-              <h5 class="fw-bold text-dark">No Active Admissions</h5>
+              <h5 class="fw-bold text-dark">No Active Ward Admissions</h5>
               <p class="mb-0">You currently have no patients admitted to the inpatient wards.</p>
             </td>
           </tr>

@@ -225,10 +225,93 @@ Ward & Room Management | Admin Control
     </div>
   </div>
 
+  <!-- 🏥 FEES REMAINING / CHECKOUT PENDING QUEUE (DISCHARGE APPROVED BY DOCTOR) -->
+  <div class="card shadow-sm border-0 rounded-4 mt-5 border-start border-4 border-warning">
+    <div class="card-header bg-dark text-white py-3 rounded-top-4 d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-0 fw-bold brand-font text-warning">
+          <i class="fas fa-file-invoice-dollar me-2"></i>Fees Remaining & Checkout Queue
+        </h5>
+        <div class="small text-white text-opacity-75">Clinically approved for discharge by physician &bull; Pending fee settlement or final bed release</div>
+      </div>
+      <span class="badge bg-warning text-dark fw-bold px-3 py-2 rounded-pill">{{ pending_billing_admissions | length }} In Checkout Queue</span>
+    </div>
+    
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4 text-muted small text-uppercase py-3">Patient</th>
+            <th class="text-muted small text-uppercase py-3">Room / Ward</th>
+            <th class="text-muted small text-uppercase py-3">Actual Stay</th>
+            <th class="text-muted small text-uppercase py-3">Inpatient Bill & Fee Status</th>
+            <th class="text-end pe-4 text-muted small text-uppercase py-3">Admin Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for admission in pending_billing_admissions %}
+          <tr>
+            <td class="ps-4 py-3">
+              <div class="fw-bold text-dark fs-6">{{ admission.patient.username }}</div>
+              <div class="small text-muted">Cleared by Dr. {{ admission.doctor.user_account.username }}</div>
+            </td>
+            <td class="py-3">
+              <span class="badge bg-secondary text-white rounded-pill px-3 py-1">
+                Room {{ admission.room.room_number }}
+              </span>
+              <small class="text-muted d-block mt-1 fw-bold text-uppercase" style="font-size: 11px;">{{ admission.room.ward_type }} Ward</small>
+            </td>
+            <td class="py-3">
+              <div class="fw-bold text-dark">{{ admission.actual_days or 1 }} Day{% if (admission.actual_days or 1) > 1 %}s{% endif %}</div>
+              <div class="small text-muted">@ ₹{{ admission.room.rate_per_day }}/day</div>
+            </td>
+            <td class="py-3">
+              {% if admission.appointment.billing %}
+                <div class="fw-bold text-dark fs-6">₹{{ admission.appointment.billing.amount }}</div>
+                {% if admission.appointment.billing.status == 'Paid' %}
+                  <span class="badge bg-success text-white rounded-pill px-3 py-1 fw-bold">
+                    <i class="fas fa-check-circle me-1"></i> Paid & Settled
+                  </span>
+                {% else %}
+                  <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold">
+                    <i class="fas fa-clock me-1"></i> Fees Unpaid (Pending)
+                  </span>
+                {% endif %}
+              {% else %}
+                <span class="badge bg-danger rounded-pill">No Bill Found</span>
+              {% endif %}
+            </td>
+            <td class="text-end pe-4 py-3">
+              {% if admission.appointment.billing and admission.appointment.billing.status == 'Paid' %}
+                <!-- Bill Paid: Allow final bed release -->
+                <form action="{{ url_for('admin.confirm_discharge', admission_id=admission.admission_id) }}" method="POST" class="d-inline" onsubmit="return confirm('Confirm final checkout for {{ admission.patient.username }} and release Room {{ admission.room.room_number }}?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <button type="submit" class="btn btn-sm btn-success rounded-pill fw-bold px-4 py-2 shadow-sm">
+                    <i class="fas fa-door-open me-1"></i> Confirm Bed Release
+                  </button>
+                </form>
+              {% else %}
+                <!-- Bill Unpaid: Option to collect/settle -->
+                <a href="{{ url_for('admin.admin_financials') }}" class="btn btn-sm btn-outline-warning rounded-pill fw-bold px-3 py-2 text-dark">
+                  <i class="fas fa-cash-register me-1"></i> Settle at Cashier
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-center py-4 text-muted">No patients currently in checkout queue.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- ACTIVE ADMISSIONS TABLE -->
   <div class="card shadow-sm border-0 rounded-4 mt-5">
     <div class="card-header bg-dark text-white py-3 rounded-top-4 d-flex justify-content-between align-items-center">
-      <h5 class="mb-0 fw-bold brand-font"><i class="fas fa-clipboard-list me-2 text-info"></i>Active Inpatient Admissions</h5>
+      <h5 class="mb-0 fw-bold brand-font"><i class="fas fa-clipboard-list me-2 text-info"></i>Active Inpatient Admissions (Under Medical Care)</h5>
       <span class="badge bg-light text-dark fw-bold">{{ active_admissions | length }} Patients Admitted</span>
     </div>
     
@@ -239,14 +322,23 @@ Ward & Room Management | Admin Control
             <th class="ps-4 text-muted small text-uppercase">Patient</th>
             <th class="text-muted small text-uppercase">Room / Ward</th>
             <th class="text-muted small text-uppercase">Admitting Doctor</th>
-            <th class="text-muted small text-uppercase">Admission Date</th>
+            <th class="text-muted small text-uppercase">Admission & Tentative</th>
             <th class="text-end pe-4 text-muted small text-uppercase">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for admission in active_admissions %}
           <tr>
-            <td class="ps-4 fw-bold text-dark">{{ admission.patient.username }}</td>
+            <td class="ps-4 fw-bold text-dark">
+              {{ admission.patient.username }}
+              {% if admission.discharge_requested %}
+              <div class="mt-1">
+                <span class="badge bg-warning text-dark rounded-pill px-2 py-0 small fw-bold">
+                  <i class="fas fa-bell me-1"></i> Patient Requested Discharge
+                </span>
+              </div>
+              {% endif %}
+            </td>
             <td>
               <span class="badge bg-info text-white rounded-pill px-3 py-2 shadow-sm border border-info">
                 Room {{ admission.room.room_number }}
@@ -254,11 +346,14 @@ Ward & Room Management | Admin Control
               <small class="text-muted d-block mt-1 fw-bold text-uppercase">{{ admission.room.ward_type }} Ward</small>
             </td>
             <td class="text-dark">{% if admission.doctor.user_account.username.lower().startswith('dr') %}{{ admission.doctor.user_account.username }}{% else %}Dr. {{ admission.doctor.user_account.username }}{% endif %}</td>
-            <td class="text-muted">{{ admission.admission_date.strftime('%b %d, %Y') }}</td>
+            <td class="text-muted">
+              <div>{{ admission.admission_date.strftime('%b %d, %Y') if admission.admission_date else 'Active' }}</div>
+              <div class="small text-primary fw-semibold">Tentative: {{ admission.tentative_days or 3 }} Days</div>
+            </td>
             <td class="text-end pe-4">
               <form action="/admin/discharge" method="POST" class="m-0" 
-                    onsubmit="return confirm('Officially discharge this patient? This will generate their final bill.');">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    onsubmit="return confirm('Authorize clinical discharge for this patient? This will generate their final hospital bill.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="hidden" name="admission_id" value="{{ admission.admission_id }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-4 py-2 hover-lift">
                   Discharge

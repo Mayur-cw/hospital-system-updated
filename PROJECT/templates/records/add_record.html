@@ -138,27 +138,39 @@ Write Prescription | Hospital Management System
             </div>
             
             <div id="admissionSection" style="display: none;" class="mt-4 pt-4 border-top">
-              <label for="room_id" class="form-label fw-bold text-info mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 12px;">
-                <i class="fas fa-bed me-2"></i>Select Available Bed / Room
-              </label>
-              
-              {% if available_rooms %}
-              <select class="form-control-modern w-100" id="room_id" name="room_id" style="border-color: #0dcaf0;">
-                  <option value="" selected disabled>Choose a ward...</option>
-                  {% for room in available_rooms %}
-                      <option value="{{ room.room_id }}">
-                        {{ room.ward_type }} Ward — Room {{ room.room_number }} (₹{{ room.rate_per_day }}/day)
-                      </option>
-                  {% endfor %}
-              </select>
-              <div class="small text-muted mt-2">
-                <i class="fas fa-info-circle me-1 text-info"></i> Reserving a room will admit the patient and automatically add a 1-day deposit to their invoice.
+              <div class="row g-3">
+                <div class="col-md-7">
+                  <label for="room_id" class="form-label fw-bold text-info mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 12px;">
+                    <i class="fas fa-bed me-2"></i>Select Available Bed / Room
+                  </label>
+                  
+                  {% if available_rooms %}
+                  <select class="form-control-modern w-100" id="room_id" name="room_id" style="border-color: #0dcaf0;">
+                      <option value="" selected disabled>Choose a ward...</option>
+                      {% for room in available_rooms %}
+                          <option value="{{ room.room_id }}">
+                            {{ room.ward_type }} Ward — Room {{ room.room_number }} (₹{{ room.rate_per_day }}/day)
+                          </option>
+                      {% endfor %}
+                  </select>
+                  {% else %}
+                  <div class="alert alert-danger mb-0 border-0 shadow-sm py-2">
+                    <i class="fas fa-exclamation-triangle me-2"></i>No rooms are currently available across all wards.
+                  </div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-5">
+                  <label for="tentative_days" class="form-label fw-bold text-info mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 12px;">
+                    <i class="fas fa-calendar-alt me-2"></i>Tentative Stay (Days)
+                  </label>
+                  <input type="number" class="form-control-modern w-100" id="tentative_days" name="tentative_days" value="3" min="1" max="90" style="border-color: #0dcaf0;" placeholder="e.g. 3">
+                </div>
               </div>
-              {% else %}
-              <div class="alert alert-danger mb-0 border-0 shadow-sm py-2">
-                <i class="fas fa-exclamation-triangle me-2"></i>No rooms are currently available across all wards.
+
+              <div class="small text-muted mt-3 p-3 bg-white rounded-3 border">
+                <i class="fas fa-info-circle me-1 text-info"></i> <strong>Hospital Billing Protocol:</strong> Outpatient visit consultation is already settled. Inpatient room charges are calculated and billed <em>only after doctor authorizes clinical discharge</em> based on actual duration in care.
               </div>
-              {% endif %}
             </div>
           </div>
 

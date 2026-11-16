@@ -47,6 +47,7 @@ class Config:
     
     FACILITY_TIMEZONE = os.environ.get('FACILITY_TIMEZONE', 'Asia/Kolkata')
     WTF_CSRF_ENABLED = True
+    TEMPLATES_AUTO_RELOAD = True
 
     @classmethod
     def validate(cls):

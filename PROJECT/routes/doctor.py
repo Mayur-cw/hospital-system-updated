@@ -88,6 +88,7 @@ def add_record(apt_id):
         prescription = request.form.get('prescription', '').strip()
         notes = request.form.get('notes', '').strip()
         room_id = request.form.get('room_id')
+        tentative_days = request.form.get('tentative_days', 3)
         action = request.form.get('action', 'sign')
 
         if not diagnosis or not prescription:
@@ -102,7 +103,8 @@ def add_record(apt_id):
             notes=notes,
             doctor_user=current_user,
             action=action,
-            room_id=room_id
+            room_id=room_id,
+            tentative_days=tentative_days
         )
 
         if success:
@@ -123,7 +125,10 @@ def my_admissions():
     
     doc_profile = Doctors.query.filter_by(user_id=current_user.id).first()
     doc_did = doc_profile.did if doc_profile else 0
-    my_patients = Admission.query.filter_by(doctor_id=doc_did, status='Admitted').all()
+    my_patients = Admission.query.filter(
+        Admission.doctor_id == doc_did,
+        Admission.status.in_(['Admitted', 'Billing Pending'])
+    ).order_by(Admission.admission_date.desc()).all()
     
     return render_template('records/doctor_admissions.html', admissions=my_patients)
 
@@ -142,12 +147,63 @@ def discharge_patient():
         return redirect(url_for('main.index'))
 
     summary = request.form.get('discharge_summary', '').strip()
-    success, message, bill = InpatientService.discharge_patient(
+    success, message, bill = InpatientService.doctor_approve_discharge(
         admission_id=admission_id,
-        actor=current_user,
+        doctor_user=current_user,
         discharge_summary=summary
     )
     
+    flash(message, "success" if success else "warning")
+    return redirect(url_for('doctor.my_admissions'))
+
+@doctor_bp.route('/doctor/reject_discharge', methods=['POST'])
+@login_required
+def reject_discharge():
+    if current_user.usertype != "Doctor":
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.index'))
+
+    admission_id = request.form.get('admission_id')
+    admission = Admission.query.get_or_404(admission_id)
+    if not can_discharge_admission(current_user, admission):
+        flash("Access Denied: You cannot alter records of patients under another physician's care.", "danger")
+        return redirect(url_for('main.index'))
+
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash("Clinical justification is required when rejecting an early discharge request.", "warning")
+        return redirect(url_for('doctor.my_admissions'))
+
+    success, message = InpatientService.doctor_reject_discharge(
+        admission_id=admission_id,
+        doctor_user=current_user,
+        reason=reason
+    )
+    flash(message, "info" if success else "warning")
+    return redirect(url_for('doctor.my_admissions'))
+
+@doctor_bp.route('/doctor/extend_stay', methods=['POST'])
+@login_required
+def extend_stay():
+    if current_user.usertype != "Doctor":
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('main.index'))
+
+    admission_id = request.form.get('admission_id')
+    admission = Admission.query.get_or_404(admission_id)
+    if not can_discharge_admission(current_user, admission):
+        flash("Access Denied: You cannot alter records of patients under another physician's care.", "danger")
+        return redirect(url_for('main.index'))
+
+    additional_days = request.form.get('additional_days', 1)
+    notes = request.form.get('notes', '').strip()
+
+    success, message = InpatientService.doctor_extend_stay(
+        admission_id=admission_id,
+        doctor_user=current_user,
+        additional_days=additional_days,
+        clinical_notes=notes
+    )
     flash(message, "success" if success else "warning")
     return redirect(url_for('doctor.my_admissions'))
 

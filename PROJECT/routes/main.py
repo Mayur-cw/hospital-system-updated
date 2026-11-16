@@ -78,10 +78,10 @@ def index():
             today = date.today()
             now = datetime.now().time()
             
-            # 🏥 Inpatient Admission & Room Tracking
-            active_admission = Admission.query.filter_by(
-                patient_id=current_user.id,
-                status='Admitted'
+            # 🏥 Inpatient Admission & Room Tracking (Admitted OR Billing Pending)
+            active_admission = Admission.query.filter(
+                Admission.patient_id == current_user.id,
+                Admission.status.in_(['Admitted', 'Billing Pending'])
             ).order_by(Admission.admission_date.desc()).first()
 
             admission_bill = None
@@ -92,8 +92,11 @@ def index():
                 delta = datetime.now() - adm_date
                 stay_days = max(1, delta.days)
                 rate = Decimal(str(active_admission.room.rate_per_day))
-                est_total = Decimal('500.00') + (Decimal(stay_days) * rate)
+                calc_days = active_admission.actual_days if active_admission.actual_days else stay_days
+                est_total = Decimal(calc_days) * rate
                 admission_bill = Billing.query.filter_by(apt_id=active_admission.apt_id).first()
+                if admission_bill and admission_bill.amount:
+                    est_total = admission_bill.amount
                 
             raw_upcoming = Appointments.query.filter(
                 Appointments.user_id == current_user.id,

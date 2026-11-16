@@ -520,176 +520,255 @@ Home | Hospital Management System
   </div>
 
   {% if active_admission %}
-  <!-- 🏥 ACTIVE INPATIENT ADMISSION COMMAND HUB -->
-  <div class="hms-panel mb-5 p-4 p-md-5 anim-1" style="background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%); border: 2px solid #0dcaf0; box-shadow: 0 15px 35px rgba(13, 202, 240, 0.12);">
-    
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4 pb-4 border-bottom">
-      <div class="d-flex align-items-center gap-3">
-        <div class="rounded-4 d-flex align-items-center justify-content-center shadow-sm text-white" style="width: 64px; height: 64px; font-size: 28px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
-          <i class="fas fa-procedures"></i>
-        </div>
-        <div>
-          <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-            <span class="badge bg-info text-white rounded-pill px-3 py-1 fw-bold text-uppercase" style="letter-spacing: 0.5px;">
-              <i class="fas fa-bed me-1"></i> Currently Admitted Inpatient
-            </span>
-            {% if active_admission.discharge_requested %}
-            <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold shadow-sm">
-              <i class="fas fa-hourglass-half me-1"></i> Discharge Requested (Under Review)
-            </span>
-            {% else %}
-            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1 fw-bold">
-              <i class="fas fa-heartbeat me-1"></i> Active Monitored Stay
-            </span>
-            {% endif %}
+    {% if active_admission.status == 'Billing Pending' %}
+    <!-- 🏥 STAGE: CLINICAL DISCHARGE APPROVED — PENDING FEE SETTLEMENT & CHECKOUT -->
+    <div class="hms-panel mb-5 p-4 p-md-5 anim-1 border-start border-4 border-warning shadow-lg" style="background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4 pb-4 border-bottom">
+        <div class="d-flex align-items-center gap-3">
+          <div class="rounded-4 d-flex align-items-center justify-content-center shadow-sm text-white" style="width: 64px; height: 64px; font-size: 28px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+            <i class="fas fa-file-invoice-dollar"></i>
           </div>
-          <h2 class="brand-font fw-bold text-dark mb-0">
-            Admitted in Room {{ active_admission.room.room_number }} &bull; {{ active_admission.room.ward_type }} Ward
-          </h2>
-          <p class="text-muted mb-0 small mt-1">
-            Attending Physician: <strong class="text-dark">{% if active_admission.doctor.user_account.username.lower().startswith('dr') %}{{ active_admission.doctor.user_account.username }}{% else %}Dr. {{ active_admission.doctor.user_account.username }}{% endif %}</strong> ({{ active_admission.doctor.dept }})
-          </p>
-        </div>
-      </div>
-
-      <!-- Quick Room Badge -->
-      <div class="text-md-end bg-white p-3 rounded-4 shadow-sm border border-info border-opacity-25 flex-shrink-0">
-        <div class="small text-muted fw-bold text-uppercase" style="letter-spacing: 1px;">Assigned Bed</div>
-        <h3 class="fw-bold text-info mb-0">Room {{ active_admission.room.room_number }}</h3>
-        <span class="badge bg-light text-muted border rounded-pill px-2 py-0 small">₹{{ active_admission.room.rate_per_day }}/day</span>
-      </div>
-    </div>
-
-    <!-- Admission Details Grid -->
-    <div class="row g-3 py-4">
-      <div class="col-sm-6 col-md-3">
-        <div class="p-3 bg-white rounded-3 border">
-          <div class="small text-muted text-uppercase fw-bold" style="font-size: 11px;">Admission Date</div>
-          <div class="fw-bold text-dark fs-6 mt-1">{{ active_admission.admission_date.strftime('%B %d, %Y') if active_admission.admission_date else 'Active' }}</div>
-          <div class="small text-muted">{{ active_admission.admission_date.strftime('%I:%M %p') if active_admission.admission_date else '' }}</div>
-        </div>
-      </div>
-      <div class="col-sm-6 col-md-3">
-        <div class="p-3 bg-white rounded-3 border">
-          <div class="small text-muted text-uppercase fw-bold" style="font-size: 11px;">Stay Duration</div>
-          <div class="fw-bold text-primary fs-6 mt-1">{{ stay_days }} Day{% if stay_days > 1 %}s{% endif %} in Care</div>
-          <div class="small text-muted">Daily rounds active</div>
-        </div>
-      </div>
-      <div class="col-sm-6 col-md-3">
-        <div class="p-3 bg-white rounded-3 border">
-          <div class="small text-muted text-uppercase fw-bold" style="font-size: 11px;">Inpatient Statement</div>
-          <div class="fw-bold text-dark fs-6 mt-1">₹{{ est_total }}</div>
           <div>
-            {% if admission_bill and admission_bill.status == 'Paid' %}
-            <span class="badge bg-success text-white rounded-pill px-2 py-0 small"><i class="fas fa-check-circle me-1"></i> Paid</span>
-            {% else %}
-            <span class="badge bg-warning text-dark rounded-pill px-2 py-0 small"><i class="fas fa-clock me-1"></i> Payment Pending</span>
-            {% endif %}
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+              <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold text-uppercase" style="letter-spacing: 0.5px;">
+                <i class="fas fa-check-circle me-1"></i> Discharge Clinically Approved by Doctor
+              </span>
+              <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-1 fw-bold">
+                Action Required: Settle Room Bill
+              </span>
+            </div>
+            <h2 class="brand-font fw-bold text-dark mb-0">
+              Pay Inpatient Bill to Confirm Final Checkout & Discharge
+            </h2>
+            <p class="text-muted mb-0 small mt-1">
+              Physician: <strong class="text-dark">{% if active_admission.doctor.user_account.username.lower().startswith('dr') %}{{ active_admission.doctor.user_account.username }}{% else %}Dr. {{ active_admission.doctor.user_account.username }}{% endif %}</strong> &bull; Room {{ active_admission.room.room_number }} ({{ active_admission.room.ward_type }} Ward)
+            </p>
           </div>
         </div>
-      </div>
-      <div class="col-sm-6 col-md-3">
-        <div class="p-3 bg-white rounded-3 border">
-          <div class="small text-muted text-uppercase fw-bold" style="font-size: 11px;">Station Support</div>
-          <div class="fw-bold text-dark fs-6 mt-1"><i class="fas fa-phone-alt text-info me-1"></i> Ext: 104</div>
-          <div class="small text-muted">Nurse Desk 24x7</div>
+
+        <div class="text-md-end bg-white p-3 rounded-4 shadow-sm border border-warning flex-shrink-0">
+          <div class="small text-muted fw-bold text-uppercase" style="letter-spacing: 1px;">Inpatient Room Bill</div>
+          <h3 class="fw-bold text-warning mb-0">₹{{ est_total }}</h3>
+          <span class="badge bg-light text-muted border rounded-pill px-2 py-0 small">{{ active_admission.actual_days or 1 }} Day{% if (active_admission.actual_days or 1) > 1 %}s{% endif %} @ ₹{{ active_admission.room.rate_per_day }}/day</span>
         </div>
+      </div>
+
+      <!-- Doctor's Discharge Clinical Summary Box -->
+      <div class="p-4 bg-white rounded-4 border my-4 shadow-sm">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="fas fa-stethoscope text-primary"></i>
+          <span class="small fw-bold text-dark text-uppercase" style="letter-spacing: 0.5px;">Attending Physician's Discharge Summary:</span>
+        </div>
+        <p class="mb-0 text-dark fs-6" style="line-height: 1.6;">
+          {{ active_admission.discharge_summary or 'Patient has been clinically evaluated, declared medically stable, and cleared for discharge. Inpatient room charges finalized.' }}
+        </p>
+      </div>
+
+      <!-- Action Row -->
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        {% if admission_bill and admission_bill.status == 'Paid' %}
+        <span class="badge bg-success fs-6 py-2 px-4 rounded-pill shadow-sm">
+          <i class="fas fa-check-circle me-1"></i> Bill Settled & Paid (₹{{ est_total }}) — Awaiting Frontdesk Bed Release
+        </span>
+        <a href="{{ url_for('patient.view_receipt', bill_id=admission_bill.bill_id) }}" class="btn btn-outline-success rounded-pill px-4 py-2 fw-bold">
+          <i class="fas fa-receipt me-1"></i> View Paid Hospital Receipt
+        </a>
+        {% else %}
+        <a href="{{ url_for('patient.inpatient_pay', admission_id=active_admission.admission_id) }}" class="btn btn-success btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg hover-lift d-flex align-items-center gap-2">
+          <i class="fas fa-credit-card"></i>
+          <span>Pay Inpatient Bill (₹{{ est_total }}) to Confirm Discharge</span>
+        </a>
+        {% endif %}
+
+        <a href="{{ url_for('doctor.view_record', apt_id=active_admission.apt_id) }}" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2">
+          <i class="fas fa-file-prescription"></i>
+          <span>View Official Discharge Rx</span>
+        </a>
       </div>
     </div>
 
-    <!-- Status Notice if Discharge Requested -->
-    {% if active_admission.discharge_requested %}
-    <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-3">
-      <i class="fas fa-info-circle fa-2x text-warning flex-shrink-0"></i>
-      <div>
-        <strong>Discharge Request Under Clinical Review:</strong> Your request has been queued for attending physician Dr. {{ active_admission.doctor.user_account.username }}. Final rounds and clearance summary will be issued shortly.
-        {% if active_admission.discharge_notes %}
-        <div class="small text-muted mt-1"><strong>Your Notes:</strong> "{{ active_admission.discharge_notes }}"</div>
+    {% else %}
+    <!-- 🏥 STAGE: ACTIVE INPATIENT ADMISSION (UNDER CLINICAL CARE) -->
+    <div class="hms-panel mb-5 p-4 p-md-5 anim-1" style="background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%); border: 2px solid #0dcaf0; box-shadow: 0 15px 35px rgba(13, 202, 240, 0.12);">
+      
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4 pb-4 border-bottom">
+        <div class="d-flex align-items-center gap-3">
+          <div class="rounded-4 d-flex align-items-center justify-content-center shadow-sm text-white" style="width: 64px; height: 64px; font-size: 28px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+            <i class="fas fa-procedures"></i>
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+              <span class="badge bg-info text-white rounded-pill px-3 py-1 fw-bold text-uppercase" style="letter-spacing: 0.5px;">
+                <i class="fas fa-bed me-1"></i> Currently Admitted Inpatient
+              </span>
+              {% if active_admission.discharge_requested %}
+              <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold shadow-sm">
+                <i class="fas fa-hourglass-half me-1"></i> Early Discharge Requested (Under Review)
+              </span>
+              {% else %}
+              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1 fw-bold">
+                <i class="fas fa-heartbeat me-1"></i> Monitored Care Active
+              </span>
+              {% endif %}
+            </div>
+            <h2 class="brand-font fw-bold text-dark mb-0">
+              Admitted in Room {{ active_admission.room.room_number }} &bull; {{ active_admission.room.ward_type }} Ward
+            </h2>
+            <p class="text-muted mb-0 small mt-1">
+              Attending Physician: <strong class="text-dark">{% if active_admission.doctor.user_account.username.lower().startswith('dr') %}{{ active_admission.doctor.user_account.username }}{% else %}Dr. {{ active_admission.doctor.user_account.username }}{% endif %}</strong> ({{ active_admission.doctor.dept }})
+            </p>
+          </div>
+        </div>
+
+        <!-- Quick Room Badge -->
+        <div class="text-md-end bg-white p-3 rounded-4 shadow-sm border border-info border-opacity-25 flex-shrink-0">
+          <div class="small text-muted fw-bold text-uppercase" style="letter-spacing: 1px;">Assigned Bed</div>
+          <h3 class="fw-bold text-info mb-0">Room {{ active_admission.room.room_number }}</h3>
+          <span class="badge bg-light text-muted border rounded-pill px-2 py-0 small">₹{{ active_admission.room.rate_per_day }}/day</span>
+        </div>
+      </div>
+
+      <!-- Admission Details Grid -->
+      <div class="row g-3 py-4">
+        <div class="col-sm-6 col-md-3">
+          <div class="p-3 bg-white rounded-3 border h-100">
+            <div class="small text-muted text-uppercase fw-bold" style="font-size: 11px;">Admission Date</div>
+            <div class="fw-bold text-dark fs-6 mt-1">{{ active_admission.admission_date.strftime('%B %d, %Y') if active_admission.admission_date else 'Active' }}</div>
+            <div class="small text-muted">{{ active_admission.admission_date.strftime('%I:%M %p') if active_admission.admission_date else '' }}</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="p-3 bg-white rounded-3 border h-100">
+            <div class="small text-muted text-uppercase fw-bold" style="font-size: 11px;">Tentative Stay & Timeline</div>
+            <div class="fw-bold text-primary fs-6 mt-1">{{ active_admission.tentative_days or 3 }} Days Planned</div>
+            <div class="small text-muted">Currently in Day {{ stay_days }}</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="p-3 bg-white rounded-3 border h-100">
+            <div class="small text-muted text-uppercase fw-bold" style="font-size: 11px;">Inpatient Billing</div>
+            <div class="fw-bold text-dark fs-6 mt-1">₹{{ active_admission.room.rate_per_day }}/day</div>
+            <div class="small text-muted">Billed upon doctor discharge clearance</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="p-3 bg-white rounded-3 border h-100">
+            <div class="small text-muted text-uppercase fw-bold" style="font-size: 11px;">Ward Station Support</div>
+            <div class="fw-bold text-dark fs-6 mt-1"><i class="fas fa-phone-alt text-info me-1"></i> Ext: 104</div>
+            <div class="small text-muted">24x7 Inpatient Nursing Desk</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clinical Team Advisory: Rejection of Early Discharge -->
+      {% if active_admission.discharge_rejection_reason %}
+      <div class="alert alert-info border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-3">
+        <i class="fas fa-user-md fa-2x text-info flex-shrink-0"></i>
+        <div>
+          <strong class="text-dark">Physician Clinical Evaluation:</strong> Early discharge was reviewed and advised against by your attending doctor for patient safety.
+          <div class="mt-1 text-dark fw-semibold">"{{ active_admission.discharge_rejection_reason }}"</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Stay Extension Notice -->
+      {% if active_admission.stay_extended_notes %}
+      <div class="alert alert-primary bg-opacity-10 border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-3">
+        <i class="fas fa-calendar-plus fa-2x text-primary flex-shrink-0"></i>
+        <div>
+          <strong class="text-dark">Stay Duration Extended:</strong> Your doctor has revised the tentative stay to <strong>{{ active_admission.tentative_days }} days</strong> for optimal recovery.
+          <div class="small text-muted mt-1">"{{ active_admission.stay_extended_notes }}"</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Status Notice if Discharge Requested -->
+      {% if active_admission.discharge_requested %}
+      <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-3">
+        <i class="fas fa-hourglass-half fa-2x text-warning flex-shrink-0"></i>
+        <div>
+          <strong>Early Discharge Request Under Review:</strong> Your attending physician has been notified. Rounds will be conducted to evaluate vitals and clear departure.
+          {% if active_admission.discharge_notes %}
+          <div class="small text-muted mt-1"><strong>Your Notes:</strong> "{{ active_admission.discharge_notes }}"</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Action Buttons -->
+      <div class="d-flex flex-wrap align-items-center gap-3 pt-2">
+        <!-- 1. Request Early Discharge Option -->
+        {% if not active_admission.discharge_requested %}
+        <button type="button" class="btn btn-outline-danger rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#dischargeRequestModal">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Request Early Discharge</span>
+        </button>
+        {% else %}
+        <button type="button" class="btn btn-secondary rounded-pill px-4 py-2 fw-bold disabled" style="opacity: 0.7;">
+          <i class="fas fa-check-circle me-1"></i> Early Discharge Requested
+        </button>
         {% endif %}
+
+        <!-- 2. View Rx / Clinical Record -->
+        <a href="{{ url_for('doctor.view_record', apt_id=active_admission.apt_id) }}" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift">
+          <i class="fas fa-file-prescription"></i>
+          <span>View Inpatient Rx & Care Orders</span>
+        </a>
+
+        <!-- 3. Room Services / Nurse Call -->
+        <a href="tel:104" class="btn btn-light rounded-pill px-3 py-2 fw-bold border text-muted ms-auto d-flex align-items-center gap-2">
+          <i class="fas fa-user-nurse text-danger"></i>
+          <span>Call Nurse Station (Ext: 104)</span>
+        </a>
+      </div>
+
+    </div>
+
+    <!-- DISCHARGE REQUEST MODAL -->
+    {% if not active_admission.discharge_requested %}
+    <div class="modal fade" id="dischargeRequestModal" tabindex="-1" aria-labelledby="dischargeRequestModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+          <div class="modal-header bg-dark text-white p-4">
+            <div class="d-flex align-items-center gap-3">
+              <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                <i class="fas fa-sign-out-alt"></i>
+              </div>
+              <div>
+                <h5 class="modal-title fw-bold" id="dischargeRequestModalLabel">Request Early Discharge</h5>
+                <div class="small text-white text-opacity-75">Room {{ active_admission.room.room_number }} &bull; {{ active_admission.room.ward_type }} Ward</div>
+              </div>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form action="{{ url_for('patient.request_discharge', admission_id=active_admission.admission_id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="modal-body p-4">
+              <p class="text-muted small mb-3">
+                If you feel recovered before your tentative {{ active_admission.tentative_days or 3 }}-day stay, you can submit an early discharge request. Your attending doctor (<strong class="text-dark">{% if active_admission.doctor.user_account.username.lower().startswith('dr') %}{{ active_admission.doctor.user_account.username }}{% else %}Dr. {{ active_admission.doctor.user_account.username }}{% endif %}</strong>) will conduct bedside rounds to confirm clinical stability.
+              </p>
+              <div class="mb-3">
+                <label for="dischargeNotes" class="form-label fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">
+                  Notes for Attending Physician <span class="text-muted fw-normal text-lowercase">(Optional)</span>
+                </label>
+                <textarea class="form-control rounded-3" id="dischargeNotes" name="notes" rows="3" placeholder="e.g. Feeling much better, fever resolved, transport arranged."></textarea>
+              </div>
+              <div class="p-3 bg-light rounded-3 border small text-muted">
+                <i class="fas fa-shield-alt text-info me-1"></i> Patient Safety Invariant: Discharge is finalized only after physician clinical clearance and final room bill settlement.
+              </div>
+            </div>
+            <div class="modal-footer bg-light p-3 border-top d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-light rounded-pill px-4 fw-bold border" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
+                <i class="fas fa-paper-plane me-1"></i> Submit Early Request
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
     {% endif %}
-
-    <!-- Action Buttons -->
-    <div class="d-flex flex-wrap align-items-center gap-3 pt-2">
-      <!-- 1. Pay Fees Option -->
-      <a href="{{ url_for('patient.inpatient_pay', admission_id=active_admission.admission_id) }}" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift">
-        <i class="fas fa-credit-card"></i>
-        <span>Pay Fees / Settle Bill (₹{{ est_total }})</span>
-      </a>
-
-      <!-- 2. Request Discharge Option -->
-      {% if not active_admission.discharge_requested %}
-      <button type="button" class="btn btn-outline-danger rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#dischargeRequestModal">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Request Discharge</span>
-      </button>
-      {% else %}
-      <button type="button" class="btn btn-secondary rounded-pill px-4 py-2 fw-bold disabled" style="opacity: 0.7;">
-        <i class="fas fa-check-circle me-1"></i> Discharge Requested
-      </button>
-      {% endif %}
-
-      <!-- 3. View Rx / Clinical Record -->
-      <a href="{{ url_for('doctor.view_record', apt_id=active_admission.apt_id) }}" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift">
-        <i class="fas fa-file-prescription"></i>
-        <span>View Inpatient Rx</span>
-      </a>
-
-      <!-- 4. Room Services / Nurse Call -->
-      <a href="tel:104" class="btn btn-light rounded-pill px-3 py-2 fw-bold border text-muted ms-auto d-flex align-items-center gap-2">
-        <i class="fas fa-user-nurse text-danger"></i>
-        <span>Call Nurse Station</span>
-      </a>
-    </div>
-
-  </div>
-
-  <!-- DISCHARGE REQUEST MODAL -->
-  {% if not active_admission.discharge_requested %}
-  <div class="modal fade" id="dischargeRequestModal" tabindex="-1" aria-labelledby="dischargeRequestModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
-        <div class="modal-header bg-dark text-white p-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-              <i class="fas fa-sign-out-alt"></i>
-            </div>
-            <div>
-              <h5 class="modal-title fw-bold" id="dischargeRequestModalLabel">Request Inpatient Discharge</h5>
-              <div class="small text-white text-opacity-75">Room {{ active_admission.room.room_number }} &bull; {{ active_admission.room.ward_type }} Ward</div>
-            </div>
-          </div>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form action="{{ url_for('patient.request_discharge', admission_id=active_admission.admission_id) }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <div class="modal-body p-4">
-            <p class="text-muted small mb-3">
-              Submitting this request notifies your attending doctor (<strong class="text-dark">{% if active_admission.doctor.user_account.username.lower().startswith('dr') %}{{ active_admission.doctor.user_account.username }}{% else %}Dr. {{ active_admission.doctor.user_account.username }}{% endif %}</strong>) to conduct clearance rounds, prepare your discharge summary, and finalize the room tariff billing ledger.
-            </p>
-            <div class="mb-3">
-              <label for="dischargeNotes" class="form-label fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">
-                Notes for Clinical Team <span class="text-muted fw-normal text-lowercase">(Optional)</span>
-              </label>
-              <textarea class="form-control rounded-3" id="dischargeNotes" name="notes" rows="3" placeholder="e.g. Feeling recovered, vitals stable, transport arranged."></textarea>
-            </div>
-            <div class="p-3 bg-light rounded-3 border small text-muted">
-              <i class="fas fa-shield-alt text-info me-1"></i> Patient Care Protocol: Final departure requires medical sign-off and cashier billing settlement.
-            </div>
-          </div>
-          <div class="modal-footer bg-light p-3 border-top d-flex justify-content-end gap-2">
-            <button type="button" class="btn btn-light rounded-pill px-4 fw-bold border" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
-              <i class="fas fa-paper-plane me-1"></i> Confirm & Submit Request
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  {% endif %}
+    {% endif %}
   {% endif %}
 
   <div class="row g-4 mb-5">
@@ -790,16 +869,26 @@ Home | Hospital Management System
 </style>
 
 <!-- =========================================================== -->
-<!-- 🏥 PUBLIC / LOGGED OUT VIEW                                -->
+<!-- 🏥 PUBLIC / LOGGED OUT VIEW (WORLD-CLASS HOSPITAL PORTAL) -->
 <!-- =========================================================== -->
 {% else %}
 
 <style>
-  /* Premium Centered Hero with Background Image */
+  /* ── 24x7 EMERGENCY DISPATCH TICKER ── */
+  .emergency-ribbon {
+    background: linear-gradient(90deg, #991b1b 0%, #b91c1c 50%, #991b1b 100%);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 10px 0;
+    box-shadow: 0 4px 15px rgba(185, 28, 28, 0.25);
+  }
+
+  /* ── PREMIER HERO CONTAINER ── */
   .public-hero-centered {
     position: relative;
-    /* 🚨 TIGHTENED PADDING: Reduces the massive gap at the bottom */
-    padding: 70px 0px 0px; 
+    padding: 90px 0 140px; 
     background: url('static/images/bg1.jpg') center/cover no-repeat;
     background-attachment: fixed;
     text-align: center;
@@ -809,7 +898,7 @@ Home | Hospital Management System
   .hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(11, 29, 53, 0.75) 0%, rgba(0, 201, 167, 0.45) 100%);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(13, 148, 136, 0.65) 100%);
     z-index: 1;
   }
 
@@ -818,42 +907,42 @@ Home | Hospital Management System
     z-index: 2;
   }
 
-  /* Upgraded Overlapping Cards */
+  /* ── ELEVATED TRI-CARD PILLARS ── */
   .hms-card-overlap {
     background: #ffffff;
-    border: none;
-    border-radius: 20px;
-    padding: 40px 30px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 24px;
+    padding: 40px 32px;
     text-align: center;
     height: 100%;
     display: flex;
     flex-direction: column;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 20px 40px -15px rgba(0,0,0,0.08);
   }
 
   .hms-card-overlap:hover {
-    transform: translateY(-12px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    transform: translateY(-10px);
+    box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.18);
   }
 
   .card-icon-wrapper {
-    width: 75px;
-    height: 75px;
-    border-radius: 18px;
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 30px;
+    font-size: 32px;
     margin: 0 auto 24px;
     transition: transform 0.3s ease;
   }
 
   .hms-card-overlap:hover .card-icon-wrapper {
-    transform: scale(1.1);
+    transform: scale(1.1) rotate(2deg);
   }
 
-  /* 🚨 UPGRADED HERO BUTTONS FOR MAXIMUM VISIBILITY 🚨 */
+  /* ── HERO BUTTONS ── */
   .hero-btn-primary {
     background: #ffffff;
     color: var(--hms-navy);
@@ -865,73 +954,141 @@ Home | Hospital Management System
     font-weight: 700;
     text-decoration: none;
     transition: all 0.2s ease;
-    /* Stronger shadow so it pops off the background */
-    box-shadow: 0 8px 25px rgba(0,0,0,0.25); 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
   }
   
   .hero-btn-primary:hover {
     background: #f8f9fa;
     transform: translateY(-3px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.35);
     color: var(--hms-teal);
   }
 
   .hero-btn-outline {
-    /* Added a frosted glass dark tint so it never gets lost in the white SVG curve */
-    background: rgba(11, 29, 53, 0.4); 
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.45); 
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     color: #ffffff;
-    border: 2px solid #ffffff;
-    padding: 12px 36px;
+    border: 2px solid rgba(255,255,255,0.8);
+    padding: 12px 34px;
     border-radius: 50px;
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 600;
     text-decoration: none;
     transition: all 0.2s ease;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
   }
 
   .hero-btn-outline:hover {
     border-color: #ffffff;
-    background: rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.2);
     transform: translateY(-3px);
     color: #ffffff;
   }
+
+  .hero-btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    color: #ffffff;
+    border: none;
+    padding: 14px 34px;
+    border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+  }
+  .hero-btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    color: #ffffff;
+    transform: translateY(-3px);
+  }
+
+  /* ── STATS COUNTER STRIP ── */
+  .trust-strip {
+    background: #ffffff;
+    border-top: 1px solid var(--hms-border);
+    border-bottom: 1px solid var(--hms-border);
+    padding: 35px 0;
+  }
+  .stat-number {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(32px, 3.5vw, 42px);
+    font-weight: 800;
+    color: var(--hms-navy);
+    line-height: 1;
+  }
+
+  /* ── SPECIALTY DEPARTMENT CARD ── */
+  .specialty-card {
+    background: #ffffff;
+    border: 1px solid var(--hms-border);
+    border-radius: 20px;
+    padding: 28px;
+    height: 100%;
+    transition: all 0.25s ease;
+  }
+  .specialty-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--hms-teal);
+    box-shadow: 0 15px 35px rgba(13, 148, 136, 0.1);
+  }
 </style>
 
-<!-- 🚨 CENTERED HERO SECTION 🚨 -->
+<!-- 🚨 24x7 EMERGENCY & TRAUMA TICKER 🚨 -->
+<div class="emergency-ribbon">
+  <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-white text-danger fw-bold px-2 py-1 text-uppercase" style="font-size: 10px; letter-spacing: 1px;">24/7 EMERGENCY</span>
+      <span>Trauma Hotline & Ambulance: <strong>+91 (0240) 233 1111</strong> or <strong>108</strong></span>
+    </div>
+    <div class="d-none d-md-flex align-items-center gap-3 small">
+      <span><i class="fas fa-heartbeat me-1"></i> Cardiac Cath Lab 24x7</span>
+      <span>&bull;</span>
+      <span><i class="fas fa-procedures me-1"></i> ICU & Modular OT Active</span>
+      <span>&bull;</span>
+      <span><i class="fas fa-tint me-1"></i> Blood Bank Ready</span>
+    </div>
+  </div>
+</div>
+
+<!-- 🚨 PRESTIGIOUS HERO SECTION 🚨 -->
 <div class="public-hero-centered">
   <div class="hero-overlay"></div>
   
   <div class="container public-hero-content">
     
-    <!-- Top Pill -->
+    <!-- Accreditation Pill -->
     <div class="anim-1 mb-4">
-      <span class="d-inline-block px-4 py-2 rounded-pill text-white fw-bold shadow-sm" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(8px); font-size: 12px; letter-spacing: 0.5px;">
-        Mini-Project 2026
+      <span class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-pill text-white fw-bold shadow-sm" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(10px); font-size: 12px; letter-spacing: 1px;">
+        <i class="fas fa-certificate text-warning"></i>
+        <span>NABH ACCREDITED &bull; ISO 9001:2015 MULTI-SPECIALTY HOSPITAL</span>
       </span>
     </div>
     
     <!-- Main Title -->
-    <h1 class="public-hero-title anim-2 mb-4 text-white brand-font" style="font-size: clamp(40px, 6vw, 65px); letter-spacing: -1px; line-height: 1.2;">
-      HOSPITAL MANAGEMENT<br>
-      <span style="color: var(--hms-teal); text-shadow: 0 0 20px rgba(0,201,167,0.4);">SYSTEM</span>
+    <h1 class="public-hero-title anim-2 mb-3 text-white brand-font" style="font-size: clamp(38px, 5.5vw, 64px); letter-spacing: -1px; line-height: 1.15;">
+      HEDGEWAR HOSPITAL<br>
+      <span style="color: var(--hms-teal); text-shadow: 0 0 30px rgba(0,201,167,0.4);">Medical Center & Research Institute</span>
     </h1>
     
     <!-- Description -->
-    <p class="anim-3 mx-auto mb-5 text-white opacity-75" style="max-width: 650px; font-size: 20px; line-height: 0.3;">
-    <i><b>Smart, Secure, and Seamless Hospital Management.</b></i>
+    <p class="anim-3 mx-auto mb-5 text-white text-opacity-90" style="max-width: 750px; font-size: 19px; line-height: 1.6;">
+      Delivering compassionate, patient-first healing with 50+ board-certified super specialists, advanced modular surgical suites, 24x7 intensive care, and transparent healthcare operations.
     </p>
     
     <!-- Action Buttons -->
-    <div class="d-flex justify-content-center gap-4 flex-wrap anim-4 mt-3 pb-3">
-      <a href="/signup" class="hero-btn-primary">
-        Create Account
+    <div class="d-flex justify-content-center gap-3 flex-wrap anim-4 mt-2 pb-2">
+      <a href="/login" class="hero-btn-primary">
+        <i class="fas fa-calendar-plus me-2 text-primary"></i>Book Consultation
       </a>
-      <a href="/login" class="hero-btn-outline">
-        Login
+      <a href="/doctors" class="hero-btn-outline">
+        <i class="fas fa-user-md me-2"></i>Find a Specialist
+      </a>
+      <a href="tel:108" class="hero-btn-danger">
+        <i class="fas fa-ambulance me-2"></i>Emergency: 108
       </a>
     </div>
   </div>
@@ -946,99 +1103,258 @@ Home | Hospital Management System
   </div>
 </div>
 
-<!-- 🚨 LIFTED FEATURE CARDS 🚨 -->
-<!-- Margin-top adjusted to tuck them neatly under the buttons -->
-<div class="container" style="margin-top: -85px; position: relative; z-index: 10; margin-bottom: 80px;">
+<!-- 🚨 LIFTED TRI-PILLAR HOSPITAL CARDS 🚨 -->
+<div class="container" style="margin-top: -85px; position: relative; z-index: 10; margin-bottom: 70px;">
   <div class="row g-4 justify-content-center anim-4">
     
-    <!-- Smart Appointments -->
+    <!-- 1. 24x7 Emergency Care -->
+    <div class="col-md-4">
+      <div class="hms-card-overlap" style="border-top: 5px solid #ef4444;">
+        <div class="card-icon-wrapper" style="background:#fee2e2;color:#dc2626;">
+          <i class="fas fa-ambulance"></i>
+        </div>
+        <h4 class="brand-font fw-bold text-dark mb-2">24x7 Emergency & Trauma</h4>
+        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">
+          Immediate critical triage, multi-specialty trauma surgeons, dedicated resuscitation bays, and 24x7 cardiac catheterization readiness.
+        </p>
+        <a href="tel:108" class="btn w-100 py-2 rounded-pill mt-auto fw-bold text-white shadow-sm" style="background: #dc2626;">
+          <i class="fas fa-phone-alt me-1"></i> Emergency: 108
+        </a>
+      </div>
+    </div>
+
+    <!-- 2. Outpatient Scheduling -->
     <div class="col-md-4">
       <div class="hms-card-overlap" style="border-top: 5px solid var(--hms-teal);">
         <div class="card-icon-wrapper" style="background:var(--hms-teal-soft);color:#0f766e;">
           <i class="fas fa-calendar-check"></i>
         </div>
-        <h4 class="brand-font fw-bold text-dark mb-3">Smart Appointments</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">Conflict-free slot booking seamlessly integrated with our MySQL backend.</p>
-        <a href="/login" class="hms-btn hms-btn-ghost w-100 py-2 rounded-pill mt-auto" style="background: var(--hms-teal); color: white; border: none; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">Login to Book</a>
+        <h4 class="brand-font fw-bold text-dark mb-2">Specialist Consultations</h4>
+        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">
+          Direct conflict-free appointment booking across Cardiology, Orthopedics, Pediatrics, Dermatology, and Internal Medicine.
+        </p>
+        <a href="/login" class="btn w-100 py-2 rounded-pill mt-auto fw-bold text-white shadow-sm" style="background: var(--hms-teal);">
+          <i class="fas fa-calendar-plus me-1"></i> Book Appointment
+        </a>
       </div>
     </div>
 
-    <!-- Specialist Directory -->
+    <!-- 3. Inpatient & Digital Portal -->
     <div class="col-md-4">
       <div class="hms-card-overlap" style="border-top: 5px solid #3b82f6;">
         <div class="card-icon-wrapper" style="background:#eff6ff;color:#1d4ed8;">
-          <i class="fas fa-user-md"></i>
+          <i class="fas fa-file-medical-alt"></i>
         </div>
-        <h4 class="brand-font fw-bold text-dark mb-3">Specialist Directory</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">Browse our verified roster of medical professionals across all departments.</p>
-        <a href="/doctors" class="hms-btn w-100 py-2 rounded-pill mt-auto" style="background: #3b82f6; color: white; border: none; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">View Doctors</a>
-      </div>
-    </div>
-
-    <!-- Past Records -->
-    <div class="col-md-4">
-      <div class="hms-card-overlap" style="border-top: 5px solid #8b5cf6;">
-        <div class="card-icon-wrapper" style="background:#f5f3ff;color:#6d28d9;">
-          <i class="fas fa-notes-medical"></i>
-        </div>
-        <h4 class="brand-font fw-bold text-dark mb-3">Past Records</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">View your previous completed bookings and secure doctor prescriptions.</p>
-        <a href="/login" class="hms-btn hms-btn-ghost w-100 py-2 rounded-pill mt-auto" style="background: #8b5cf6; color: white; border: none; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">Login to View</a>
+        <h4 class="brand-font fw-bold text-dark mb-2">Inpatient Care & Portal</h4>
+        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">
+          View active room admissions, track tentative recovery, request discharge review, settle room bills, and access signed prescriptions.
+        </p>
+        <a href="/login" class="btn w-100 py-2 rounded-pill mt-auto fw-bold text-white shadow-sm" style="background: #3b82f6;">
+          <i class="fas fa-user-lock me-1"></i> Patient Portal Login
+        </a>
       </div>
     </div>
 
   </div>
 </div>
 
-<!-- 🚨 DATABASE CAPABILITIES 🚨 -->
-<div class="container mb-5 pb-4 anim-3">
-  <div class="hms-card p-5" style="background: var(--hms-navy); border: none; overflow: hidden; position: relative; border-radius: 24px;">
-    
-    <!-- Decorative subtle grid background inside the card -->
-    <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size: 30px 30px; pointer-events: none;"></div>
-    
-    <div class="row align-items-center mb-5 position-relative z-index-2">
-      <div class="col text-center">
-        <h2 class="brand-font text-white mb-2">Database Core Capabilities</h2>
-        <p class="text-white opacity-50 mb-0" style="font-size: 16px;">Built with Flask, SQLAlchemy & pure MySQL logic</p>
+<!-- 🚨 INSTITUTIONAL TRUST METRICS 🚨 -->
+<section class="trust-strip mb-5">
+  <div class="container">
+    <div class="row g-4 text-center">
+      <div class="col-6 col-md-3">
+        <div class="stat-number">50+</div>
+        <div class="text-muted small fw-bold text-uppercase mt-1" style="letter-spacing: 1px;">Super Specialists</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-number">150+</div>
+        <div class="text-muted small fw-bold text-uppercase mt-1" style="letter-spacing: 1px;">Inpatient & ICU Beds</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-number">99.4%</div>
+        <div class="text-muted small fw-bold text-uppercase mt-1" style="letter-spacing: 1px;">Clinical Recovery Index</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-number">24/7</div>
+        <div class="text-muted small fw-bold text-uppercase mt-1" style="letter-spacing: 1px;">Emergency & Diagnostics</div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- 🚨 CENTERS OF EXCELLENCE / SPECIALTY DEPARTMENTS 🚨 -->
+<div class="container mb-5 pb-3">
+  <div class="text-center mb-5">
+    <div class="badge bg-light text-primary rounded-pill px-3 py-2 fw-bold text-uppercase mb-2 shadow-sm">
+      <i class="fas fa-hospital-symbol me-1"></i> Clinical Centers of Excellence
+    </div>
+    <h2 class="brand-font fw-bold text-dark" style="font-size: clamp(28px, 4vw, 42px);">
+      Comprehensive Multi-Specialty Care
+    </h2>
+    <p class="text-muted mx-auto" style="max-width: 600px;">
+      State-of-the-art diagnostic facilities and internationally trained clinicians delivering advanced medical, surgical, and intensive care.
+    </p>
+  </div>
+
+  <div class="row g-4">
+    <!-- Department 1: Cardiology -->
+    <div class="col-md-6 col-lg-4">
+      <div class="specialty-card">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="rounded-3 d-flex align-items-center justify-content-center text-danger" style="width: 50px; height: 50px; background: #fee2e2; font-size: 24px;">
+            <i class="fas fa-heartbeat"></i>
+          </div>
+          <div>
+            <h5 class="brand-font fw-bold text-dark mb-0">Cardiology & CCU</h5>
+            <small class="text-muted">Interventional & Preventive</small>
+          </div>
+        </div>
+        <p class="text-muted small mb-3" style="line-height: 1.6;">
+          Full-spectrum cardiac catheterization, coronary angiography, 2D echocardiography, and dedicated 24x7 Cardiac Intensive Care Unit.
+        </p>
+        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
+          View Specialists <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Department 2: Critical Care -->
+    <div class="col-md-6 col-lg-4">
+      <div class="specialty-card">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="rounded-3 d-flex align-items-center justify-content-center text-info" style="width: 50px; height: 50px; background: #e0f2fe; font-size: 24px;">
+            <i class="fas fa-procedures"></i>
+          </div>
+          <div>
+            <h5 class="brand-font fw-bold text-dark mb-0">Critical Care & ICU</h5>
+            <small class="text-muted">Intensive Life Support</small>
+          </div>
+        </div>
+        <p class="text-muted small mb-3" style="line-height: 1.6;">
+          Modular ICUs with laminar airflow, advanced invasive ventilators, continuous hemodynamic monitoring, and 24x7 intensivist coverage.
+        </p>
+        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
+          Explore Inpatient Care <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Department 3: Orthopedics -->
+    <div class="col-md-6 col-lg-4">
+      <div class="specialty-card">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="rounded-3 d-flex align-items-center justify-content-center text-warning" style="width: 50px; height: 50px; background: #fef3c7; font-size: 24px;">
+            <i class="fas fa-bone"></i>
+          </div>
+          <div>
+            <h5 class="brand-font fw-bold text-dark mb-0">Orthopedics & Trauma</h5>
+            <small class="text-muted">Joints & Reconstruction</small>
+          </div>
+        </div>
+        <p class="text-muted small mb-3" style="line-height: 1.6;">
+          Computer-assisted joint arthroplasty, arthroscopic keyhole surgery, pediatric orthopedics, and complex fracture management.
+        </p>
+        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
+          View Specialists <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Department 4: Internal Medicine -->
+    <div class="col-md-6 col-lg-4">
+      <div class="specialty-card">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="rounded-3 d-flex align-items-center justify-content-center text-success" style="width: 50px; height: 50px; background: #dcfce7; font-size: 24px;">
+            <i class="fas fa-stethoscope"></i>
+          </div>
+          <div>
+            <h5 class="brand-font fw-bold text-dark mb-0">Internal Medicine</h5>
+            <small class="text-muted">Diagnostic Therapeutics</small>
+          </div>
+        </div>
+        <p class="text-muted small mb-3" style="line-height: 1.6;">
+          Evidence-based diagnosis and management of infectious diseases, metabolic disorders, hypertension, diabetes, and geriatrics.
+        </p>
+        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
+          View Specialists <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Department 5: Pediatrics -->
+    <div class="col-md-6 col-lg-4">
+      <div class="specialty-card">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="rounded-3 d-flex align-items-center justify-content-center text-primary" style="width: 50px; height: 50px; background: #dbeafe; font-size: 24px;">
+            <i class="fas fa-baby"></i>
+          </div>
+          <div>
+            <h5 class="brand-font fw-bold text-dark mb-0">Pediatrics & NICU</h5>
+            <small class="text-muted">Neonatal & Child Health</small>
+          </div>
+        </div>
+        <p class="text-muted small mb-3" style="line-height: 1.6;">
+          Level-III Neonatal Intensive Care, high-risk newborn care, comprehensive immunization, pediatric pulmonology, and child development.
+        </p>
+        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
+          View Specialists <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Department 6: Dermatology -->
+    <div class="col-md-6 col-lg-4">
+      <div class="specialty-card">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: #f3e8ff; color: #9333ea; font-size: 24px;">
+            <i class="fas fa-allergies"></i>
+          </div>
+          <div>
+            <h5 class="brand-font fw-bold text-dark mb-0">Dermatology</h5>
+            <small class="text-muted">Clinical & Phototherapy</small>
+          </div>
+        </div>
+        <p class="text-muted small mb-3" style="line-height: 1.6;">
+          Diagnosis and advanced treatment of acute skin infections, chronic psoriasis, allergy patch tests, and dermatosurgical care.
+        </p>
+        <a href="/doctors" class="small fw-bold text-primary text-decoration-none">
+          View Specialists <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🚨 PATIENT & VISITOR ASSURANCE BANNER 🚨 -->
+<div class="container mb-5 pb-4">
+  <div class="p-5 rounded-4 text-white shadow-lg position-relative overflow-hidden" style="background: linear-gradient(135deg, var(--hms-navy) 0%, #1e293b 100%);">
+    <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size: 25px 25px; pointer-events: none;"></div>
     
-    <div class="row g-4 position-relative z-index-2">
-      <div class="col-md-4">
-        <div class="text-center px-2">
-          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(245,158,11,0.1); color:var(--hms-amber); width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(245,158,11,0.2);"><i class="fas fa-bolt"></i></div>
-          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Automated Triggers</div>
-          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
-            Real-time audit logging using MySQL <code style="color:var(--hms-amber); background:transparent; border-color:rgba(245,158,11,0.3);">AFTER INSERT</code>, <code style="color:var(--hms-amber); background:transparent; border-color:rgba(245,158,11,0.3);">UPDATE</code>, and <code style="color:var(--hms-amber); background:transparent; border-color:rgba(245,158,11,0.3);">DELETE</code>.
-          </div>
-        </div>
+    <div class="row align-items-center position-relative z-index-2">
+      <div class="col-lg-8 mb-4 mb-lg-0">
+        <span class="badge bg-teal text-white rounded-pill px-3 py-1 fw-bold text-uppercase small mb-2" style="background: var(--hms-teal);">
+          <i class="fas fa-shield-alt me-1"></i> Cashless Insurance & TPA Desk
+        </span>
+        <h3 class="brand-font fw-bold text-white mb-2">Hassle-Free Cashless Mediclaim & Transparent Billing</h3>
+        <p class="text-white text-opacity-75 mb-0" style="max-width: 650px; font-size: 15px; line-height: 1.6;">
+          Empanelled with Star Health, HDFC ERGO, ICICI Lombard, New India Assurance, Max Bupa, and CGHS. Our dedicated TPA desk coordinates pre-authorizations and claims directly with your insurer.
+        </p>
       </div>
-      
-      <div class="col-md-4">
-        <div class="text-center px-2">
-          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(16,185,129,0.1); color:var(--hms-success); width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(16,185,129,0.2);"><i class="fas fa-shield-alt"></i></div>
-          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Role-Based Security</div>
-          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
-            Strict routing protocols separating Doctor and Patient privileges using Flask-Login session management.
-          </div>
-        </div>
-      </div>
-      
-      <div class="col-md-4">
-        <div class="text-center px-2">
-          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(96,165,250,0.1); color:#60a5fa; width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(96,165,250,0.2);"><i class="fas fa-network-wired"></i></div>
-          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Relational Integrity</div>
-          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
-            Optimized table schemas with strict foreign key constraints ensuring zero data redundancy.
-          </div>
+      <div class="col-lg-4 text-lg-end">
+        <div class="d-flex flex-column gap-2">
+          <a href="/login" class="btn btn-light rounded-pill px-4 py-2 fw-bold text-dark shadow-sm">
+            <i class="fas fa-file-invoice-dollar me-2 text-success"></i>Patient Billing Portal
+          </a>
+          <a href="/doctors" class="btn btn-outline-light rounded-pill px-4 py-2 fw-bold">
+            <i class="fas fa-user-md me-2"></i>Browse Doctor Roster
+          </a>
         </div>
       </div>
     </div>
-    
   </div>
 </div>
 
 {% endif %}
 
 {% endblock body %}
+

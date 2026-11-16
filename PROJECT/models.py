@@ -154,11 +154,19 @@ class Admission(db.Model):
     room_id        = db.Column(db.Integer, db.ForeignKey('rooms.room_id', ondelete='CASCADE'), nullable=False)
     admission_date = db.Column(db.DateTime, server_default=db.func.now())
     discharge_date = db.Column(db.DateTime, nullable=True)
-    status         = db.Column(db.String(30), nullable=False, default='Admitted') # 'Admitted', 'Discharged'
+    status         = db.Column(db.String(30), nullable=False, default='Admitted') # 'Admitted', 'Billing Pending', 'Discharged'
     discharge_summary = db.Column(db.Text, nullable=True)
     discharge_requested = db.Column(db.Boolean, default=False)
     discharge_requested_at = db.Column(db.DateTime, nullable=True)
     discharge_notes = db.Column(db.String(255), nullable=True)
+    
+    # Inpatient Stay & Lifecycle Extensions
+    tentative_days             = db.Column(db.Integer, default=3)
+    discharge_approved         = db.Column(db.Boolean, default=False)
+    discharge_approved_at      = db.Column(db.DateTime, nullable=True)
+    discharge_rejection_reason = db.Column(db.String(255), nullable=True)
+    actual_days                = db.Column(db.Integer, nullable=True)
+    stay_extended_notes        = db.Column(db.String(255), nullable=True)
 
     patient     = db.relationship('User', backref=db.backref('admissions', lazy=True))
     doctor      = db.relationship('Doctors', backref=db.backref('admissions', lazy=True))
