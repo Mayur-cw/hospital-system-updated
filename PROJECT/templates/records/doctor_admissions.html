@@ -56,6 +56,7 @@
               <!-- Discharge Action -->
               <form action="/discharge_patient" method="POST" class="m-0" 
                     onsubmit="return confirm('Authorize discharge for {{ admission.patient.username }}? This will generate their final hospital bill.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="hidden" name="admission_id" value="{{ admission.admission_id }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-4 py-2 hover-lift">
                   <i class="fas fa-sign-out-alt me-1"></i>Authorize Discharge

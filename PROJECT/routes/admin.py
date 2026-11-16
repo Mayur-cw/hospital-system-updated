@@ -4,8 +4,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 
-# 🏥 UPGRADE: Imported Room and Admission models
 from models import db, User, Appointments, Doctors, AuditLog, Billing, Room, Admission
+from security import is_safe_url
+from services.inpatient import InpatientService
+from services.billing import BillingService
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -374,6 +376,8 @@ def admin_update_appointment_status():
     appointment_id = request.form.get('appointment_id')
     status = request.form.get('status')
     redirect_url = request.form.get('redirect_url', url_for('admin.admin_appointments'))
+    if not is_safe_url(redirect_url):
+        redirect_url = url_for('admin.admin_appointments')
 
     if status == 'Pending': status = 'Scheduled'
 
@@ -394,12 +398,15 @@ def admin_delete_appointment():
 
     appointment_id = request.form.get('appointment_id')
     redirect_url = request.form.get('redirect_url', url_for('admin.admin_appointments'))
+    if not is_safe_url(redirect_url):
+        redirect_url = url_for('admin.admin_appointments')
 
     a = Appointments.query.get(appointment_id)
     if a:
-        db.session.delete(a)
+        # Soft cancellation to prevent permanent loss of clinical and scheduling history (F-09)
+        a.slot = 'Cancelled'
         db.session.commit()
-        flash('Appointment deleted permanently.', 'danger')
+        flash('Appointment has been marked as Cancelled (history preserved).', 'warning')
 
     return redirect(redirect_url)
 
@@ -539,7 +546,7 @@ def delete_room():
         
     return redirect(url_for('admin.admin_rooms'))
 
-# 🚨 NEW: THE DISCHARGE ROUTE 🚨
+# 🚨 UNIFIED DOMAIN DISCHARGE ROUTE 🚨
 @admin_bp.route('/discharge', methods=['POST'])
 @login_required
 def discharge_patient():
@@ -548,19 +555,33 @@ def discharge_patient():
         return redirect(url_for('main.index'))
         
     admission_id = request.form.get('admission_id')
-    admission = Admission.query.get_or_404(admission_id)
+    summary = request.form.get('discharge_summary', 'Discharged by Administrative action.')
+
+    # Unified InpatientService call: guarantees single final bill and identical room availability
+    success, message, bill = InpatientService.discharge_patient(
+        admission_id=admission_id,
+        actor=current_user,
+        discharge_summary=summary
+    )
     
-    if admission.status == 'Discharged':
-        flash(f"Patient {admission.patient.username} has already been discharged.", "info")
-        return redirect(url_for('admin.admin_rooms'))
-        
-    # Mark as discharged and record the timestamp
-    admission.status = 'Discharged'
-    admission.discharge_date = db.func.now()
-    
-    # 🎓 DBMS POWER MOVE: The `admission_update` MySQL trigger we built
-    # will automatically intercept this commit and flip the room's status back to 'Available'!
-    db.session.commit()
-    
-    flash(f"Patient {admission.patient.username} has been officially discharged. Room {admission.room.room_number} is now Available.", "success")
+    flash(message, "success" if success else "warning")
     return redirect(url_for('admin.admin_rooms'))
+
+@admin_bp.route('/settle_payment/<int:bill_id>', methods=['POST'])
+@login_required
+def settle_payment(bill_id):
+    if current_user.usertype not in ('Admin', 'Cashier'):
+        flash("Unauthorized access. Cashier or Admin permissions required.", "danger")
+        return redirect(url_for('main.index'))
+
+    payment_mode = request.form.get('payment_mode', 'cash')
+    txn_ref = request.form.get('transaction_ref', '')
+
+    success, message, inv = BillingService.settle_cashier_payment(
+        bill_id=bill_id,
+        payment_mode=payment_mode,
+        cashier_user=current_user,
+        transaction_ref=txn_ref
+    )
+    flash(message, "success" if success else "warning")
+    return redirect(url_for('admin.admin_financials'))

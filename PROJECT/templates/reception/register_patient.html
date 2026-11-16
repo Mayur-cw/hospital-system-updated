@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}Patient Registration | Hospital OS{% endblock title %}
+
+{% block body %}
+<div class="container mt-5 mb-5" style="max-width: 800px;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <span class="badge bg-primary px-3 py-2 rounded-pill fw-bold text-uppercase" style="letter-spacing: 0.05em;">Front Desk Registration</span>
+            <h3 class="brand-font fw-bold text-dark mt-2 mb-0">Register New Patient</h3>
+        </div>
+        <a href="{{ url_for('reception.queue_board') }}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+            <i class="fas fa-arrow-left me-1"></i> Back to Queue
+        </a>
+    </div>
+
+    <!-- Duplicate Alert if potential match found -->
+    {% if duplicate %}
+    <div class="alert alert-warning border-0 shadow-sm rounded-4 p-4 mb-4">
+        <div class="d-flex align-items-start">
+            <div class="bg-warning text-dark rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                <i class="fas fa-exclamation-triangle fs-5"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h5 class="fw-bold mb-1">Potential Duplicate Patient Detected</h5>
+                <p class="small mb-3">An existing patient matching this name or phone number already exists in the system registry:</p>
+                
+                <div class="bg-white rounded-3 p-3 border mb-3">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <span class="text-muted small">Registered Name:</span>
+                            <div class="fw-bold text-dark">{{ duplicate.username }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small">Assigned MRN:</span>
+                            <div class="fw-bold text-primary">{{ duplicate.mrn or 'N/A' }}</div>
+                        </div>
+                        <div class="col-sm-6 mt-2">
+                            <span class="text-muted small">Phone:</span>
+                            <div class="fw-bold text-dark">{{ duplicate.phone }}</div>
+                        </div>
+                        <div class="col-sm-6 mt-2">
+                            <span class="text-muted small">Allergies:</span>
+                            <div class="fw-bold text-danger">{{ duplicate.allergies or 'None' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('patient.patient_booking') }}" class="btn btn-success btn-sm rounded-pill px-3 fw-bold">
+                        <i class="fas fa-calendar-check me-1"></i> Book for Existing Patient ({{ duplicate.mrn }})
+                    </a>
+                    <form method="POST" action="{{ url_for('reception.register_patient') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="username" value="{{ form_data.get('username') }}"/>
+                        <input type="hidden" name="phone" value="{{ form_data.get('phone') }}"/>
+                        <input type="hidden" name="gender" value="{{ form_data.get('gender') }}"/>
+                        <input type="hidden" name="age" value="{{ form_data.get('age') }}"/>
+                        <input type="hidden" name="email" value="{{ form_data.get('email') }}"/>
+                        <input type="hidden" name="allergies" value="{{ form_data.get('allergies') }}"/>
+                        <input type="hidden" name="blood_group" value="{{ form_data.get('blood_group') }}"/>
+                        <input type="hidden" name="force_create" value="true"/>
+                        <button type="submit" class="btn btn-outline-warning btn-sm rounded-pill px-3 fw-bold">
+                            Ignore and Register as Separate Patient
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Registration Form -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+        <form method="POST" action="{{ url_for('reception.register_patient') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Full Legal Name <span class="text-danger">*</span></label>
+                    <input type="text" name="username" class="form-control rounded-pill px-3 py-2" placeholder="e.g. Ramesh Kulkarni" required value="{{ form_data.get('username') if form_data else '' }}">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Contact Mobile Phone <span class="text-danger">*</span></label>
+                    <input type="tel" name="phone" class="form-control rounded-pill px-3 py-2" placeholder="e.g. 9822012345" required value="{{ form_data.get('phone') if form_data else '' }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Age (Years)</label>
+                    <input type="number" name="age" min="0" max="130" class="form-control rounded-pill px-3 py-2" placeholder="e.g. 35" value="{{ form_data.get('age') if form_data else '' }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Gender</label>
+                    <select name="gender" class="form-select rounded-pill px-3 py-2">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Blood Group</label>
+                    <select name="blood_group" class="form-select rounded-pill px-3 py-2">
+                        <option value="">Unknown / Not Tested</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                    </select>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Known Allergies / Medical Warnings</label>
+                    <input type="text" name="allergies" class="form-control rounded-pill px-3 py-2" placeholder="e.g. Penicillin, Sulfa drugs, Aspirin (or leave as 'None known')" value="None known">
+                    <div class="form-text small">Visible as a high-priority warning flag on the doctor's clinical workspace.</div>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Email Address (Optional)</label>
+                    <input type="email" name="email" class="form-control rounded-pill px-3 py-2" placeholder="e.g. patient@example.com (autogenerated if blank)">
+                </div>
+
+                <div class="col-12 mt-4 pt-3 border-top d-flex justify-content-between">
+                    <a href="{{ url_for('reception.queue_board') }}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">Cancel</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                        <i class="fas fa-id-card me-2"></i> Register & Issue MRN
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock body %}

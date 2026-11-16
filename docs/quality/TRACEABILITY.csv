@@ -1,0 +1,16 @@
+req_id,module,description,verification_method,test_id,code_reference,status
+REQ-CFG-001,security,Fail closed in production without SECRET_KEY and safe DB,Automated Unit Test,T-CONFIG-001,PROJECT/config.py,PASSED
+REQ-AUTH-001,security,Patient cannot view another patient's invoice by ID,Automated Negative Test,T-AUTH-001,PROJECT/routes/patient.py,PASSED
+REQ-AUTH-002,security,Doctor cannot mark another doctor's appointment attended/missed,Automated Negative Test,T-AUTH-002,PROJECT/routes/doctor.py,PASSED
+REQ-AUTH-003,security,Doctor cannot chart note on unassigned encounter,Automated Negative Test,T-AUTH-003,PROJECT/routes/doctor.py,PASSED
+REQ-AUTH-004,security,Doctor cannot discharge unrelated patient admission,Automated Negative Test,T-AUTH-004,PROJECT/routes/doctor.py,PASSED
+REQ-AUTH-005,security,Doctor cannot view unrelated booking success page,Automated Negative Test,T-AUTH-005,PROJECT/routes/patient.py,PASSED
+REQ-CSRF-001,security,State mutating requests without valid CSRF token fail,Automated Integration Test,T-CSRF-001,PROJECT/app.py,PASSED
+REQ-REDIR-001,security,Open external redirects on login and admin update rejected,Automated Negative Test,T-REDIRECT-001,PROJECT/routes/auth.py,PASSED
+REQ-PAY-001,finance,Forged payment POST cannot mark invoice Paid without verification,Automated Integration Test,T-PAY-001,PROJECT/routes/patient.py,PASSED
+REQ-SCH-001,scheduling,Concurrent booking requests yield exactly one success and predictable conflict,Automated Concurrency Test,T-APPT-001,PROJECT/services/scheduling.py,PASSED
+REQ-IPD-001,inpatient,Concurrent bed allocations yield exactly one active occupant,Automated Concurrency Test,T-BED-001,PROJECT/services/inpatient.py,PASSED
+REQ-IPD-002,inpatient,Repeated discharge produces exactly one discharge event and one bill,Automated Idempotency Test,T-DISCH-001,PROJECT/services/inpatient.py,PASSED
+REQ-CLN-001,clinical,Signed clinical note is immutable; amendments preserved in audit trail,Automated Unit Test,T-NOTE-001,PROJECT/services/clinical.py,PASSED
+REQ-DATA-001,data,Archived user preserves historical appointments notes and receipts,Automated Integration Test,T-DATA-001,PROJECT/models.py,PASSED
+REQ-UX-001,ux,Keyboard accessible registration booking clinical chart and billing,Browser E2E Inspection,T-ACCESS-001,PROJECT/templates/*,PASSED

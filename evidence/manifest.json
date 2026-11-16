@@ -1,0 +1,129 @@
+{
+  "manifest_version": "1.0.0",
+  "generated_at": "2026-11-17T01:00:00+05:30",
+  "project": {
+    "name": "Hospital OS Enterprise HMS",
+    "repository": "https://github.com/Mayur-cw/hospital-system-updated.git",
+    "branch": "feature/hospital-os-champion",
+    "base_commit_sha": "ec332d26d815434e817b1b49e66c83311f5dc79d",
+    "runtime": "Python 3.9.6",
+    "framework": "Flask 2.3.3 / SQLAlchemy 1.4.52"
+  },
+  "release_evaluation": {
+    "status": "PASS",
+    "decision": "DEMO_READY",
+    "production_status": "BLOCKED_PENDING_EXTERNAL_AUDIT",
+    "demo_mode": true
+  },
+  "test_execution": {
+    "framework": "pytest 8.4.2",
+    "total_tests": 15,
+    "passed": 15,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": 14.15,
+    "suites": [
+      {
+        "suite": "tests/test_config_security.py",
+        "tests": [
+          "test_t_config_001_refuses_production_boot_without_secret",
+          "test_t_redirect_001_rejects_external_open_redirect",
+          "test_t_csrf_001_enforces_csrf_on_session_mutations"
+        ],
+        "status": "PASS"
+      },
+      {
+        "suite": "tests/test_authorization.py",
+        "tests": [
+          "test_t_auth_001_patient_cannot_access_other_patient_booking_success",
+          "test_t_auth_002_doctor_cannot_mark_other_doctor_appointment",
+          "test_t_auth_003_patient_cannot_view_other_patient_invoice",
+          "test_t_auth_004_non_receptionist_cannot_access_reception_queue",
+          "test_t_auth_005_receptionist_cannot_chart_medical_record"
+        ],
+        "status": "PASS"
+      },
+      {
+        "suite": "tests/test_concurrency.py",
+        "tests": [
+          "test_t_appt_001_concurrent_slot_booking_prevents_double_booking",
+          "test_t_bed_001_concurrent_bed_admission_prevents_double_occupancy"
+        ],
+        "status": "PASS"
+      },
+      {
+        "suite": "tests/test_billing_integrity.py",
+        "tests": [
+          "test_t_pay_001_cashier_settlement_updates_ledger",
+          "test_t_pay_002_demo_payment_marks_explicit_simulation"
+        ],
+        "status": "PASS"
+      },
+      {
+        "suite": "tests/test_clinical_safety.py",
+        "tests": [
+          "test_t_note_001_clinical_note_lifecycle_and_amendments",
+          "test_t_data_001_clinical_records_cannot_be_hard_deleted"
+        ],
+        "status": "PASS"
+      },
+      {
+        "suite": "tests/test_inpatient_discharge.py",
+        "tests": [
+          "test_t_disch_001_unified_discharge_service_idempotence"
+        ],
+        "status": "PASS"
+      }
+    ]
+  },
+  "p0_defect_resolution": [
+    {
+      "id": "F-01",
+      "summary": "Hardcoded secrets & root MySQL password",
+      "resolution": "Config.validate() fails closed in production; environment variable driven.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-02",
+      "summary": "Flask debug mode enabled by default",
+      "resolution": "FLASK_DEBUG defaults to False across all environments.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-03",
+      "summary": "BOLA on doctor mark_attended and clinical notes",
+      "resolution": "Centralized RBAC + object-level ownership checks enforced.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-04",
+      "summary": "Simulated payment form masquerading as real settlement",
+      "resolution": "Explicit mock tag added, Cashier settlement service implemented.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-05",
+      "summary": "Inconsistent discharge billing postconditions",
+      "resolution": "Unified idempotent InpatientService.discharge_patient() implemented.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-06",
+      "summary": "Destructive DROP/CASCADE DDL in SQL schema",
+      "resolution": "Forward-only additive migrations; hard deletes eliminated from clinical/billing.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-07",
+      "summary": "Open redirect on login & GET logout",
+      "resolution": "is_safe_url() validation; POST /logout with CSRF protection.",
+      "status": "RESOLVED"
+    },
+    {
+      "id": "F-08",
+      "summary": "Unportable MySQL stored procedures & concurrency race conditions",
+      "resolution": "SchedulingService with pessimistic locking (with_for_update) handles bookings.",
+      "status": "RESOLVED"
+    }
+  ]
+}

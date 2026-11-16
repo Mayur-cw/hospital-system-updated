@@ -67,6 +67,7 @@ Edit Prescription | Hospital Management System
       <div class="hms-panel p-5 h-100">
         
         <form action="/edit_record/{{ appointment.apt_id }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           
           <div class="mb-4">
             <label for="diagnosis" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
@@ -82,11 +83,20 @@ Edit Prescription | Hospital Management System
             <textarea class="form-control-modern w-100" id="prescription" name="prescription" rows="4" required>{{ record.prescription }}</textarea>
           </div>
 
-          <div class="mb-5">
+          <div class="mb-4">
             <label for="notes" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
               <i class="fas fa-clipboard text-warning me-2"></i>Additional Notes / Advice
             </label>
             <textarea class="form-control-modern w-100" id="notes" name="notes" rows="2">{{ record.notes }}</textarea>
+          </div>
+
+          <!-- Clinical Amendment Reason Required -->
+          <div class="mb-4 p-3 bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-4">
+            <label for="amendment_reason" class="form-label fw-bold text-dark mb-1 text-uppercase" style="letter-spacing: 0.5px; font-size: 13px;">
+              <i class="fas fa-file-contract text-warning me-2"></i>Amendment Reason (Mandatory Clinical Audit Trail) <span class="text-danger">*</span>
+            </label>
+            <p class="small text-muted mb-2">The original signed chart note will be permanently preserved in the revision history. State the clinical or factual rationale for this amendment.</p>
+            <textarea class="form-control-modern w-100 bg-white" id="amendment_reason" name="amendment_reason" rows="2" placeholder="e.g. Dosage adjusted following renal function lab review; allergy cross-check completed." required></textarea>
           </div>
 
           <hr class="text-muted mb-4 opacity-25">

@@ -1,0 +1,30 @@
+# Python & Virtualenv
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Flask / Instance / SQLite
+instance/
+*.sqlite
+*.sqlite3
+*.db
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local Environment
+.env
+!.env.example
+project.env

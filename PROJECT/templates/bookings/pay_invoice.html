@@ -36,8 +36,8 @@
       <!-- Processing Animation -->
       <div id="processingOverlay">
         <div class="spinner-grow mb-3" role="status"></div>
-        <h4 class="brand-font fw-bold text-dark">Processing Payment</h4>
-        <p class="text-muted small">Establishing secure connection to your bank...</p>
+        <h4 class="brand-font fw-bold text-dark">Simulating Demo Settlement</h4>
+        <p class="text-muted small">Executing non-production demonstration transaction...</p>
       </div>
 
       <div class="invoice-header d-flex justify-content-between align-items-center">
@@ -52,10 +52,17 @@
         </div>
       </div>
 
+      <!-- Demo Simulation Banner -->
+      <div class="bg-warning bg-opacity-10 border-bottom border-warning border-opacity-25 px-4 py-2 text-center text-dark small fw-bold">
+        <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+        DEMO MODE: Simulated Payment Form — No real gateway connected. Real hospital settlement occurs at the hospital cashier counter.
+      </div>
+
       <div class="p-4 p-md-5">
-        <h6 class="fw-bold text-uppercase text-muted mb-4" style="letter-spacing: 1px;">Select Payment Mode</h6>
+        <h6 class="fw-bold text-uppercase text-muted mb-4" style="letter-spacing: 1px;">Select Settlement Method</h6>
         
         <form action="{{ url_for('patient.process_payment', bill_id=invoice.bill_id) }}" method="POST" id="paymentForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <input type="hidden" name="payment_mode" id="paymentMode">
           <input type="hidden" name="bank_name" id="bankName">
 
@@ -63,19 +70,21 @@
             <div class="col-6">
               <div class="mode-card" onclick="selectMode('netbanking')">
                 <i class="fas fa-university fa-2x mb-2 text-primary"></i>
-                <div class="fw-bold">Net Banking</div>
+                <div class="fw-bold">Simulated Net Banking</div>
+                <small class="text-muted d-block">Test mock</small>
               </div>
             </div>
             <div class="col-6">
               <div class="mode-card" onclick="selectMode('cash')">
                 <i class="fas fa-money-bill-wave fa-2x mb-2 text-success"></i>
-                <div class="fw-bold">Pay at Counter</div>
+                <div class="fw-bold">Cash at Counter</div>
+                <small class="text-muted d-block">Cashier verified</small>
               </div>
             </div>
           </div>
 
           <div id="bankSelection" class="mb-4" style="display: none;">
-            <h6 class="fw-bold text-dark mb-3">Select Bank</h6>
+            <h6 class="fw-bold text-dark mb-3">Select Bank (Simulation Only)</h6>
             <div class="row g-2">
               <div class="col-4"><div class="bank-option" onclick="selectBank('SBI')">SBI</div></div>
               <div class="col-4"><div class="bank-option" onclick="selectBank('HDFC')">HDFC</div></div>
@@ -87,10 +96,10 @@
           </div>
 
           <button type="button" class="btn-pay" id="payBtn" disabled onclick="simulatePayment()">
-            <i class="fas fa-lock me-2"></i> <span id="payBtnText">Select a payment method</span>
+            <i class="fas fa-check-circle me-2"></i> <span id="payBtnText">Select a payment method</span>
           </button>
           
-          <div class="text-center mt-3 small text-muted"><i class="fas fa-shield-alt text-success me-1"></i> SSL Secured Transaction</div>
+          <div class="text-center mt-3 small text-muted"><i class="fas fa-info-circle text-info me-1"></i> Demo environment transaction record</div>
         </form>
       </div>
 

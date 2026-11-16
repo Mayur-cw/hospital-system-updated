@@ -21,16 +21,17 @@ Login | Hospital Management System
         {% endif %}
       {% endwith %}
 
-      <div class="card shadow border-0 mt-3">
+      <div class="card shadow-sm border-0 mt-3 overflow-hidden rounded-3">
         
-        <div class="card-header bg-dark text-white text-center py-3">
-          <h4 class="mb-0"><i class="fas fa-sign-in-alt me-2"></i>Account Login</h4>
+        <div class="card-header text-center py-3" style="background-color: var(--hos-navy-900); border-bottom: 2px solid var(--hos-teal-600);">
+          <h4 class="mb-0 text-white fw-bold"><i class="fas fa-lock me-2 text-info"></i>Account Login</h4>
         </div>
         
         <div class="card-body p-4 bg-light">
           <p class="text-muted text-center mb-4">Welcome back! Please enter your credentials to access the system.</p>
 
           <form action="/login" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             
             <div class="mb-3">
               <label for="email" class="form-label fw-bold">Email Address</label>
@@ -60,6 +61,35 @@ Login | Hospital Management System
             <span class="text-muted">Don't have an account?</span> 
             <a href="/signup" class="text-primary text-decoration-none fw-bold">Sign up here</a>
           </div>
+
+          {% if demo_only %}
+          <!-- Synthetic Demo Credentials Box -->
+          <div class="mt-4 pt-3 border-top">
+            <div class="small fw-bold text-muted text-uppercase mb-2 text-center" style="letter-spacing: 0.05em;">
+              <i class="fas fa-key text-warning me-1"></i> Quick Demo Access
+            </div>
+            <div class="d-grid gap-1">
+              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-1 px-2 font-monospace" style="font-size: 0.78rem;" onclick="fillLogin('admin@hospital.local', 'AdminPass@2026')">
+                <span class="badge bg-dark me-1">Admin</span> admin@hospital.local
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-1 px-2 font-monospace" style="font-size: 0.78rem;" onclick="fillLogin('dr.sharma@hospital.local', 'DoctorPass@2026')">
+                <span class="badge bg-primary me-1">Doctor</span> dr.sharma@hospital.local
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-1 px-2 font-monospace" style="font-size: 0.78rem;" onclick="fillLogin('receptionist@hospital.local', 'StaffPass@2026')">
+                <span class="badge bg-info text-white me-1">Reception</span> receptionist@hospital.local
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm text-start py-1 px-2 font-monospace" style="font-size: 0.78rem;" onclick="fillLogin('patient1@hospital.local', 'PatientPass@2026')">
+                <span class="badge bg-success me-1">Patient</span> patient1@hospital.local
+              </button>
+            </div>
+          </div>
+          <script>
+            function fillLogin(email, pass) {
+              document.getElementById('email').value = email;
+              document.getElementById('password').value = pass;
+            }
+          </script>
+          {% endif %}
 
         </div>
       </div>

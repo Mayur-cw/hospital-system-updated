@@ -1,12 +1,26 @@
 # routes/doctor.py
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from datetime import datetime
 
-# 🏥 UPGRADE: Imported Room, Admission, and Doctors models
 from models import db, Appointments, MedicalRecord, Billing, Room, Admission, Doctors
+from authorization import can_modify_appointment_status, can_chart_encounter, can_discharge_admission
+from services.clinical import ClinicalService
+from services.inpatient import InpatientService
 
 doctor_bp = Blueprint('doctor', __name__)
+
+@doctor_bp.route('/appointments')
+@doctor_bp.route('/doctor/appointments')
+@login_required
+def appointments_workspace():
+    return redirect(url_for('patient.dashboard'))
+
+@doctor_bp.route('/view_record/<int:rec_id>')
+@doctor_bp.route('/doctor/view_record/<int:rec_id>')
+@login_required
+def view_record_redirect(rec_id):
+    return redirect(url_for('patient.view_record', id=rec_id))
 
 @doctor_bp.route('/cancel_apt/<int:apt_id>', methods=['POST'])
 @login_required
@@ -15,9 +29,9 @@ def cancel_apt(apt_id):
     if current_user.usertype == "Patient" and appointment.user_id != current_user.id:
         flash("Unauthorized! You can only cancel your own appointments.", "danger")
         return redirect(request.referrer or url_for('patient.upcoming_bookings'))
-    elif current_user.usertype == "Doctor" and appointment.doctor.lower() != current_user.username.lower():
-         flash("Unauthorized! You can only cancel your own schedule.", "danger")
-         return redirect(request.referrer or url_for('patient.dashboard'))
+    elif current_user.usertype == "Doctor" and not can_modify_appointment_status(current_user, appointment):
+        flash("Unauthorized! You can only cancel your own schedule.", "danger")
+        return redirect(request.referrer or url_for('patient.dashboard'))
 
     appointment.slot = 'Cancelled'
     db.session.commit()
@@ -28,37 +42,51 @@ def cancel_apt(apt_id):
 @login_required
 def mark_missed(apt_id):
     if current_user.usertype != "Doctor":
-        flash("Unauthorized!", "danger")
+        flash("Unauthorized! Doctor access required.", "danger")
         return redirect(url_for('patient.dashboard'))
+        
     appointment = Appointments.query.get_or_404(apt_id)
+    if not can_modify_appointment_status(current_user, appointment):
+        flash("Access Denied: You cannot modify appointments assigned to another physician.", "danger")
+        return redirect(url_for('patient.dashboard'))
+
     appointment.slot = 'Missed'
     db.session.commit()
-    flash(f"Appointment marked as Missed.", "info")
+    flash("Appointment marked as Missed.", "info")
     return redirect(request.referrer or url_for('patient.dashboard'))
 
 @doctor_bp.route('/mark_attended/<int:apt_id>', methods=['POST'])
 @login_required
 def mark_attended(apt_id):
     if current_user.usertype != "Doctor":
-        flash("Unauthorized!", "danger")
+        flash("Unauthorized! Doctor access required.", "danger")
         return redirect(url_for('patient.dashboard'))
+        
     appointment = Appointments.query.get_or_404(apt_id)
+    if not can_modify_appointment_status(current_user, appointment):
+        flash("Access Denied: You cannot modify appointments assigned to another physician.", "danger")
+        return redirect(url_for('patient.dashboard'))
+
     appointment.slot = 'Attended'
     db.session.commit()
-    flash(f"Patient marked as Attended. Prescription is now pending.", "success")
-    return redirect(request.referrer or url_for('main.index'))
+    flash("Patient marked as Attended. Clinical charting workspace is now open.", "success")
+    return redirect(url_for('doctor.add_record', apt_id=apt_id))
 
 @doctor_bp.route('/add_record/<int:apt_id>', methods=['GET', 'POST'])
 @login_required
 def add_record(apt_id):
-    if current_user.usertype != "Doctor":
-        flash("Unauthorized! Only doctors can add medical records.", "danger")
+    if current_user.usertype != "Doctor" and current_user.usertype != "Admin":
+        flash("Unauthorized! Only clinicians can document medical records.", "danger")
         return redirect(url_for('patient.dashboard'))
 
     appointment = Appointments.query.get_or_404(apt_id)
+    if not can_chart_encounter(current_user, appointment):
+        flash("Access Denied: You can only document medical records for your assigned patients.", "danger")
+        return redirect(url_for('patient.dashboard'))
+
     existing_record = MedicalRecord.query.filter_by(apt_id=apt_id).first()
     if existing_record:
-        flash("A medical record already exists for this appointment.", "warning")
+        flash("A signed medical record already exists for this appointment.", "warning")
         return redirect(url_for('doctor.view_record', apt_id=apt_id))
 
     if request.method == "POST":
@@ -66,42 +94,33 @@ def add_record(apt_id):
         prescription = request.form.get('prescription', '').strip()
         notes = request.form.get('notes', '').strip()
         room_id = request.form.get('room_id')
-        
-        try:
-            new_record = MedicalRecord(apt_id=apt_id, diagnosis=diagnosis, prescription=prescription, notes=notes)
-            db.session.add(new_record)
-            
-            if room_id:
-                room = Room.query.get(room_id)
-                if room and room.status == 'Available':
-                    doctor_profile = Doctors.query.filter_by(user_id=current_user.id).first()
-                    # 🚨 NEW: Passing apt_id
-                    new_admission = Admission(apt_id=apt_id, patient_id=appointment.user_id, doctor_id=doctor_profile.did, room_id=room.room_id)
-                    db.session.add(new_admission)
-                    
-                    # 🚨 NEW: Skip billing creation entirely. Will generate upon discharge.
-                    appointment.slot = 'Completed'
-                    db.session.commit()
-                    flash("Record saved and Patient Admitted! Invoice will be generated upon discharge.", "success")
-                    return redirect(url_for('main.index'))
+        action = request.form.get('action', 'sign')
 
-            # Standard Outpatient Logic (No Admission)
-            new_bill = Billing(apt_id=apt_id, user_id=appointment.user_id, amount=500.00, status='Unpaid')
-            db.session.add(new_bill)
-            appointment.slot = 'Completed'
-            db.session.commit()
-            flash("Medical record saved and Invoice generated successfully!", "success")
+        if not diagnosis or not prescription:
+            flash("Diagnosis and prescription are mandatory clinical fields.", "danger")
+            available_rooms = Room.query.filter_by(status='Available').all()
+            return render_template('records/add_record.html', appointment=appointment, available_rooms=available_rooms)
+
+        success, message, record = ClinicalService.save_medical_record(
+            apt_id=apt_id,
+            diagnosis=diagnosis,
+            prescription=prescription,
+            notes=notes,
+            doctor_user=current_user,
+            action=action,
+            room_id=room_id
+        )
+
+        if success:
+            flash(message, "success")
             return redirect(url_for('main.index'))
-
-        except Exception as e:
-            db.session.rollback()
-            flash(f"System Error: Details: {str(e)}", "danger")
+        else:
+            flash(message, "danger")
             return redirect(url_for('doctor.add_record', apt_id=apt_id))
-        
+
     available_rooms = Room.query.filter_by(status='Available').all()
     return render_template('records/add_record.html', appointment=appointment, available_rooms=available_rooms)
 
-# 🏥 NEW: DOCTOR'S VIEW OF THEIR ADMITTED PATIENTS
 @doctor_bp.route('/my_admissions')
 @login_required
 def my_admissions():
@@ -109,40 +128,33 @@ def my_admissions():
         return redirect(url_for('main.index'))
     
     doc_profile = Doctors.query.filter_by(user_id=current_user.id).first()
-    # Fetch only patients admitted by THIS doctor
-    my_patients = Admission.query.filter_by(doctor_id=doc_profile.did, status='Admitted').all()
+    doc_did = doc_profile.did if doc_profile else 0
+    my_patients = Admission.query.filter_by(doctor_id=doc_did, status='Admitted').all()
     
     return render_template('records/doctor_admissions.html', admissions=my_patients)
 
-# 🏥 NEW: DOCTOR DISCHARGE & DYNAMIC BILLING
 @doctor_bp.route('/discharge_patient', methods=['POST'])
 @login_required
 def discharge_patient():
     if current_user.usertype != "Doctor":
+        flash("Unauthorized access.", "danger")
         return redirect(url_for('main.index'))
         
     admission_id = request.form.get('admission_id')
     admission = Admission.query.get_or_404(admission_id)
     
-    now = datetime.now()
-    admission.status = 'Discharged'
-    admission.discharge_date = now
+    if not can_discharge_admission(current_user, admission):
+        flash("Access Denied: You cannot discharge patients under another physician's care.", "danger")
+        return redirect(url_for('main.index'))
+
+    summary = request.form.get('discharge_summary', '').strip()
+    success, message, bill = InpatientService.discharge_patient(
+        admission_id=admission_id,
+        actor=current_user,
+        discharge_summary=summary
+    )
     
-    # 🚨 DYNAMIC BILLING MATH 🚨
-    delta = now - admission.admission_date
-    days = delta.days
-    if days == 0:
-        days = 1 # Charge minimum of 1 day if discharged on the same day
-        
-    total_bill = 500.00 + (days * float(admission.room.rate_per_day))
-    
-    # Generate the delayed invoice
-    new_bill = Billing(apt_id=admission.apt_id, user_id=admission.patient_id, amount=total_bill, status='Unpaid')
-    db.session.add(new_bill)
-    
-    db.session.commit() # Triggers room reset automatically!
-    
-    flash(f"{admission.patient.username} discharged successfully! Final bill of ₹{total_bill} generated.", "success")
+    flash(message, "success" if success else "warning")
     return redirect(url_for('doctor.my_admissions'))
 
 @doctor_bp.route('/view_record/<int:apt_id>')
@@ -178,16 +190,28 @@ def edit_record(apt_id):
         flash("No medical record exists to edit yet.", "warning")
         return redirect(url_for('doctor.add_record', apt_id=apt_id))
 
-    if appointment.doctor.lower() != current_user.username.lower():
+    if not can_chart_encounter(current_user, appointment):
          flash("Unauthorized access. You cannot edit another doctor's patient record.", "danger")
          return redirect(url_for('patient.dashboard'))
 
     if request.method == "POST":
-        record.diagnosis = request.form.get('diagnosis', '').strip()
-        record.prescription = request.form.get('prescription', '').strip()
-        record.notes = request.form.get('notes', '').strip()
-        db.session.commit()
-        flash("Medical record updated successfully!", "success")
-        return redirect(url_for('patient.past_records'))
+        new_diagnosis = request.form.get('diagnosis', '').strip()
+        new_prescription = request.form.get('prescription', '').strip()
+        amendment_reason = request.form.get('amendment_reason', '').strip()
+
+        if not amendment_reason:
+            flash("Clinical Integrity Requirement: An explicit amendment reason is mandatory to modify a signed chart.", "danger")
+            return render_template('records/edit_record.html', appointment=appointment, record=record)
+
+        success, message = ClinicalService.amend_medical_record(
+            record_id=record.record_id,
+            new_diagnosis=new_diagnosis,
+            new_prescription=new_prescription,
+            amendment_reason=amendment_reason,
+            doctor_user=current_user
+        )
+
+        flash(message, "success" if success else "danger")
+        return redirect(url_for('doctor.view_record', apt_id=apt_id))
         
     return render_template('records/edit_record.html', appointment=appointment, record=record)

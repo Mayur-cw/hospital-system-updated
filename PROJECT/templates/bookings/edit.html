@@ -28,6 +28,7 @@ Edit Booking | Hospital Management System
         <div class="card-body p-4 bg-light">
           <!-- 🔄 UPDATED: posts.apt_id -->
           <form action="/edit/{{ posts.apt_id }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             
             <input type="hidden" name="slot" value="{{ posts.slot }}">
 

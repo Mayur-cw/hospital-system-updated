@@ -1,8 +1,10 @@
 # routes/auth.py
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, User, Doctors
+from security import is_safe_url
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -18,9 +20,13 @@ def login():
 
         if user and check_password_hash(user.password, password):
             login_user(user)
-            flash("Login successful!", "success")
+            flash(f"Welcome back, {user.username}!", "success")
+            
+            # Safe redirect: prevent open redirect vulnerability (F-11)
             next_page = request.args.get('next')
-            return redirect(next_page or url_for('main.index'))
+            if next_page and is_safe_url(next_page):
+                return redirect(next_page)
+            return redirect(url_for('main.index'))
         else:
             flash("Invalid email or password.", "danger")
 
@@ -36,6 +42,8 @@ def signup():
         usertype = "Patient"  
         email    = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
+        phone    = request.form.get('phone', '').strip()
+        gender   = request.form.get('gender', '').strip()
 
         if not all([username, email, password]):
             flash("All fields are required.", "danger")
@@ -46,19 +54,34 @@ def signup():
             return render_template('auth/signup.html')
 
         hashed_password = generate_password_hash(password)
-        new_user = User(username=username, usertype=usertype, email=email, password=hashed_password)
+        
+        # Generate scoped MRN for new patient
+        current_year = datetime.now().year
+        patient_count = User.query.filter_by(usertype='Patient').count() + 1
+        generated_mrn = f"MRN-{current_year}-{patient_count:04d}"
+
+        new_user = User(
+            username=username,
+            usertype=usertype,
+            email=email,
+            password=hashed_password,
+            phone=phone if phone else None,
+            gender=gender if gender else None,
+            mrn=generated_mrn
+        )
         db.session.add(new_user)
         db.session.commit()
-        flash("Signup successful! Please login.", "success")
+        flash(f"Registration successful! Your MRN is {generated_mrn}. Please login.", "success")
         return redirect(url_for('auth.login'))
 
     return render_template('auth/signup.html')
 
-@auth_bp.route('/logout')
+@auth_bp.route('/logout', methods=['POST', 'GET'])
 @login_required
 def logout():
+    """State-changing logout route supporting secure POST."""
     logout_user()
-    flash("You have been logged out.", "info")
+    flash("You have been safely logged out.", "info")
     return redirect(url_for('auth.login'))
 
 @auth_bp.route('/profile', methods=['GET', 'POST'])
@@ -78,11 +101,9 @@ def profile():
             if existing_user:
                 flash("That email address is already in use by another account.", "danger")
                 return redirect(url_for('auth.profile'))
-            # 🎓 UPGRADE: No longer need to update doctors table email! (3NF)
             user.email = new_email
 
         if new_username and new_username != current_user.username:
-            # 🎓 UPGRADE: No longer need to update doctors table username! (3NF)
             user.username = new_username
             
         user.phone = new_phone
@@ -97,7 +118,6 @@ def profile():
 
     doctor_info = None
     if current_user.usertype == 'Doctor':
-        # 🎓 UPGRADE: Query by user_id instead of email
         doctor_info = Doctors.query.filter_by(user_id=current_user.id).first()
 
     return render_template('auth/profile.html', doctor_info=doctor_info)

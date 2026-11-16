@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block title %}Reception Command Board | Hospital OS{% endblock title %}
+
+{% block body %}
+<div class="container-fluid px-lg-5 mt-4 mb-5">
+    
+    <!-- Top Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary px-3 py-2 rounded-pill fw-bold text-uppercase" style="letter-spacing: 0.05em;">OPD Command Center</span>
+                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fw-bold"><i class="fas fa-calendar-day text-primary me-1"></i> {{ selected_date }}</span>
+            </div>
+            <h2 class="brand-font fw-bold text-dark mb-0">Reception Check-in & Queue Board</h2>
+        </div>
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <a href="{{ url_for('reception.register_patient') }}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                <i class="fas fa-user-plus me-2"></i> Register New Patient
+            </a>
+            <a href="{{ url_for('patient.patient_booking') }}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
+                <i class="fas fa-calendar-plus me-2"></i> Book Appointment
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Operational Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-primary">
+                <div class="text-muted small fw-bold text-uppercase">Waiting for Doctor</div>
+                <div class="fs-2 fw-bold text-dark mt-1">{{ waiting_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-warning">
+                <div class="text-muted small fw-bold text-uppercase">In Consultation</div>
+                <div class="fs-2 fw-bold text-dark mt-1">{{ with_doc_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-success">
+                <div class="text-muted small fw-bold text-uppercase">Consultations Completed</div>
+                <div class="fs-2 fw-bold text-dark mt-1">{{ completed_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-secondary">
+                <div class="text-muted small fw-bold text-uppercase">Missed / Cancelled</div>
+                <div class="fs-2 fw-bold text-dark mt-1">{{ missed_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4">
+        <form method="GET" action="{{ url_for('reception.queue_board') }}" class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Select Date</label>
+                <input type="date" name="date" class="form-control rounded-pill px-3" value="{{ selected_date }}" onchange="this.form.submit()">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Filter by Doctor</label>
+                <select name="doctor" class="form-select rounded-pill px-3" onchange="this.form.submit()">
+                    <option value="">All Consulting Doctors</option>
+                    {% for doc_name in doctor_names %}
+                    <option value="{{ doc_name }}" {% if selected_doctor == doc_name %}selected{% endif %}>{{ doc_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <a href="{{ url_for('reception.queue_board') }}" class="btn btn-outline-secondary rounded-pill w-100 fw-bold">Reset Filters</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Live Queue Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="brand-font fw-bold mb-0 text-dark"><i class="fas fa-list-ol text-primary me-2"></i>Today's OPD Queue ({{ appointments|length }} Patients)</h5>
+            <span class="small text-muted fw-bold"><i class="fas fa-sync-alt fa-spin me-1 text-primary"></i> Live Queue</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-uppercase small text-muted">
+                    <tr>
+                        <th class="ps-4" style="width: 80px;">Token</th>
+                        <th>Patient Name & MRN</th>
+                        <th>Time Slot</th>
+                        <th>Consulting Doctor & Dept</th>
+                        <th>Chief Complaint</th>
+                        <th>Queue Status</th>
+                        <th class="text-end pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if appointments %}
+                        {% for apt in appointments %}
+                        <tr>
+                            <td class="ps-4">
+                                <span class="badge bg-primary fs-6 px-3 py-2 rounded-circle" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
+                                    {{ apt.token_number or loop.index }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">{{ apt.patient.username }}</div>
+                                <div class="small text-muted">
+                                    <span class="badge bg-light text-dark border rounded-pill">{{ apt.patient.mrn or 'MRN Pending' }}</span>
+                                    <span class="ms-1">{{ apt.patient.gender or 'N/A' }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-primary"><i class="far fa-clock me-1"></i>{{ apt.time }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">{{ apt.doctor }}</div>
+                                <div class="small text-muted">{{ apt.dept }}</div>
+                            </td>
+                            <td>
+                                <span class="text-dark small">{{ apt.disease }}</span>
+                            </td>
+                            <td>
+                                {% if apt.slot == 'CheckedIn' %}
+                                    <span class="badge bg-info text-white rounded-pill px-3 py-2"><i class="fas fa-walking me-1"></i> Checked In</span>
+                                {% elif apt.slot == 'Scheduled' %}
+                                    <span class="badge bg-secondary rounded-pill px-3 py-2"><i class="far fa-clock me-1"></i> Scheduled</span>
+                                {% elif apt.slot == 'Attended' %}
+                                    <span class="badge bg-warning text-dark rounded-pill px-3 py-2"><i class="fas fa-stethoscope me-1"></i> With Doctor</span>
+                                {% elif apt.slot == 'Completed' %}
+                                    <span class="badge bg-success rounded-pill px-3 py-2"><i class="fas fa-check-circle me-1"></i> Completed</span>
+                                {% elif apt.slot == 'Missed' %}
+                                    <span class="badge bg-danger rounded-pill px-3 py-2"><i class="fas fa-user-times me-1"></i> Missed</span>
+                                {% elif apt.slot == 'Cancelled' %}
+                                    <span class="badge bg-dark rounded-pill px-3 py-2"><i class="fas fa-ban me-1"></i> Cancelled</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">{{ apt.slot }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                {% if apt.slot == 'Scheduled' %}
+                                    <form action="{{ url_for('reception.check_in', apt_id=apt.apt_id) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+                                            <i class="fas fa-sign-in-alt me-1"></i> Check In
+                                        </button>
+                                    </form>
+                                {% elif apt.slot == 'CheckedIn' %}
+                                    <span class="text-success small fw-bold"><i class="fas fa-check me-1"></i>In Waiting Lounge</span>
+                                {% elif apt.slot == 'Completed' %}
+                                    <a href="{{ url_for('doctor.view_record', apt_id=apt.apt_id) }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold">
+                                        <i class="fas fa-file-medical me-1"></i> View Summary
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-inbox fa-3x mb-3 text-secondary opacity-50"></i>
+                                    <h5>No Appointments Found</h5>
+                                    <p class="small mb-3">No consultations are scheduled for this date/doctor selection.</p>
+                                    <a href="{{ url_for('patient.patient_booking') }}" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold">Book Walk-In Patient</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock body %}

@@ -144,6 +144,7 @@ Manage Doctors | Hospital Management System
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form action="/admin/edit_doctor" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="modal-body p-4">
           <input type="hidden" name="doctor_id" id="editDoctorId">
           <div class="mb-3">
@@ -179,6 +180,7 @@ Manage Doctors | Hospital Management System
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form action="/admin/change_doctor_password" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="modal-body p-4">
           <input type="hidden" name="doctor_id" id="pwDoctorId">
           <div class="alert alert-warning border-0 rounded-3 small">
@@ -224,6 +226,7 @@ Manage Doctors | Hospital Management System
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form action="/admin/delete_doctor" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="modal-body p-4 text-center">
           <input type="hidden" name="doctor_id" id="deleteDoctorId">
           <i class="fas fa-user-minus fa-4x text-danger mb-3 opacity-75"></i>
@@ -253,6 +256,7 @@ Manage Doctors | Hospital Management System
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form action="/add_staff" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="modal-body p-4 bg-light">
           <!-- Hidden input forces the role to Doctor -->
           <input type="hidden" name="usertype" value="Doctor">

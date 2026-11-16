@@ -69,7 +69,8 @@
             <th>Consultation</th>
             <th>Amount</th>
             <th>Status</th>
-            <th class="pe-4 text-end">Generated On</th>
+            <th>Generated On</th>
+            <th class="pe-4 text-end">Action</th>
           </tr>
         </thead>
         <tbody id="billingTableBody">
@@ -78,22 +79,40 @@
             <td class="ps-4 fw-bold text-muted">#{{ bill.bill_id }}</td>
             <td class="fw-bold text-dark">{{ bill.appointment.patient.username }}</td>
             <td>
-                <div class="fw-bold" style="font-size: 13px;">Dr. {{ bill.appointment.doctor }}</div>
+                <div class="fw-bold" style="font-size: 13px;">{% if bill.appointment.doctor.lower().startswith('dr') %}{{ bill.appointment.doctor }}{% else %}Dr. {{ bill.appointment.doctor }}{% endif %}</div>
                 <div class="text-muted small">{{ bill.appointment.dept }}</div>
             </td>
-            <td class="fw-bold text-dark">₹{{ bill.amount }}</td>
+            <td class="fw-bold text-dark amount">₹{{ bill.amount }}</td>
             <td>
               {% if bill.status == 'Paid' %}
                 <span class="status-badge status-paid"><i class="fas fa-check-circle me-1"></i>Paid</span>
+                {% if bill.settled_by %}
+                <div class="text-muted small" style="font-size: 10px;">By: {{ bill.settled_by }}</div>
+                {% endif %}
               {% else %}
                 <span class="status-badge status-unpaid"><i class="fas fa-exclamation-circle me-1"></i>Unpaid</span>
               {% endif %}
             </td>
-            <td class="pe-4 text-end small text-muted">{{ bill.issued_on.strftime('%Y-%m-%d') }}</td>
+            <td class="small text-muted">{{ bill.issued_on.strftime('%Y-%m-%d') }}</td>
+            <td class="pe-4 text-end">
+              {% if bill.status == 'Paid' %}
+                <a href="{{ url_for('patient.receipt', bill_id=bill.bill_id) }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                  <i class="fas fa-receipt me-1"></i>Receipt
+                </a>
+              {% else %}
+                <form action="{{ url_for('admin.settle_payment', bill_id=bill.bill_id) }}" method="POST" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <input type="hidden" name="payment_ref" value="COUNTER-CASH-{{ bill.bill_id }}"/>
+                  <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm">
+                    <i class="fas fa-cash-register me-1"></i>Settle Cash
+                  </button>
+                </form>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
           <tr id="emptyMsg" style="display: none;">
-            <td colspan="6" class="text-center py-5 text-muted">
+            <td colspan="7" class="text-center py-5 text-muted">
                 <i class="fas fa-filter fa-3x mb-3 opacity-25"></i>
                 <h5 class="fw-bold">No records match this status</h5>
                 <button class="btn btn-link text-decoration-none" onclick="filterBills('All')">Show all results</button>

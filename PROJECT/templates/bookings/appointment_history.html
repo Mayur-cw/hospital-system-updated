@@ -286,9 +286,22 @@ My Appointments | Hospital Management System
                           <a href="{{ url_for('doctor.edit_record', apt_id=apt.apt_id) }}" class="btn btn-sm btn-outline-secondary rounded-pill btn-action-fixed"><i class="fas fa-edit me-1"></i> Edit</a>
                       {% elif apt.slot == 'Attended' %}
                           <a href="{{ url_for('doctor.add_record', apt_id=apt.apt_id) }}" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark btn-action-fixed"><i class="fas fa-notes-medical me-1"></i> Add Rx</a>
-                      {% elif apt.slot == 'Scheduled' %}
-                          <form action="{{ url_for('doctor.cancel_apt', apt_id=apt.apt_id) }}" method="POST" class="m-0" onsubmit="return confirm('Cancel this appointment?');">
-                              <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold btn-action-fixed">Cancel</button>
+                      {% elif apt.slot in ('Scheduled', 'CheckedIn') %}
+                          <form action="{{ url_for('doctor.mark_attended', apt_id=apt.apt_id) }}" method="POST" class="d-inline m-0">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                              <button type="submit" class="btn btn-sm btn-success rounded-pill fw-bold px-2" title="Mark patient attended">
+                                  <i class="fas fa-check me-1"></i>Attend
+                              </button>
+                          </form>
+                          <form action="{{ url_for('doctor.mark_missed', apt_id=apt.apt_id) }}" method="POST" class="d-inline m-0">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                              <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-2" title="Mark patient missed">
+                                  <i class="fas fa-times me-1"></i>Missed
+                              </button>
+                          </form>
+                          <form action="{{ url_for('doctor.cancel_apt', apt_id=apt.apt_id) }}" method="POST" class="d-inline m-0" onsubmit="return confirm('Cancel this appointment?');">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                              <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-2">Cancel</button>
                           </form>
                       {% endif %}
                   {% else %}
@@ -337,6 +350,7 @@ My Appointments | Hospital Management System
                                 
                       {% elif apt.slot == 'Scheduled' %}
                           <form action="{{ url_for('doctor.cancel_apt', apt_id=apt.apt_id) }}" method="POST" class="m-0" onsubmit="return confirm('Cancel your appointment?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                               <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold btn-action-fixed"><i class="fas fa-times me-1"></i> Cancel</button>
                           </form>
                       {% else %}

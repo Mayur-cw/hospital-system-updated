@@ -332,6 +332,7 @@
 
       <div class="pf-card-body">
         <form action="/profile" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
           <p class="pf-section-tag">Personal Details</p>
 

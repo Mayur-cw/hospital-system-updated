@@ -71,9 +71,17 @@ Write Prescription | Hospital Management System
             </div>
           </div>
 
-          <div class="p-4 bg-danger bg-opacity-10 rounded-4 border border-danger border-opacity-25">
+          <div class="p-4 bg-danger bg-opacity-10 rounded-4 border border-danger border-opacity-25 mb-3">
             <span class="text-danger small fw-bold text-uppercase d-block mb-1" style="letter-spacing: 0.5px;"><i class="fas fa-exclamation-circle me-1"></i> Reported Reason:</span>
             <p class="mb-0 fw-bold text-dark">{{ appointment.disease }}</p>
+          </div>
+
+          <!-- Clinical Allergy Safety Flag -->
+          <div class="p-3 bg-danger bg-opacity-10 rounded-4 border border-danger border-opacity-50">
+            <span class="text-danger small fw-bold text-uppercase d-block mb-1" style="letter-spacing: 0.5px;">
+              <i class="fas fa-allergies me-1"></i> Allergies & Contraindications:
+            </span>
+            <p class="mb-0 fw-bold text-danger">{{ appointment.patient.allergies or 'None recorded' }}</p>
           </div>
         </div>
       </div>
@@ -84,6 +92,7 @@ Write Prescription | Hospital Management System
       <div class="hms-panel p-5 h-100">
         
         <form action="/add_record/{{ appointment.apt_id }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           
           <div class="mb-4">
             <label for="diagnosis" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
@@ -96,7 +105,20 @@ Write Prescription | Hospital Management System
             <label for="prescription" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
               <i class="fas fa-pills text-success me-2"></i>Prescription & Medications <span class="text-danger">*</span>
             </label>
-            <textarea class="form-control-modern w-100" id="prescription" name="prescription" rows="4" placeholder="List medications, dosage, and frequency (e.g., Amoxicillin 500mg, 1 tablet twice daily for 7 days)" required></textarea>
+            <div class="mb-2 d-flex flex-wrap gap-1">
+              <span class="small text-muted me-1 align-self-center">Structured Presets:</span>
+              <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0 px-2" style="font-size: 0.75rem;" onclick="addMed('Tab Paracetamol 650mg | 1 tab TDS (thrice daily) | 3 days | After meals')">+ Paracetamol 650mg</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0 px-2" style="font-size: 0.75rem;" onclick="addMed('Tab Amoxicillin-Clav 625mg | 1 tab BD (twice daily) | 5 days | With food')">+ Amox-Clav 625mg</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0 px-2" style="font-size: 0.75rem;" onclick="addMed('Cap Pantoprazole 40mg | 1 cap OD (once daily morning) | 7 days | Before breakfast')">+ Pantoprazole 40mg</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0 px-2" style="font-size: 0.75rem;" onclick="addMed('Tab Cetirizine 10mg | 1 tab HS (at bedtime) | 5 days')">+ Cetirizine 10mg</button>
+            </div>
+            <textarea class="form-control-modern w-100" id="prescription" name="prescription" rows="4" placeholder="List medications, dosage, route, frequency, and duration (e.g., Amoxicillin 500mg, Oral, TDS for 5 days)" required></textarea>
+            <script>
+              function addMed(text) {
+                const rx = document.getElementById('prescription');
+                rx.value = rx.value ? rx.value + '\n' + text : text;
+              }
+            </script>
           </div>
 
           <div class="mb-4">

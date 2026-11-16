@@ -61,19 +61,31 @@
           {% endif %}
         
           <div class="r-row border-0">
-              <span class="r-label">Payment Mode</span>
+              <span class="r-label">Settlement Mode</span>
               <span class="r-val text-uppercase text-success">
-                  {% if invoice.payment_mode == 'netbanking' %}🏦 {{ invoice.bank_name }}{% else %}💵 Counter Cash{% endif %}
+                  {% if 'demo_simulation' in (invoice.payment_mode or '') %}
+                      <span class="badge bg-warning text-dark"><i class="fas fa-flask me-1"></i> Demo Simulation ({{ invoice.bank_name or 'Netbanking' }})</span>
+                  {% elif invoice.payment_mode == 'cash' %}
+                      💵 Cashier Counter (Ref: {{ invoice.transaction_ref or 'CASH-001' }})
+                  {% else %}
+                      {{ invoice.payment_mode or 'Settled' }}
+                  {% endif %}
               </span>
           </div>
         
           <div class="bg-light p-3 rounded-3 mt-3 text-center border">
-            <div class="r-label mb-1">Total Amount Paid</div>
+            <div class="r-label mb-1">Total Amount Settled</div>
             <h2 class="text-success fw-bold mb-1">₹{{ invoice.amount }}</h2>
             {% if invoice.appointment.admission %}
             <small class="text-muted fst-italic">Includes consultation and cumulative room stay charges.</small>
             {% endif %}
           </div>
+
+          {% if 'demo_simulation' in (invoice.payment_mode or '') %}
+          <div class="alert alert-warning py-2 px-3 mt-3 mb-0 small text-center fw-bold border-0">
+              <i class="fas fa-exclamation-circle me-1"></i> NOTICE: This transaction was completed in DEMO MODE for workflow demonstration. No real banking transfer was executed.
+          </div>
+          {% endif %}
         
           <div class="barcode">||| |||| | |||||| || | ||</div>
           <div class="text-center small text-muted mt-2">Digital Signature Verified. No physical stamp required.</div>

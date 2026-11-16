@@ -177,6 +177,7 @@ Book Appointment | Hospital Management System
 
           <!-- THE FORM -->
           <form action="/patients" method="POST" id="bookingForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="slot" value="Scheduled">
             <!-- 🚨 FIXED: Removed required from hidden fields and added selected_dept -->
             <input type="hidden" id="selected_doctor" name="doctor">
