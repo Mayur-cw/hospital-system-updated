@@ -132,21 +132,119 @@
         }
         .nav-link:hover { color: var(--hms-teal) !important; transform: translateY(-1px); }
 
-        /* ── GLASS SEARCH BAR ── */
-        .glass-search {
-            width: 125px;
-            background: rgba(255,255,255,0.08) !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-            color: white !important; border-radius: var(--radius-pill);
-            padding-left: 1rem; font-size: 0.82rem; transition: all 0.3s ease;
+        /* ── INTERACTIVE EXPANDING GLASS SEARCH WIDGET ── */
+        .search-widget-container {
+            position: relative;
+            z-index: 1040;
         }
-        .glass-search:focus {
-            width: 165px;
-            background: rgba(255,255,255,0.15) !important;
+        .search-input-pill-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .glass-search-expandable {
+            width: 140px;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border: 1px solid rgba(255, 255, 255, 0.16) !important;
+            color: #ffffff !important;
+            border-radius: var(--radius-pill);
+            padding: 0.38rem 1.8rem 0.38rem 2.1rem !important;
+            font-size: 0.82rem;
+            letter-spacing: 0.2px;
+            transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-search-expandable:focus,
+        .glass-search-expandable.active-expanded {
+            width: 220px;
+            background: rgba(11, 29, 53, 0.96) !important;
             border-color: var(--hms-teal) !important;
-            box-shadow: 0 0 0 4px rgba(0, 201, 167, 0.15) !important;
+            box-shadow: 0 0 0 4px rgba(0, 201, 167, 0.2), 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+            outline: none;
         }
-        .glass-search::placeholder { color: rgba(255,255,255,0.4); }
+        .glass-search-expandable::placeholder {
+            color: rgba(255, 255, 255, 0.48);
+            font-size: 0.8rem;
+            transition: color 0.2s;
+        }
+        .glass-search-expandable:focus::placeholder {
+            color: rgba(255, 255, 255, 0.65);
+        }
+        .search-lens-icon {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.55);
+            pointer-events: none;
+            transition: color 0.25s, transform 0.25s;
+        }
+        .glass-search-expandable:focus ~ .search-lens-icon,
+        .glass-search-expandable.active-expanded ~ .search-lens-icon {
+            color: var(--hms-teal);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .search-clear-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 0.85rem;
+            padding: 0;
+            line-height: 1;
+            cursor: pointer;
+            display: none;
+            transition: color 0.2s;
+        }
+        .search-clear-btn:hover {
+            color: #ffffff;
+        }
+
+        /* ── LIVE SEARCH FLYOUT DROPDOWN ── */
+        .search-flyout-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 320px;
+            background: rgba(11, 29, 53, 0.98);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 201, 167, 0.28);
+            border-radius: 16px;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+            z-index: 1070;
+            overflow: hidden;
+            animation: searchFlyoutIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            display: none;
+        }
+        @keyframes searchFlyoutIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .search-flyout-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.55rem 0.75rem;
+            border-radius: 10px;
+            text-decoration: none !important;
+            transition: all 0.2s ease;
+            color: #ffffff;
+        }
+        .search-flyout-item:hover {
+            background: rgba(0, 201, 167, 0.12);
+            transform: translateX(2px);
+        }
+        .search-flyout-badge {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: 50px;
+        }
 
         /* ── USER PILL & DROPDOWN ── */
         .user-pill {
@@ -324,12 +422,42 @@
                 </ul>
 
                 <div class="d-flex align-items-center gap-2 gap-xl-3 mt-3 mt-lg-0">
-                    <form class="d-none d-lg-block position-relative" action="/search" method="post">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <input class="form-control glass-search" type="search" name="search" 
-                               placeholder="{% if current_user.usertype == 'Doctor' %}Search patients...{% else %}Search doctors...{% endif %}" required>
-                        <i class="fas fa-search position-absolute top-50 translate-middle-y end-0 me-3 opacity-50 text-white" style="font-size: 0.8rem;"></i>
-                    </form>
+                    {% if not current_user.is_authenticated or current_user.usertype != 'Patient' %}
+                    <!-- ── INTERACTIVE EXPANDING SEARCH WIDGET (DOCTOR, ADMIN & PUBLIC) ── -->
+                    <div class="search-widget-container d-none d-lg-block position-relative">
+                        <form action="/search" method="get" id="globalNavSearchForm" autocomplete="off" class="m-0">
+                            <div class="search-input-pill-wrapper position-relative">
+                                <input class="form-control glass-search-expandable" 
+                                       type="search" 
+                                       name="q" 
+                                       id="globalNavSearchInput"
+                                       placeholder="{% if current_user.is_authenticated and current_user.usertype == 'Doctor' %}Search patients...{% elif current_user.is_authenticated and current_user.usertype == 'Admin' %}Search doctors, patients...{% else %}Search doctors...{% endif %}"
+                                       aria-label="Search" 
+                                       required>
+                                <i class="fas fa-search search-lens-icon"></i>
+                                <button type="button" class="search-clear-btn" id="searchClearBtn" aria-label="Clear search">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Live Suggestions Dropdown Card -->
+                        <div class="search-flyout-dropdown shadow-lg" id="searchFlyoutDropdown">
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom border-white border-opacity-10">
+                                <span class="text-white-50 fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.8px;">Quick Suggestions</span>
+                                <span class="badge bg-info text-white rounded-pill px-2 py-0.5" id="searchFlyoutCount" style="font-size: 0.65rem;">0 matches</span>
+                            </div>
+                            <div class="p-2" id="searchFlyoutList" style="max-height: 280px; overflow-y: auto;">
+                                <!-- Live items injected dynamically -->
+                            </div>
+                            <div class="p-2 border-top border-white border-opacity-10 text-center bg-black bg-opacity-20">
+                                <a href="#" id="searchFlyoutSubmitLink" class="text-info text-decoration-none fw-bold" style="font-size: 0.78rem;">
+                                    View all results <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
 
                     {% if current_user.is_authenticated %}
                         <div class="dropdown ms-lg-1 ms-xl-2">
@@ -507,12 +635,122 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // Toast dismiss
             document.querySelectorAll('.toast-alert').forEach(toast => {
                 setTimeout(() => {
                     toast.classList.add('toast-fade-out');
                     setTimeout(() => toast.remove(), 500);
                 }, 4500);
             });
+
+            // ── LIVE INTERACTIVE EXPANDING SEARCH & AUTOCOMPLETE ──
+            const searchInput = document.getElementById('globalNavSearchInput');
+            const clearBtn = document.getElementById('searchClearBtn');
+            const flyout = document.getElementById('searchFlyoutDropdown');
+            const flyoutList = document.getElementById('searchFlyoutList');
+            const flyoutCount = document.getElementById('searchFlyoutCount');
+            const submitLink = document.getElementById('searchFlyoutSubmitLink');
+            const searchForm = document.getElementById('globalNavSearchForm');
+
+            if (searchInput && flyout) {
+                let debounceTimer = null;
+
+                searchInput.addEventListener('input', function() {
+                    const q = this.value.trim();
+                    if (clearBtn) clearBtn.style.display = q.length > 0 ? 'block' : 'none';
+
+                    if (q.length < 2) {
+                        flyout.style.display = 'none';
+                        return;
+                    }
+
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        fetch('/api/search?q=' + encodeURIComponent(q))
+                            .then(res => res.json())
+                            .then(data => {
+                                renderSuggestions(data.results, q);
+                            })
+                            .catch(() => {
+                                flyout.style.display = 'none';
+                            });
+                    }, 160);
+                });
+
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        searchInput.value = '';
+                        clearBtn.style.display = 'none';
+                        flyout.style.display = 'none';
+                        searchInput.focus();
+                    });
+                }
+
+                if (submitLink) {
+                    submitLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        if (searchInput.value.trim() && searchForm) {
+                            searchForm.submit();
+                        }
+                    });
+                }
+
+                document.addEventListener('click', function(e) {
+                    const container = searchInput.closest('.search-widget-container');
+                    if (container && !container.contains(e.target)) {
+                        flyout.style.display = 'none';
+                        if (!searchInput.value.trim()) {
+                            searchInput.classList.remove('active-expanded');
+                        }
+                    }
+                });
+
+                searchInput.addEventListener('focus', function() {
+                    this.classList.add('active-expanded');
+                    if (this.value.trim().length >= 2) {
+                        flyout.style.display = 'block';
+                    }
+                });
+
+                function renderSuggestions(items, q) {
+                    if (!items || items.length === 0) {
+                        flyoutList.innerHTML = '<div class="p-3 text-center text-white-50 small"><i class="fas fa-search me-1"></i>No quick matches. Press Enter for full search.</div>';
+                        flyoutCount.textContent = '0 matches';
+                        submitLink.href = '/search?q=' + encodeURIComponent(q);
+                        flyout.style.display = 'block';
+                        return;
+                    }
+
+                    flyoutCount.textContent = items.length + ' match' + (items.length > 1 ? 'es' : '');
+                    submitLink.href = '/search?q=' + encodeURIComponent(q);
+
+                    let html = '';
+                    items.forEach(item => {
+                        const badgeClass = item.badge_color === 'primary' ? 'bg-primary text-white' : 
+                                          (item.badge_color === 'success' ? 'bg-success text-white' : 
+                                          (item.badge_color === 'warning' ? 'bg-warning text-dark' : 'bg-info text-white'));
+                        
+                        html += `
+                        <a href="${item.url}" class="search-flyout-item">
+                            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 30px; height: 30px; background: rgba(255,255,255,0.1);">
+                                <i class="fas ${item.icon} text-info" style="font-size: 0.8rem;"></i>
+                            </div>
+                            <div class="flex-grow-1 text-truncate">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold text-white small text-truncate">${item.title}</span>
+                                    <span class="search-flyout-badge ${badgeClass}">${item.badge}</span>
+                                </div>
+                                <div class="text-white-50 text-truncate" style="font-size: 0.72rem;">${item.subtitle}</div>
+                            </div>
+                            <i class="fas fa-chevron-right text-white-50 small ms-1"></i>
+                        </a>`;
+                    });
+
+                    flyoutList.innerHTML = html;
+                    flyout.style.display = 'block';
+                }
+            }
         });
     </script>
 </body>

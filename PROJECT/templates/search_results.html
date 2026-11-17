@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Search Results for "{{ query }}" | Hospital Management System
+{% endblock title %}
+
+{% block body %}
+<style>
+  .search-hero-header {
+    background: linear-gradient(135deg, #0b1d35 0%, #162f55 100%);
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 2rem;
+  }
+  .search-result-card {
+    background: #ffffff;
+    border: 1px solid var(--hms-border, #e2e8f0);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.25s ease;
+    height: 100%;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  }
+  .search-result-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.08);
+    border-color: rgba(0, 201, 167, 0.4);
+  }
+  .search-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .search-input-re {
+    border-radius: 50px;
+    padding: 0.6rem 1.4rem;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.1);
+    color: white;
+  }
+  .search-input-re::placeholder {
+    color: rgba(255,255,255,0.6);
+  }
+  .search-input-re:focus {
+    background: rgba(255,255,255,0.2);
+    border-color: var(--hms-teal, #00c9a7);
+    color: white;
+    box-shadow: 0 0 0 4px rgba(0, 201, 167, 0.25);
+  }
+</style>
+
+<div class="container my-5">
+
+  <!-- Breadcrumbs -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-primary fw-semibold"><i class="fas fa-home me-1"></i>Home</a></li>
+      <li class="breadcrumb-item active text-muted">Search Registry</li>
+    </ol>
+  </nav>
+
+  <!-- Search Hero Header -->
+  <div class="search-hero-header">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-7">
+        <div class="d-flex align-items-center gap-3">
+          <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 52px; height: 52px; background: rgba(0, 201, 167, 0.2); color: var(--hms-teal, #00c9a7);">
+            <i class="fas fa-search fs-4"></i>
+          </div>
+          <div>
+            <span class="badge bg-white bg-opacity-15 text-white rounded-pill px-3 py-1 text-uppercase fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 1px;">
+              {% if current_user.is_authenticated and current_user.usertype == 'Doctor' %}
+                Clinician Patient Lookup
+              {% elif current_user.is_authenticated and current_user.usertype == 'Admin' %}
+                System Wide Search
+              {% else %}
+                Specialist Directory Search
+              {% endif %}
+            </span>
+            <h2 class="fw-bold mb-1 text-white">
+              {% if query %}
+                Results for &ldquo;{{ query }}&rdquo;
+              {% else %}
+                Search Hospital Profiles
+              {% endif %}
+            </h2>
+            <p class="mb-0 text-white-50 small">
+              Found <strong>{{ total_count }}</strong> matching record(s) across active hospital registries.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <form action="/search" method="get" class="d-flex gap-2">
+          <input type="search" name="q" class="form-control search-input-re" placeholder="Search again by name, ID, or dept..." value="{{ query }}">
+          <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+            <i class="fas fa-search"></i>
+            <span>Search</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Section -->
+  {% if total_count == 0 %}
+    <!-- Empty State -->
+    <div class="card shadow-sm border-0 rounded-4 p-5 text-center my-4">
+      <div class="mb-3">
+        <div class="rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 80px; height: 80px; background: rgba(13, 110, 253, 0.1); color: #0d6efd;">
+          <i class="fas fa-search-minus fa-2x"></i>
+        </div>
+      </div>
+      <h4 class="fw-bold text-dark">No Matching Profiles Found</h4>
+      <p class="text-muted mx-auto" style="max-width: 500px;">
+        We could not find any active doctors, patients, or records matching &ldquo;<strong>{{ query }}</strong>&rdquo;.
+      </p>
+      <div class="d-flex justify-content-center gap-2 mt-2">
+        {% if current_user.is_authenticated and current_user.usertype == 'Admin' %}
+          <a href="/admin/patients" class="btn btn-outline-primary rounded-pill px-4 fw-bold"><i class="fas fa-users me-2"></i>Patient Registry</a>
+          <a href="/admin/doctors" class="btn btn-outline-info rounded-pill px-4 fw-bold"><i class="fas fa-user-md me-2"></i>Doctors Directory</a>
+        {% elif current_user.is_authenticated and current_user.usertype == 'Doctor' %}
+          <a href="/dashboard" class="btn btn-outline-primary rounded-pill px-4 fw-bold"><i class="fas fa-stethoscope me-2"></i>Clinic Workspace</a>
+        {% else %}
+          <a href="/doctors" class="btn btn-outline-primary rounded-pill px-4 fw-bold"><i class="fas fa-user-md me-2"></i>View All Doctors</a>
+        {% endif %}
+      </div>
+    </div>
+
+  {% else %}
+
+    <!-- 👥 PATIENTS RESULTS -->
+    {% if results.patients %}
+    <div class="mb-5">
+      <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+        <h4 class="fw-bold text-dark mb-0">
+          <i class="fas fa-user-injured text-success me-2"></i>Patients
+          <span class="badge bg-success-subtle text-success rounded-pill ms-2 fs-6">{{ results.patients | length }}</span>
+        </h4>
+        {% if current_user.is_authenticated and current_user.usertype == 'Admin' %}
+          <a href="/admin/patients?search={{ query }}" class="text-decoration-none small fw-bold text-primary">Open in Full Registry &rarr;</a>
+        {% endif %}
+      </div>
+
+      <div class="row g-3">
+        {% for patient in results.patients %}
+        <div class="col-md-6 col-lg-4">
+          <div class="search-result-card d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="search-avatar" style="background: rgba(34, 197, 94, 0.15); color: #16a34a;">
+                  {{ patient.name[0] | upper }}
+                </div>
+                <div>
+                  <h5 class="fw-bold text-dark mb-0">{{ patient.name }}</h5>
+                  <div class="d-flex align-items-center gap-1 mt-1">
+                    <span class="badge bg-light text-dark border rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">{{ patient.mrn }}</span>
+                    <span class="badge bg-info-subtle text-info rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">{{ patient.gender }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="small text-muted mb-3 space-y-1">
+                <div><i class="fas fa-envelope text-muted me-2" style="width: 16px;"></i>{{ patient.email }}</div>
+                <div><i class="fas fa-phone text-muted me-2" style="width: 16px;"></i>{{ patient.phone }}</div>
+                {% if patient.active_admission %}
+                  <div class="mt-2 text-warning fw-bold">
+                    <i class="fas fa-procedures text-warning me-2" style="width: 16px;"></i>Inpatient: Room {{ patient.active_admission.room.room_number }} ({{ patient.active_admission.room.ward_type }})
+                  </div>
+                {% endif %}
+              </div>
+
+              {% if current_user.usertype == 'Doctor' and patient.my_appointments %}
+                <div class="border-top pt-2 mb-3">
+                  <div class="small fw-bold text-dark mb-1">Your Consultations:</div>
+                  <div class="list-group list-group-flush small">
+                    {% for apt in patient.my_appointments[:2] %}
+                      <div class="list-group-item px-0 py-1 border-0 d-flex justify-content-between align-items-center">
+                        <span><i class="far fa-calendar-alt text-primary me-1"></i>{{ apt.date }}</span>
+                        {% if apt.slot == 'Completed' %}
+                          <a href="{{ url_for('doctor.view_record', apt_id=apt.apt_id) }}" class="badge bg-success text-decoration-none">
+                            <i class="fas fa-file-medical me-1"></i>Signed Chart
+                          </a>
+                        {% elif apt.slot == 'Attended' %}
+                          <a href="{{ url_for('doctor.add_record', apt_id=apt.apt_id) }}" class="badge bg-warning text-dark text-decoration-none">
+                            <i class="fas fa-pen-alt me-1"></i>Add Chart
+                          </a>
+                        {% else %}
+                          <span class="badge bg-primary">{{ apt.slot }}</span>
+                        {% endif %}
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="border-top pt-3 mt-2 d-flex gap-2">
+              {% if current_user.is_authenticated and current_user.usertype == 'Admin' %}
+                <a href="/admin/patients?search={{ patient.name }}" class="btn btn-outline-primary btn-sm rounded-pill w-100 fw-bold">
+                  <i class="fas fa-external-link-alt me-1"></i>View Profile
+                </a>
+              {% elif current_user.is_authenticated and current_user.usertype == 'Doctor' %}
+                {% if patient.active_admission %}
+                  <a href="/my_admissions" class="btn btn-outline-warning btn-sm rounded-pill w-100 fw-bold">
+                    <i class="fas fa-bed me-1"></i>Ward Management
+                  </a>
+                {% else %}
+                  <a href="/dashboard" class="btn btn-outline-primary btn-sm rounded-pill w-100 fw-bold">
+                    <i class="fas fa-clipboard-list me-1"></i>Queue Workspace
+                  </a>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 🩺 DOCTORS RESULTS -->
+    {% if results.doctors %}
+    <div class="mb-5">
+      <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+        <h4 class="fw-bold text-dark mb-0">
+          <i class="fas fa-user-md text-primary me-2"></i>Doctors & Specialists
+          <span class="badge bg-primary-subtle text-primary rounded-pill ms-2 fs-6">{{ results.doctors | length }}</span>
+        </h4>
+        {% if current_user.is_authenticated and current_user.usertype == 'Admin' %}
+          <a href="/admin/doctors" class="text-decoration-none small fw-bold text-primary">Manage Directory &rarr;</a>
+        {% endif %}
+      </div>
+
+      <div class="row g-3">
+        {% for doctor in results.doctors %}
+        <div class="col-md-6 col-lg-4">
+          <div class="search-result-card d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="search-avatar" style="background: rgba(13, 110, 253, 0.15); color: #0d6efd;">
+                  <i class="fas fa-stethoscope"></i>
+                </div>
+                <div>
+                  <h5 class="fw-bold text-dark mb-0">{{ doctor.name }}</h5>
+                  <span class="badge bg-primary rounded-pill px-2.5 py-1 text-white" style="font-size: 0.72rem;">{{ doctor.dept }}</span>
+                </div>
+              </div>
+
+              <div class="small text-muted mb-3 space-y-1">
+                <div><i class="fas fa-envelope text-muted me-2" style="width: 16px;"></i>{{ doctor.email }}</div>
+                {% if doctor.appointment_count is defined %}
+                  <div><i class="fas fa-calendar-check text-muted me-2" style="width: 16px;"></i>{{ doctor.appointment_count }} total appointment(s)</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="border-top pt-3 mt-2">
+              {% if current_user.is_authenticated and current_user.usertype == 'Admin' %}
+                <a href="/admin/doctors" class="btn btn-outline-primary btn-sm rounded-pill w-100 fw-bold">
+                  <i class="fas fa-user-cog me-1"></i>Manage in Doctors Directory
+                </a>
+              {% elif not current_user.is_authenticated %}
+                <a href="/login" class="btn btn-primary btn-sm rounded-pill w-100 fw-bold">
+                  <i class="fas fa-calendar-plus me-1"></i>Login to Book Consultation
+                </a>
+              {% else %}
+                <a href="/doctors" class="btn btn-outline-primary btn-sm rounded-pill w-100 fw-bold">
+                  <i class="fas fa-info-circle me-1"></i>Specialist Details
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 🛡️ STAFF RESULTS (Admin Only) -->
+    {% if results.staff %}
+    <div class="mb-5">
+      <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+        <h4 class="fw-bold text-dark mb-0">
+          <i class="fas fa-user-shield text-warning me-2"></i>Hospital System Staff
+          <span class="badge bg-warning-subtle text-warning rounded-pill ms-2 fs-6">{{ results.staff | length }}</span>
+        </h4>
+        <a href="/admin/staff" class="text-decoration-none small fw-bold text-primary">Manage Staff Panel &rarr;</a>
+      </div>
+
+      <div class="row g-3">
+        {% for staff in results.staff %}
+        <div class="col-md-6 col-lg-4">
+          <div class="search-result-card d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="search-avatar" style="background: rgba(245, 158, 11, 0.15); color: #d97706;">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <div>
+                  <h5 class="fw-bold text-dark mb-0">{{ staff.name }}</h5>
+                  <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem;">{{ staff.role }}</span>
+                </div>
+              </div>
+
+              <div class="small text-muted mb-3 space-y-1">
+                <div><i class="fas fa-envelope text-muted me-2" style="width: 16px;"></i>{{ staff.email }}</div>
+                <div><i class="fas fa-phone text-muted me-2" style="width: 16px;"></i>{{ staff.phone }}</div>
+              </div>
+            </div>
+
+            <div class="border-top pt-3 mt-2">
+              <a href="/admin/staff" class="btn btn-outline-warning text-dark btn-sm rounded-pill w-100 fw-bold">
+                <i class="fas fa-cog me-1"></i>Configure Staff Permissions
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  {% endif %}
+
+</div>
+{% endblock body %}

@@ -1,9 +1,9 @@
 # routes/main.py
 from datetime import date, datetime
 from decimal import Decimal
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify
 from flask_login import login_required, current_user
-from models import Appointments, MedicalRecord, Doctors, Admission, Billing
+from models import db, User, Appointments, MedicalRecord, Doctors, Admission, Billing
 
 main_bp = Blueprint('main', __name__)
 
@@ -134,7 +134,6 @@ def index():
     return render_template('index.html')
 
 @main_bp.route('/doctors', methods=['GET'])
-
 def doctors():
     # 🎓 UPGRADE: Use the SQLAlchemy relationship to map the name from the User table
     raw_doctors = Doctors.query.all()
@@ -143,3 +142,229 @@ def doctors():
         for d in raw_doctors
     ]
     return render_template('doctor_directory.html', all_doctors=doctors_list)
+
+
+@main_bp.route('/search', methods=['GET', 'POST'])
+def global_search():
+    query = (request.args.get('q') or request.args.get('search') or request.form.get('search') or '').strip()
+    
+    # If patient attempts to search, redirect to dashboard
+    if current_user.is_authenticated and current_user.usertype == 'Patient':
+        return redirect(url_for('patient.dashboard'))
+
+    results = {
+        'doctors': [],
+        'patients': [],
+        'staff': []
+    }
+    
+    if not query:
+        return render_template('search_results.html', query='', results=results, total_count=0)
+
+    search_term = f"%{query}%"
+
+    if not current_user.is_authenticated or current_user.usertype == 'Guest':
+        # Public search: search doctors by name or department
+        docs = Doctors.query.join(User, Doctors.user_id == User.id).filter(
+            (User.username.ilike(search_term)) | 
+            (Doctors.dept.ilike(search_term)) |
+            (User.email.ilike(search_term))
+        ).all()
+        for d in docs:
+            results['doctors'].append({
+                'id': d.user_account.id,
+                'name': d.user_account.username,
+                'email': d.user_account.email,
+                'dept': d.dept
+            })
+
+    elif current_user.usertype == 'Doctor':
+        # Doctor search: search patient profiles
+        patients = User.query.filter_by(usertype='Patient').filter(
+            (User.username.ilike(search_term)) | 
+            (User.email.ilike(search_term)) | 
+            (User.phone.ilike(search_term)) |
+            (User.mrn.ilike(search_term))
+        ).all()
+        
+        for p in patients:
+            # Check appointments with this doctor
+            my_apts = Appointments.query.filter_by(user_id=p.id, doctor=current_user.username).order_by(Appointments.date.desc()).all()
+            # Check if admitted
+            admission = Admission.query.filter_by(patient_id=p.id, status='Admitted').first()
+            results['patients'].append({
+                'id': p.id,
+                'name': p.username,
+                'email': p.email,
+                'phone': p.phone or 'Not Provided',
+                'gender': p.gender or 'Unspecified',
+                'mrn': p.mrn or f'PID-{p.id}',
+                'my_appointments': my_apts,
+                'active_admission': admission
+            })
+
+    elif current_user.usertype == 'Admin':
+        # Admin search: search doctors, patients, staff
+        # 1. Doctors
+        docs = Doctors.query.join(User, Doctors.user_id == User.id).filter(
+            (User.username.ilike(search_term)) | 
+            (Doctors.dept.ilike(search_term)) |
+            (User.email.ilike(search_term))
+        ).all()
+        for d in docs:
+            apt_count = Appointments.query.filter_by(doctor=d.user_account.username).count()
+            results['doctors'].append({
+                'id': d.user_account.id,
+                'name': d.user_account.username,
+                'email': d.user_account.email,
+                'dept': d.dept,
+                'appointment_count': apt_count
+            })
+
+        # 2. Patients
+        patients = User.query.filter_by(usertype='Patient').filter(
+            (User.username.ilike(search_term)) | 
+            (User.email.ilike(search_term)) | 
+            (User.phone.ilike(search_term)) |
+            (User.mrn.ilike(search_term))
+        ).all()
+        for p in patients:
+            apt_count = Appointments.query.filter_by(user_id=p.id).count()
+            results['patients'].append({
+                'id': p.id,
+                'name': p.username,
+                'email': p.email,
+                'phone': p.phone or 'Not Provided',
+                'gender': p.gender or 'Unspecified',
+                'mrn': p.mrn or f'PID-{p.id}',
+                'appointment_count': apt_count
+            })
+
+        # 3. Staff
+        staff_users = User.query.filter(User.usertype.in_(['Admin', 'Cashier', 'Receptionist'])).filter(
+            (User.username.ilike(search_term)) | 
+            (User.email.ilike(search_term)) | 
+            (User.usertype.ilike(search_term))
+        ).all()
+        for s in staff_users:
+            results['staff'].append({
+                'id': s.id,
+                'name': s.username,
+                'email': s.email,
+                'role': s.usertype,
+                'phone': s.phone or 'Not Provided'
+            })
+
+    elif current_user.usertype == 'Cashier':
+        # Cashier: search patients and bills
+        patients = User.query.filter_by(usertype='Patient').filter(
+            (User.username.ilike(search_term)) | 
+            (User.email.ilike(search_term)) | 
+            (User.phone.ilike(search_term))
+        ).all()
+        for p in patients:
+            results['patients'].append({
+                'id': p.id,
+                'name': p.username,
+                'email': p.email,
+                'phone': p.phone or 'Not Provided',
+                'gender': p.gender or 'Unspecified',
+                'mrn': p.mrn or f'PID-{p.id}'
+            })
+
+    total_count = len(results['doctors']) + len(results['patients']) + len(results['staff'])
+    return render_template('search_results.html', query=query, results=results, total_count=total_count)
+
+
+@main_bp.route('/api/search', methods=['GET'])
+def api_search():
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify({'results': [], 'total': 0})
+        
+    search_term = f"%{query}%"
+    items = []
+
+    if not current_user.is_authenticated or current_user.usertype == 'Guest':
+        docs = Doctors.query.join(User, Doctors.user_id == User.id).filter(
+            (User.username.ilike(search_term)) | (Doctors.dept.ilike(search_term))
+        ).limit(6).all()
+        for d in docs:
+            items.append({
+                'type': 'doctor',
+                'title': d.user_account.username,
+                'subtitle': d.dept,
+                'badge': 'Doctor',
+                'badge_color': 'primary',
+                'icon': 'fa-user-md',
+                'url': url_for('main.global_search', q=d.user_account.username)
+            })
+
+    elif current_user.usertype == 'Doctor':
+        # Search patients
+        patients = User.query.filter_by(usertype='Patient').filter(
+            (User.username.ilike(search_term)) | 
+            (User.email.ilike(search_term)) | 
+            (User.phone.ilike(search_term)) |
+            (User.mrn.ilike(search_term))
+        ).limit(8).all()
+        for p in patients:
+            items.append({
+                'type': 'patient',
+                'title': p.username,
+                'subtitle': f"MRN: {p.mrn or 'PID-'+str(p.id)} • {p.email}",
+                'badge': 'Patient',
+                'badge_color': 'info',
+                'icon': 'fa-user-injured',
+                'url': url_for('main.global_search', q=p.username)
+            })
+
+    elif current_user.usertype == 'Admin':
+        # Search doctors
+        docs = Doctors.query.join(User, Doctors.user_id == User.id).filter(
+            (User.username.ilike(search_term)) | (Doctors.dept.ilike(search_term))
+        ).limit(4).all()
+        for d in docs:
+            items.append({
+                'type': 'doctor',
+                'title': d.user_account.username,
+                'subtitle': f"Specialty: {d.dept}",
+                'badge': 'Doctor',
+                'badge_color': 'primary',
+                'icon': 'fa-user-md',
+                'url': url_for('admin.admin_doctors')
+            })
+
+        # Search patients
+        patients = User.query.filter_by(usertype='Patient').filter(
+            (User.username.ilike(search_term)) | 
+            (User.email.ilike(search_term)) | 
+            (User.mrn.ilike(search_term))
+        ).limit(4).all()
+        for p in patients:
+            items.append({
+                'type': 'patient',
+                'title': p.username,
+                'subtitle': f"Patient ID: PID-{p.id} • {p.email}",
+                'badge': 'Patient',
+                'badge_color': 'success',
+                'icon': 'fa-procedures',
+                'url': url_for('admin.admin_patients', search=p.username)
+            })
+
+        # Search staff
+        staff = User.query.filter(User.usertype.in_(['Admin', 'Cashier', 'Receptionist'])).filter(
+            (User.username.ilike(search_term)) | (User.usertype.ilike(search_term))
+        ).limit(3).all()
+        for s in staff:
+            items.append({
+                'type': 'staff',
+                'title': s.username,
+                'subtitle': f"System Role: {s.usertype}",
+                'badge': s.usertype,
+                'badge_color': 'warning',
+                'icon': 'fa-user-shield',
+                'url': url_for('admin.admin_staff')
+            })
+
+    return jsonify({'results': items, 'total': len(items)})
