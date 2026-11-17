@@ -217,12 +217,6 @@
                                     <span>OPD Queue</span>
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link nav-link-item" href="{{ url_for('reception.register_patient') }}">
-                                    <span class="nav-ico-badge nav-ico-patient"><i class="fas fa-user-plus"></i></span>
-                                    <span>New Patient</span>
-                                </a>
-                            </li>
 
                             <!-- Operations Dropdown -->
                             <li class="nav-item dropdown">
@@ -248,6 +242,7 @@
                                     <span>Quick Add</span>
                                 </a>
                                 <ul class="dropdown-menu shadow-lg border-0 mt-2 rounded-4 p-2">
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="{{ url_for('reception.register_patient') }}"><i class="fas fa-user-plus me-2 text-success"></i>Register New Patient</a></li>
                                     <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="#" data-bs-toggle="modal" data-bs-target="#globalAddDoctorModal"><i class="fas fa-user-md me-2 text-primary"></i>New Doctor</a></li>
                                     <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="#" data-bs-toggle="modal" data-bs-target="#globalAddStaffModal"><i class="fas fa-user-shield me-2 text-warning"></i>New Admin</a></li>
                                 </ul>

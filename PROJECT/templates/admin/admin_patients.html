@@ -19,9 +19,13 @@ Registered Patients | Hospital Management System
       <h2 class="fw-bold text-dark mb-0"><i class="fas fa-users text-info me-2"></i>Registered Patients</h2>
       <p class="text-muted mt-1">Search and view all registered patients in the system.</p>
     </div>
-    <div class="col-md-4 text-md-end">
-      <span class="badge bg-info fs-6 rounded-pill px-4 py-2 shadow-sm text-white">
-        <i class="fas fa-users me-2"></i>{{ patients | length }} Patient(s)
+    <div class="col-md-4 text-md-end d-flex align-items-center justify-content-md-end gap-2 flex-wrap mt-3 mt-md-0">
+      <a href="{{ url_for('reception.register_patient') }}" class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2 hover-lift">
+        <i class="fas fa-user-plus"></i>
+        <span>Register New Patient</span>
+      </a>
+      <span class="badge bg-info fs-6 rounded-pill px-3 py-2 shadow-sm text-white">
+        <i class="fas fa-users me-1"></i>{{ patients | length }}
       </span>
     </div>
   </div>
