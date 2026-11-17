@@ -12,6 +12,7 @@ from routes.admin import admin_bp
 from routes.patient import patient_bp
 from routes.doctor import doctor_bp
 from routes.main import main_bp
+from cli import register_cli
 
 def create_app(config_object=None):
     """Application factory for Hospital OS."""
@@ -40,6 +41,9 @@ def create_app(config_object=None):
     application.register_blueprint(patient_bp)
     application.register_blueprint(doctor_bp)
     application.register_blueprint(admin_bp, url_prefix='/admin')
+
+    # Register CLI Commands
+    register_cli(application)
 
     return application
 

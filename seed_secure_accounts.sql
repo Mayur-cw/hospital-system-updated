@@ -1,56 +1,46 @@
 -- ==============================================================================
--- Script Name: seed_and_sample_data.sql
--- Description: Initializes master accounts AND populates sample test data.
--- Security Note: Passwords are hashed using Werkzeug's PBKDF2:SHA256 algorithm.
--- Testing Note: Admin and Sample accounts use password 'mayur'. 
---               Main doctor is 'siddhi'. Main patient is 'rehman'.
+-- Script Name: seed_secure_accounts.sql
+-- Description: Non-production seed template for local testing schema.
+-- SECURITY MANDATE: Do not store plaintext passwords or production credentials here.
+-- Use 'flask create-admin' or 'flask seed-demo' to populate development environments.
 -- ==============================================================================
 
--- ==============================================================================
--- NOTE: Password creation ,
--- HOW THE HASH for Password is GENERATED (Run this exact command in your terminal):
--- python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('the_password_you wanna set'))"
--- ---eg:
--- python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('mayur'))"
--- output : pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02
--- ==============================================================================
-
-use hms;
+USE hms;
 
 -- ------------------------------------------------------------------------------
--- 1. MASTER ACCOUNTS (Your Seed Data)
+-- 1. MASTER ACCOUNTS (Non-production demo placeholders)
 -- ------------------------------------------------------------------------------
 
--- Master Admin Account (Password: mayur)
+-- Master Admin Account Placeholder
 INSERT INTO user (id, username, usertype, email, phone, gender, password) 
 VALUES (
-    1, 'Mayur Wakchaure', 'Admin', 'mayur@gmail.com', '9850064866', 'Male',           
+    1, 'Hospital Administrator', 'Admin', 'admin@hospital.local', '555-0100', 'Male',           
     'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'
 );
 
--- Primary Doctor Account (Password: siddhi)
+-- Primary Doctor Account Placeholder
 INSERT INTO user (id, username, usertype, email, gender, password) 
 VALUES (
-    2, 'Siddhi Meghale', 'Doctor', 'drsiddhi@gmail.com', 'Female',
+    2, 'Dr. Siddhi Meghale', 'Doctor', 'drsiddhi@hospital.local', 'Female',
     'pbkdf2:sha256:600000$1n03ta2yOQgT2H30$17e9ce072ce26e73c252d4b7c3222b07b9ce3d0dca5f07926413477e1509cfa8'
 );
 
--- Primary Patient Account (Password: rehman)
+-- Primary Patient Account Placeholder
 INSERT INTO user (id, username, usertype, email, phone, gender, password) 
 VALUES (
-    3, 'Rehman Daket', 'Patient', 'rehmandaket@gmail.com', '9822012345', 'Male',
+    3, 'Rehman Daket', 'Patient', 'rehman@hospital.local', '555-0200', 'Male',
     'pbkdf2:sha256:600000$5kTAk9fr1fnvKZrK$dd0d506c14e04c44bdff51ed442f79bdc704cfadf0716b3a13edd681cfce6ada'
 );
 
 -- ------------------------------------------------------------------------------
--- 2. SAMPLE DOCTOR ACCOUNTS (Password: mayur)
+-- 2. SAMPLE DOCTOR ACCOUNTS
 -- ------------------------------------------------------------------------------
 INSERT INTO user (id, username, usertype, email, password) VALUES 
-(4, 'Anushka', 'Doctor', 'anushka@gmail.com', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
-(5, 'Amruta', 'Doctor', 'amruta@gmail.com', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
-(6, 'Aaditya', 'Doctor', 'aaditya@gmail.com', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
-(7, 'Mangesh Wagh', 'Doctor', 'mangesh@gmail.com', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
-(8, 'Pranjal', 'Doctor', 'pranjal@gmail.com', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02');
+(4, 'Dr. Anushka', 'Doctor', 'anushka@hospital.local', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
+(5, 'Dr. Amruta', 'Doctor', 'amruta@hospital.local', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
+(6, 'Dr. Aaditya', 'Doctor', 'aaditya@hospital.local', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
+(7, 'Dr. Mangesh Wagh', 'Doctor', 'mangesh@hospital.local', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
+(8, 'Dr. Pranjal', 'Doctor', 'pranjal@hospital.local', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02');
 
 INSERT INTO doctors (did, user_id, dept) VALUES
 (1, 4, 'Cardiologists'),
@@ -61,26 +51,26 @@ INSERT INTO doctors (did, user_id, dept) VALUES
 (6, 2, 'Cardiologists');
 
 -- ------------------------------------------------------------------------------
--- 3. SAMPLE PATIENT ACCOUNTS (Password: mayur)
+-- 3. SAMPLE PATIENT ACCOUNTS
 -- ------------------------------------------------------------------------------
 INSERT INTO user (id, username, usertype, email, phone, gender, password) VALUES 
-(9,  'Priya Patil',    'Patient', 'priya.patil@gmail.com',    '9850011223', 'Female', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
-(10, 'Arjun Sharma',   'Patient', 'arjun.sharma@gmail.com',   '9970055443', 'Male',   'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
-(11, 'Sneha Kulkarni', 'Patient', 'sneha.kulkarni@gmail.com', '9881166554', 'Female', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
-(12, 'Vikram Singh',   'Patient', 'vikram.singh@gmail.com',   '9422077889', 'Male',   'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02');
+(9,  'Priya Patil',    'Patient', 'priya.patil@hospital.local',    '555-0201', 'Female', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
+(10, 'Arjun Sharma',   'Patient', 'arjun.sharma@hospital.local',   '555-0202', 'Male',   'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
+(11, 'Sneha Kulkarni', 'Patient', 'sneha.kulkarni@hospital.local', '555-0203', 'Female', 'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02'),
+(12, 'Vikram Singh',   'Patient', 'vikram.singh@hospital.local',   '555-0204', 'Male',   'pbkdf2:sha256:600000$FAQHYDMCGcUV7cZu$8fa6fece9349fe77fb0d543c428136eb0ee4401f94958f05262701b135009e02');
 
 -- ------------------------------------------------------------------------------
 -- 4. NORMALIZED APPOINTMENT DATA
 -- ------------------------------------------------------------------------------
 INSERT INTO appointments (apt_id, user_id, slot, disease, time, date, dept, doctor) VALUES
-(1, 3, 'Completed', 'Chest Pain',        '10:30 PM', '2026-05-03', 'Cardiologists',      'Siddhi Meghale'),
-(2, 3, 'Scheduled', 'Routine Follow-up', '08:30 PM', '2026-05-03', 'Cardiologists',      'Siddhi Meghale'),
-(3, 3, 'Attended',  'Viral Fever',       '11:00 AM', '2026-05-02', 'Infectious Disease', 'Pranjal'),
-(4, 9, 'Completed', 'Skin Rash',         '10:00 AM', '2026-05-01', 'Dermatologists',     'Amruta'),
-(5, 10, 'Missed',   'Back Surgery Prep', '03:30 PM', '2026-05-04', 'Anesthesiologists',  'Aaditya'),
-(6, 11, 'Scheduled', 'Diabetes Check',   '11:30 AM', '2026-05-05', 'Endocrinologists',   'Mangesh Wagh'),
-(7, 12, 'Attended',  'High BP',          '12:30 PM', '2026-05-07', 'Cardiologists',      'Anushka'),
-(8, 9,  'Cancelled', 'Acne Treatment',   '04:30 PM', '2026-05-10', 'Dermatologists',     'Amruta');
+(1, 3, 'Completed', 'Chest Pain',        '10:30 PM', '2026-05-03', 'Cardiologists',      'Dr. Siddhi Meghale'),
+(2, 3, 'Scheduled', 'Routine Follow-up', '08:30 PM', '2026-05-03', 'Cardiologists',      'Dr. Siddhi Meghale'),
+(3, 3, 'Attended',  'Viral Fever',       '11:00 AM', '2026-05-02', 'Infectious Disease', 'Dr. Pranjal'),
+(4, 9, 'Completed', 'Skin Rash',         '10:00 AM', '2026-05-01', 'Dermatologists',     'Dr. Amruta'),
+(5, 10, 'Missed',   'Back Surgery Prep', '03:30 PM', '2026-05-04', 'Anesthesiologists',  'Dr. Aaditya'),
+(6, 11, 'Scheduled', 'Diabetes Check',   '11:30 AM', '2026-05-05', 'Endocrinologists',   'Dr. Mangesh Wagh'),
+(7, 12, 'Attended',  'High BP',          '12:30 PM', '2026-05-07', 'Cardiologists',      'Dr. Anushka'),
+(8, 9,  'Cancelled', 'Acne Treatment',   '04:30 PM', '2026-05-10', 'Dermatologists',     'Dr. Amruta');
 
 -- ------------------------------------------------------------------------------
 -- 5. MEDICAL RECORDS
@@ -90,40 +80,11 @@ INSERT INTO medical_records (record_id, apt_id, diagnosis, prescription, notes) 
 (2, 4, 'Contact Dermatitis.', 'Hydrocortisone 1% cream apply twice daily.\nCetirizine 10mg SOS for itching.', 'Keep affected area dry. Avoid suspected allergens.');
 
 -- ------------------------------------------------------------------------------
--- 6. BILLING DATA
--- ------------------------------------------------------------------------------
-INSERT INTO billing (bill_id, apt_id, user_id, amount, status, issued_on, paid_on, payment_mode, bank_name) VALUES
-(1, 1, 3, 500.00, 'Paid',   '2026-04-30 11:00:00', '2026-04-30 11:05:00', 'cash', NULL),
-(2, 2, 3, 500.00, 'Unpaid', '2026-05-08 10:00:00', NULL, NULL, NULL),
-(3, 3, 3, 650.00, 'Unpaid', '2026-05-02 11:45:00', NULL, NULL, NULL),
-(4, 4, 9,  800.00, 'Paid',   '2026-05-01 10:30:00', '2026-05-01 14:20:00', 'netbanking', 'HDFC'),
-(5, 5, 10, 500.00, 'Unpaid', '2026-05-04 16:00:00', NULL, NULL, NULL),
-(6, 6, 11, 750.00, 'Unpaid', '2026-05-05 09:00:00', NULL, NULL, NULL),
-(7, 7, 12, 500.00, 'Unpaid', '2026-05-07 13:00:00', NULL, NULL, NULL),
-(8, 8, 9,  500.00, 'Unpaid', '2026-05-10 08:00:00', NULL, NULL, NULL);
-
--- ------------------------------------------------------------------------------
--- 7. ROOMS AND INPATIENT ADMISSIONS (New Module)
+-- 6. ROOMS (Inpatient Ward Setup)
 -- ------------------------------------------------------------------------------
 INSERT INTO rooms (room_id, room_number, ward_type, rate_per_day, status) VALUES
-(1, '101-A', 'General', 1500.00, 'Available'),
-(2, '101-B', 'General', 1500.00, 'Occupied'),
-(3, '201',   'ICU',     5000.00, 'Available'),
-(4, '202',   'ICU',     5000.00, 'Occupied'),
-(5, '301',   'VIP',     8000.00, 'Available');
-
--- 🚨 UPDATED: Added apt_id mapping (Priya Patil = apt_id 4, Arjun Sharma = apt_id 5)
-INSERT INTO admissions (admission_id, apt_id, patient_id, doctor_id, room_id, admission_date, status) VALUES
-(1, 4, 9, 1, 2, '2026-05-01 08:00:00', 'Admitted'), 
-(2, 5, 10, 3, 4, '2026-05-02 10:30:00', 'Admitted'); 
-
--- ------------------------------------------------------------------------------
--- 8. RESET AUTO_INCREMENT COUNTERS
--- ------------------------------------------------------------------------------
-ALTER TABLE user AUTO_INCREMENT = 13;
-ALTER TABLE doctors AUTO_INCREMENT = 7;
-ALTER TABLE appointments AUTO_INCREMENT = 9;
-ALTER TABLE medical_records AUTO_INCREMENT = 3;
-ALTER TABLE billing AUTO_INCREMENT = 9;
-ALTER TABLE rooms AUTO_INCREMENT = 6;
-ALTER TABLE admissions AUTO_INCREMENT = 3;
+(1, '101', 'General',   800.00, 'Available'),
+(2, '102', 'General',   800.00, 'Available'),
+(3, '201', 'ICU',      3500.00, 'Available'),
+(4, '301', 'VIP',      5000.00, 'Available'),
+(5, '401', 'Maternity', 1500.00, 'Available');
