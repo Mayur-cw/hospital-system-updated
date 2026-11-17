@@ -90,7 +90,7 @@ These are the forks in the road. Each lists the options considered so the owner 
   - **Where:** `base.html:263`, `base.html:303`, `admin/admin_doctors.html:255`, `admin/admin_staff.html:258` all post to `/add_staff`. The blueprint is registered with `url_prefix='/admin'` (`app.py:39`), so the real URL is `/admin/add_staff`.
   - **Change:** `action="{{ url_for('admin.add_staff') }}"`.
   - **Done when:** creating a doctor from the navbar creates `user` + `doctors` rows (test).
-- [ ] **B-02 · P0 · ✅ Navbar search posts to a route that does not exist**
+- [x] **B-02 · P0 · ✅ Navbar search posts to a route that does not exist**
   - **Where:** `base.html:194` → `POST /search`; no such route. Also `d-none d-lg-block` hides it on mobile.
   - **Change:** implement F-02, visible on all breakpoints.
 - [x] **B-03 · P0 · ✅ Dead dashboard links**
@@ -100,64 +100,64 @@ These are the forks in the road. Each lists the options considered so the owner 
   - **Where:** `admin.py:434` renders `admin/admin_view_invoice.html`, which does not exist → 500. `bookings/appointment_history.html:322` and `:326` (shown to patients and doctors) link to `admin.view_receipt` / `admin.view_invoice`, which are admin-only → patients get "Unauthorized".
   - **Change:** one `billing.invoice_detail` / `billing.receipt` endpoint per role-appropriate policy (owner patient, admin/billing staff), one template; templates use a `bill_url(bill)` helper.
   - **Done when:** patient, admin each open their allowed invoice and receipt; others get 403 (authorization matrix test T-04).
-- [ ] **B-05 · P1 · ✅ Appointment edit has no route**
+- [x] **B-05 · P1 · ✅ Appointment edit has no route**
   - **Where:** `bookings/edit.html:30` posts to `/edit/{{ posts.apt_id }}`; no such route exists and no route renders the template. It is dead code that hints at a missing feature.
   - **Change:** implement reschedule (F-01) and delete the orphan template once replaced.
 - [x] **B-06 · P0 · ✅ Two inconsistent discharge flows**
   - **Where:** `doctor.py:118-146` (bills; no check that this doctor owns the admission; no guard against discharging twice → duplicate invoice on double-click) vs `admin.py:543-566` (marks discharged but **never creates an invoice**).
   - **Change:** one `AdmissionService.discharge(admission_id, actor)`: row-lock the admission (`SELECT … FOR UPDATE`), reject if already discharged, verify actor permission, compute charges once, create one invoice (D-04), write an audit event, free the room. Both UIs call it. Disable the submit button on first click (U-10).
   - **Done when:** concurrent double-submit produces exactly one invoice (test T-03).
-- [ ] **B-07 · P1 · ✅ Room-day billing under-charges**
+- [x] **B-07 · P1 · ✅ Room-day billing under-charges**
   - **Where:** `doctor.py:132-137` uses `delta.days` (floors) with a minimum of 1: a 47-hour stay bills 1 day. Consultation fee `500.00` is hard-coded at `doctor.py:89` and `:137`; amounts are cast through `float`.
   - **Change:** `Decimal` arithmetic; rule = number of started 24-hour blocks, minimum 1 (**confirm this business rule with the owner** and document it in `docs/billing.md`); fee comes from the doctor/department (D-06), not a constant.
 - [x] **B-08 · P1 · ✅ Date comparison inconsistency**
   - **Where:** `models.py:41-42` declares `time`/`date` as `String(50)` but `hms.sql` defines `date DATE`. `patient.py:160` compares `apt.date == today` (a `date`) while `main.py:88` compares `apt.date == str(today)`; one of them can never be true depending on what the driver returns. 🔎 Reproduce which branch is wrong, then remove the whole class of bug via D-01.
-- [ ] **B-09 · P1 · ✅ Appointments sorted by time *string***
+- [x] **B-09 · P1 · ✅ Appointments sorted by time *string***
   - **Where:** `admin.py:327` `order_by(Appointments.time.asc())` on values like `'01:00 PM'`, `'09:00 AM'` — sorts "01:00 PM" before "09:00 AM". Same pattern in Python sorts using `strptime` over the whole table (`main.py:24`, `patient.py:128`).
   - **Change:** resolved by D-01 (`starts_at DATETIME`).
 - [x] **B-10 · P1 · ✅ `get_booked_slots` crashes on bad input**
   - **Where:** `patient.py:25-28` — `request.get_json()` returns `None` for a non-JSON body → `AttributeError` → 500. No validation of date format or doctor.
   - **Change:** validate (F-03 replaces it with a typed `GET /api/doctors/<id>/slots?date=`), return 400 on bad input.
-- [ ] **B-11 · P1 · ✅ Booking swallows real errors and can redirect to the wrong appointment**
+- [x] **B-11 · P1 · ✅ Booking swallows real errors and can redirect to the wrong appointment**
   - **Where:** `patient.py:95-98` catches every `Exception` and tells the user "slot just taken"; `patient.py:92` fetches "this user's latest appointment" after the procedure call instead of using the inserted id.
   - **Change:** `AppointmentService.book()` returns the created entity; only an `IntegrityError` on the unique slot index becomes "slot taken"; everything else is logged and shown as a generic error with a request id.
-- [ ] **B-12 · P1 · ✅ `add_record` crash and detail leak**
+- [x] **B-12 · P1 · ✅ `add_record` crash and detail leak**
   - **Where:** `doctor.py:77-79` — `Doctors…first()` can be `None` → `doctor_profile.did` raises. `doctor.py:98` flashes `str(e)` (internal DB error text) to the user. No check that the appointment belongs to this doctor (`doctor.py:51-58`).
   - **Change:** ownership policy check (S-05), friendly error + log, no internals in the UI.
-- [ ] **B-13 · P0 · ✅ Room allocation race**
+- [x] **B-13 · P0 · ✅ Room allocation race**
   - **Where:** `doctor.py:74-80` checks `room.status == 'Available'` then inserts an admission; status flips to `Occupied` only via the `admission_insert` trigger afterward. Two doctors can admit into the same room simultaneously.
   - **Change:** lock the room row (`with_for_update()`) inside the service transaction and set status explicitly; add a UNIQUE guard such that one active admission per room is enforced by the schema (generated-column trick as in D-03).
-- [ ] **B-14 · P0 · ✅ Renaming a doctor orphans their appointments**
+- [x] **B-14 · P0 · ✅ Renaming a doctor orphans their appointments**
   - **Where:** `Appointments.doctor` stores the *username* (`models.py:44`); ownership checks compare names (`doctor.py:18`, `:157`, `:181`). A doctor can rename themselves (`auth.py:84-86`) and an admin can too (`admin.py:207-208`); afterwards existing appointments no longer match.
   - **Change:** `doctor_id` foreign key (D-01) + data migration (see D-01 notes).
-- [ ] **B-15 · P1 · ✅ Admin create/edit validation holes**
+- [x] **B-15 · P1 · ✅ Admin create/edit validation holes**
   - **Where:** `admin.py:86` takes `usertype` from the form unvalidated (any string accepted); `admin.py:118-121`, `:205-208` change email with no uniqueness check → `IntegrityError` 500; `admin.py:89-95` has no server-side password or empty-field check (only HTML `minlength=6`).
   - **Change:** form classes with enum whitelists, uniqueness validators, password policy (S-06).
-- [ ] **B-16 · P1 · ✅ Room forms crash or hit DB errors**
+- [x] **B-16 · P1 · ✅ Room forms crash or hit DB errors**
   - **Where:** `admin.py:480-482`, `:509-513` call `.strip()` directly on `request.form.get(...)` (crashes on a missing field); `ward_type` is free text but the DDL column is `ENUM('General','ICU','VIP','Maternity')` (`hms.sql`); `rate_per_day` converted with `float()` and not range-checked.
-- [ ] **B-17 · P1 · ✅ No state-transition rules**
+- [x] **B-17 · P1 · ✅ No state-transition rules**
   - **Where:** `doctor.py:11-49` — a patient can cancel a Completed/Attended appointment; `mark_missed` and `mark_attended` check only that the user is *a* doctor, not the appointment's doctor (`doctor.py:27-49`).
   - **Change:** appointment state machine (F-04) enforced in `AppointmentService`; policies enforce ownership.
-- [ ] **B-18 · P0 · ✅ Patient can mark their own invoice "Paid"**
+- [x] **B-18 · P0 · ✅ Patient can mark their own invoice "Paid"**
   - **Where:** `patient.py:227-252` — any POST with `payment_mode=cash` sets `status='Paid'`; `bank_name` is trusted free text; no payment record, no idempotency, no verification.
   - **Change:** F-06 (gateway abstraction, `Payment` table, cash recorded only by staff, webhook verification).
-- [ ] **B-19 · P0 · ✅ Hard deletes destroy medical and financial records**
+- [x] **B-19 · P0 · ✅ Hard deletes destroy medical and financial records**
   - **Where:** `admin.py:388-404` (delete appointment), `:163-167` (delete admin user), `:249-257` (delete doctor user) combined with `ON DELETE CASCADE` on `medical_records`, `billing`, `admissions` (`hms.sql`) and `cascade="all, delete-orphan"` (`models.py:29,32`).
   - **Change:** soft delete / deactivate (D-05); `RESTRICT` on clinical and financial FKs; destructive admin actions require typed confirmation and are audited.
-- [ ] **B-20 · P1 · ✅ Whole-table loads and N+1 queries**
+- [x] **B-20 · P1 · ✅ Whole-table loads and N+1 queries**
   - **Where:** `MedicalRecord.query.all()` on every dashboard/history request (`patient.py:129`, `:154`, `:174`; `main.py:33`) loads **every patient's diagnosis and prescription** into memory just to collect ids. `admin.py:279` (count per patient) and `admin.py:331` (`User.query.get` per appointment) are N+1. No pagination anywhere.
   - **Change:** `EXISTS`/join queries, eager loading (`selectinload`), server-side pagination (F-12).
-- [ ] **B-21 · P2 · ✅ Audit trail is partly wrong**
+- [x] **B-21 · P2 · ✅ Audit trail is partly wrong**
   - **Where:** `hms.sql` — `appointment_delete` logs `'APPOINTMENT CANCELLED'` for hard deletes, while actual cancellation is an UPDATE logged only as `'APPOINTMENT UPDATED'` with no before/after; `audit_log.apt_id` is `NOT NULL`, so logins/user changes cannot be logged; `models.py:70` types `timestamp` as `String(50)` but DDL is `DATETIME`.
   - **Change:** D-09.
-- [ ] **B-22 · P2 · ✅ Profile: password and email change without re-authentication**
+- [x] **B-22 · P2 · ✅ Profile: password and email change without re-authentication**
   - **Where:** `auth.py:76-92`. Anyone with a hijacked session can change email + password without knowing the current password; `.strip()` silently alters passwords (`auth.py:16`, `:38`, `:70`).
   - **Change:** S-06/S-12.
-- [ ] **B-23 · P2 · ✅ Phone column too short**
+- [x] **B-23 · P2 · ✅ Phone column too short**
   - **Where:** `models.py:25` / `hms.sql` `VARCHAR(12)` — `+91 98500 64866` does not fit. Widen to 20 and validate (D-07).
 - [x] **B-24 · P2 · 🔎 Toast close button**
   - **Where:** `base.html` toast markup uses `data-bs-dismiss="alert"` on an element without the Bootstrap `.alert` class. Confirm the ✕ works; if not, use the new toast component (U-04).
-- [ ] **B-25 · P3 · ✅ Invisible footer text and placeholder links**
+- [x] **B-25 · P3 · ✅ Invisible footer text and placeholder links**
   - **Where:** `base.html` footer — copyright uses `opacity-10` (effectively unreadable) and social links are `href="#"`. Footer brands the app as "DBMS Mini-Project". Replace with a real, accessible footer (U-05).
 
 ---

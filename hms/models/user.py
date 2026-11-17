@@ -12,7 +12,7 @@ class UserRole:
     RECEPTIONIST = 'Receptionist'
     ALL_ROLES = (ADMIN, DOCTOR, PATIENT, RECEPTIONIST)
 
-class User(UserMixin, TimestampMixin, SoftDeleteMixin, db.Model):
+class User(SoftDeleteMixin, UserMixin, TimestampMixin, db.Model):
     __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True)

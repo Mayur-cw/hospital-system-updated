@@ -336,9 +336,18 @@ My Appointments | Hospital Management System
                           {% endif %}
                                 
                       {% elif apt.slot == 'Scheduled' %}
-                          <form action="{{ url_for('doctor.cancel_apt', apt_id=apt.apt_id) }}" method="POST" class="m-0" onsubmit="return confirm('Cancel your appointment?');">
-                              <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold btn-action-fixed"><i class="fas fa-times me-1"></i> Cancel</button>
-                          </form>
+                          {% if current_user.usertype == 'Patient' %}
+                              <a href="{{ url_for('patient.reschedule_appointment', apt_id=apt.apt_id) }}" class="btn btn-sm btn-outline-warning rounded-pill fw-bold btn-action-fixed">
+                                  <i class="fas fa-calendar-alt me-1"></i> Reschedule
+                              </a>
+                              <form action="{{ url_for('patient.cancel_appointment', apt_id=apt.apt_id) }}" method="POST" class="m-0" onsubmit="return confirm('Cancel your appointment?');">
+                                  <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold btn-action-fixed"><i class="fas fa-times me-1"></i> Cancel</button>
+                              </form>
+                          {% else %}
+                              <form action="{{ url_for('doctor.cancel_apt', apt_id=apt.apt_id) }}" method="POST" class="m-0" onsubmit="return confirm('Cancel this appointment?');">
+                                  <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold btn-action-fixed"><i class="fas fa-times me-1"></i> Cancel</button>
+                              </form>
+                          {% endif %}
                       {% else %}
                           <span class="text-muted small fst-italic">No actions</span>
                       {% endif %}

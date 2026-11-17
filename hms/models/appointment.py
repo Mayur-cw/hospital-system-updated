@@ -19,6 +19,42 @@ class DateStr(str):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def strftime(self, fmt):
+        try:
+            from datetime import datetime as dt
+            parsed = dt.strptime(str(self), '%Y-%m-%d')
+            return parsed.strftime(fmt)
+        except Exception:
+            return str(self)
+
+    @property
+    def year(self):
+        from datetime import datetime as dt
+        return dt.strptime(str(self), '%Y-%m-%d').year
+
+    @property
+    def month(self):
+        from datetime import datetime as dt
+        return dt.strptime(str(self), '%Y-%m-%d').month
+
+    @property
+    def day(self):
+        from datetime import datetime as dt
+        return dt.strptime(str(self), '%Y-%m-%d').day
+
+
+class StatusStr(str):
+    """Dual-equality string for CheckedIn / Attended vocabulary parity (D-02)."""
+    def __eq__(self, other):
+        if str(self) == 'CheckedIn' and str(other) == 'Attended':
+            return True
+        if str(self) == 'Attended' and str(other) == 'CheckedIn':
+            return True
+        return super().__eq__(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class ActiveSlotExpr(FunctionElement):
     name = 'active_slot_expr'
@@ -87,7 +123,20 @@ class Appointment(TimestampMixin, SoftDeleteMixin, db.Model):
     # Legacy synonyms & property adapters
     apt_id = db.synonym('id')
     user_id = db.synonym('patient_id')
-    slot = db.synonym('status')
+    @hybrid_property
+    def slot(self) -> str:
+        return StatusStr(self.status) if self.status else ''
+
+    @slot.setter
+    def slot(self, val):
+        if val == 'Attended':
+            self.status = AppointmentStatus.CHECKED_IN
+        else:
+            self.status = val
+
+    @slot.expression
+    def slot(cls):
+        return cls.status
     disease = db.synonym('reason')
 
     def __init__(self, **kwargs):
@@ -126,6 +175,22 @@ class Appointment(TimestampMixin, SoftDeleteMixin, db.Model):
         valid_attrs.update({'patient', 'doctor_rel', 'canceller', 'records', 'invoices'})
         filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_attrs or hasattr(self.__class__, k)}
         super().__init__(**filtered_kwargs)
+
+    @property
+    def name(self) -> str:
+        return self.patient.username if self.patient else ''
+
+    @property
+    def email(self) -> str:
+        return self.patient.email if self.patient else ''
+
+    @property
+    def number(self) -> str:
+        return self.patient.phone if self.patient else ''
+
+    @property
+    def gender(self) -> str:
+        return self.patient.gender if self.patient else ''
 
     @property
     def dept(self) -> str:

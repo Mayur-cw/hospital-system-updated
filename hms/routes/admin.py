@@ -1,77 +1,94 @@
 # routes/admin.py
-from datetime import date, timedelta
+from datetime import UTC, date, datetime
+from decimal import Decimal, InvalidOperation
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, g, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
-from werkzeug.security import generate_password_hash
+from sqlalchemy.orm import joinedload
 
-# 🏥 UPGRADE: Imported Room and Admission models
-from hms.models import (
-    Admission,
-    Appointments,
-    AuditLog,
-    Billing,
-    Doctors,
-    Room,
-    User,
-    db,
-)
+from hms.extensions import db
+from hms.models.admission import Admission, AdmissionStatus, Room, RoomStatus
+from hms.models.appointment import Appointment, AppointmentStatus
+from hms.models.audit import AuditEvent
+from hms.models.billing import Invoice
+from hms.models.department import Department
+from hms.models.doctor import Doctor
+from hms.models.user import User
+from hms.services.accounts import AccountsService
+from hms.services.admissions import AdmissionError, AdmissionService
+from hms.services.audit import AuditService
 
 admin_bp = Blueprint('admin', __name__)
 
-# ── DASHBOARD ─────────────────────────────────────────────────────────
+ALLOWED_WARD_TYPES = ('General', 'ICU', 'VIP', 'Maternity')
+
+
+# ── DASHBOARD ────────────────────────────────────────────────────────
 
 @admin_bp.route('/dashboard')
 @login_required
 def admin_dashboard():
-    if current_user.usertype != "Admin":
-        flash("Unauthorized Access! Administrator privileges required.", "danger")
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    total_doctors = Doctors.query.count()
-    total_users = User.query.filter_by(usertype='Patient').count()
-    total_appointments = Appointments.query.count()
-    recent_logs = AuditLog.query.order_by(AuditLog.tid.desc()).limit(5).all()
+    total_patients = User.query.filter_by(usertype='Patient', is_active=True).count()
+    total_doctors = Doctor.query.filter_by(is_active=True).count()
 
-    # 🏥 UPGRADE: Fetch capacity stats for the dashboard
-    total_rooms = Room.query.count()
-    available_rooms = Room.query.filter_by(status='Available').count()
-    occupied_rooms = Room.query.filter_by(status='Occupied').count()
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    today_end = datetime.combine(date.today(), datetime.max.time())
+    today_appts = Appointment.query.filter(
+        Appointment.starts_at >= today_start,
+        Appointment.starts_at <= today_end,
+        Appointment.is_active.is_(True)
+    ).count()
+
+    total_rooms = Room.query.filter_by(is_active=True).count()
+    occupied_rooms = Room.query.filter_by(status='Occupied', is_active=True).count()
+    available_rooms = Room.query.filter_by(status='Available', is_active=True).count()
+
+    all_invoices = Invoice.query.all()
+    total_revenue = sum((inv.total for inv in all_invoices if inv.status == 'Paid'), Decimal('0.00'))
+    pending_revenue = sum((inv.total for inv in all_invoices if inv.status != 'Paid'), Decimal('0.00'))
+
+    recent_logs = AuditEvent.query.order_by(AuditEvent.created_at.desc()).limit(8).all()
+
+    today_schedule = Appointment.query.options(
+        joinedload(Appointment.patient),
+        joinedload(Appointment.doctor_rel).joinedload(Doctor.user)
+    ).filter(
+        Appointment.starts_at >= today_start,
+        Appointment.starts_at <= today_end,
+        Appointment.is_active.is_(True)
+    ).order_by(Appointment.starts_at.asc()).all()
 
     return render_template('admin/admin_dashboard.html',
+                           total_patients=total_patients,
                            total_doctors=total_doctors,
-                           total_users=total_users,
-                           total_appointments=total_appointments,
-                           recent_logs=recent_logs,
+                           today_appts=today_appts,
                            total_rooms=total_rooms,
+                           occupied_rooms=occupied_rooms,
                            available_rooms=available_rooms,
-                           occupied_rooms=occupied_rooms)
+                           total_revenue=total_revenue,
+                           pending_revenue=pending_revenue,
+                           recent_logs=recent_logs,
+                           today_schedule=today_schedule)
 
-# ── AUDIT LOGS ────────────────────────────────────────────────────────
 
 @admin_bp.route('/details')
+@admin_bp.route('/audit_logs')
 @login_required
 def details():
-    if current_user.usertype != "Admin":
-        flash("Unauthorized Access!", "danger")
+    """System activity & audit trail view (D-09)."""
+    if current_user.usertype != 'Admin':
+        flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    logs_data = db.session.query(AuditLog, User).outerjoin(User, AuditLog.user_id == User.id).order_by(AuditLog.tid.desc()).all()
+    logs = AuditEvent.query.options(joinedload(AuditEvent.actor)).order_by(AuditEvent.created_at.desc()).all()
+    return render_template('admin/audit_logs.html', posts=logs)
 
-    posts = []
-    for log, user in logs_data:
-        posts.append({
-            'tid': log.tid,
-            'pid': log.user_id,
-            'action': log.action,
-            'timestamp': log.timestamp,
-            'email': user.email if user else 'Deleted/Unknown',
-            'name': user.username if user else 'Deleted/Unknown'
-        })
 
-    return render_template('admin/audit_logs.html', posts=posts)
-
-# ── SYSTEM STAFF ──────────────────────────────────────────────────────
+# ── STAFF MANAGEMENT ──────────────────────────────────────────────────
 
 @admin_bp.route('/staff')
 @login_required
@@ -80,59 +97,89 @@ def admin_staff():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    admin_users = User.query.filter_by(usertype='Admin').all()
+    admin_users = User.query.filter_by(usertype='Admin', is_active=True).all()
     return render_template('admin/admin_staff.html', admins=admin_users)
+
 
 @admin_bp.route('/add_staff', methods=['POST'])
 @login_required
 def add_staff():
+    """B-01 & B-15: Provision new staff account with strict validation."""
     if current_user.usertype != "Admin":
-        flash("Unauthorized! Only Admins can create staff accounts.", "danger")
+        flash("Unauthorized! Only Admins can provision staff accounts.", "danger")
         return redirect(url_for('main.index'))
 
     username = request.form.get('username', '').strip()
-    email = request.form.get('email', '').strip()
-    password = request.form.get('password', '').strip()
+    email = request.form.get('email', '').strip().lower()
+    password = request.form.get('password', '')
     usertype = request.form.get('usertype', '').strip()
     dept = request.form.get('dept', '').strip()
+
+    if usertype not in ('Admin', 'Doctor'):
+        flash("Invalid account type specified.", "danger")
+        return redirect(url_for('admin.admin_dashboard'))
+
+    if not username or not email or not password:
+        flash("All account fields are required.", "warning")
+        return redirect(url_for('admin.admin_dashboard'))
+
+    if len(password) < 8:
+        flash("Temporary password must be at least 8 characters long.", "warning")
+        return redirect(url_for('admin.admin_dashboard'))
 
     if User.query.filter_by(email=email).first():
         flash("An account with that email already exists.", "warning")
         return redirect(url_for('admin.admin_dashboard'))
 
-    hashed_password = generate_password_hash(password)
-    new_user = User(username=username, usertype=usertype, email=email, password=hashed_password)
-    db.session.add(new_user)
+    try:
+        new_user = AccountsService.create_user(
+            email=email,
+            username=username,
+            password=password,
+            usertype=usertype,
+            dept=dept if usertype == 'Doctor' else None,
+            actor=current_user
+        )
+        flash(f"Success! {usertype} account for {new_user.username} has been provisioned.", "success")
+    except Exception as e:
+        req_id = getattr(g, 'request_id', 'ERR')
+        current_app.logger.exception("Provisioning failed: %s [Req: %s]", e, req_id)
+        flash(f"Error provisioning account. (Reference: {req_id})", "danger")
 
-    db.session.flush()
-
-    if usertype == "Doctor":
-        new_doc = Doctors(user_id=new_user.id, dept=dept)
-        db.session.add(new_doc)
-
-    db.session.commit()
-    flash(f"Success! {usertype} account for {username} has been provisioned.", "success")
     return redirect(request.referrer or url_for('admin.admin_dashboard'))
+
 
 @admin_bp.route('/edit_staff', methods=['POST'])
 @login_required
 def admin_edit_staff():
+    """B-15: Edit admin staff with email uniqueness validation."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
     staff_id = request.form.get('staff_id')
-    username = request.form.get('username')
-    email    = request.form.get('email')
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip().lower()
 
-    u = User.query.get(staff_id)
+    if not staff_id or not username or not email:
+        flash("Username and email cannot be empty.", "warning")
+        return redirect(url_for('admin.admin_staff'))
+
+    u = db.session.get(User, int(staff_id))
     if u and u.usertype == 'Admin':
+        # Uniqueness check
+        existing = User.query.filter(User.email == email, User.id != u.id).first()
+        if existing:
+            flash(f"The email '{email}' is already in use by another account.", "danger")
+            return redirect(url_for('admin.admin_staff'))
+
         u.username = username
         u.email = email
         db.session.commit()
         flash(f'Administrator {username} updated successfully.', 'success')
 
     return redirect(url_for('admin.admin_staff'))
+
 
 @admin_bp.route('/change_staff_password', methods=['POST'])
 @login_required
@@ -141,42 +188,47 @@ def admin_change_staff_password():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    staff_id         = request.form.get('staff_id')
-    new_password     = request.form.get('new_password')
-    confirm_password = request.form.get('confirm_password')
+    staff_id = request.form.get('staff_id')
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
 
-    if new_password != confirm_password:
-        flash('Passwords do not match. Please try again.', 'danger')
+    if not new_password or len(new_password) < 8:
+        flash('Password must be at least 8 characters long.', 'warning')
         return redirect(url_for('admin.admin_staff'))
 
-    u = User.query.get(staff_id)
+    if new_password != confirm_password:
+        flash('Passwords do not match.', 'danger')
+        return redirect(url_for('admin.admin_staff'))
+
+    u = db.session.get(User, int(staff_id))
     if u and u.usertype == 'Admin':
-        u.password = generate_password_hash(new_password)
+        u.set_password(new_password)
         db.session.commit()
         flash('Administrator password updated successfully.', 'success')
 
     return redirect(url_for('admin.admin_staff'))
 
+
 @admin_bp.route('/delete_staff', methods=['POST'])
 @login_required
 def admin_delete_staff():
+    """B-19: Soft-deactivate admin user instead of hard delete."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
     staff_id = request.form.get('staff_id')
-
     if int(staff_id) == current_user.id:
-        flash('Safety Protocol: You cannot delete your own active session.', 'warning')
+        flash('Safety Protocol: You cannot deactivate your own active session.', 'warning')
         return redirect(url_for('admin.admin_staff'))
 
-    u = User.query.get(staff_id)
+    u = db.session.get(User, int(staff_id))
     if u and u.usertype == 'Admin':
-        db.session.delete(u)
-        db.session.commit()
-        flash('Administrator account removed successfully.', 'success')
+        AccountsService.deactivate_user(u.id, actor=current_user)
+        flash(f'Administrator {u.username} deactivated successfully.', 'success')
 
     return redirect(url_for('admin.admin_staff'))
+
 
 # ── DOCTORS DIRECTORY ─────────────────────────────────────────────────
 
@@ -187,44 +239,64 @@ def admin_doctors():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    doc_users = User.query.filter_by(usertype='Doctor').all()
+    doctors = Doctor.query.options(joinedload(Doctor.user), joinedload(Doctor.department)).filter_by(is_active=True).all()
     doctors_list = []
-    for u in doc_users:
-        doc_record = Doctors.query.filter_by(user_id=u.id).first()
+    for doc in doctors:
+        dept_name = doc.department.name if doc.department else (doc.dept or 'Unassigned')
         doctors_list.append({
-            'id': u.id,
-            'username': u.username,
-            'email': u.email,
-            'dept': doc_record.dept if doc_record else 'Unassigned'
+            'id': doc.user_id,
+            'doctor_id': doc.id,
+            'username': doc.user.username if doc.user else 'Unknown',
+            'email': doc.user.email if doc.user else '',
+            'dept': dept_name,
+            'fee': doc.consultation_fee
         })
 
     return render_template('admin/admin_doctors.html', doctors=doctors_list)
 
+
 @admin_bp.route('/edit_doctor', methods=['POST'])
 @login_required
 def admin_edit_doctor():
+    """B-14 & B-15: Edit doctor details with email uniqueness check."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    doctor_id = request.form.get('doctor_id')
-    username  = request.form.get('username')
-    email     = request.form.get('email')
-    dept      = request.form.get('dept')
+    user_id = request.form.get('doctor_id')
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip().lower()
+    dept = request.form.get('dept', '').strip()
 
-    u = User.query.get(doctor_id)
+    if not user_id or not username or not email:
+        flash("Doctor username and email cannot be empty.", "warning")
+        return redirect(url_for('admin.admin_doctors'))
+
+    u = db.session.get(User, int(user_id))
     if u and u.usertype == 'Doctor':
+        existing = User.query.filter(User.email == email, User.id != u.id).first()
+        if existing:
+            flash(f"The email '{email}' is already in use.", "danger")
+            return redirect(url_for('admin.admin_doctors'))
+
         u.username = username
         u.email = email
 
-        doc = Doctors.query.filter_by(user_id=u.id).first()
-        if doc:
+        doc = Doctor.query.filter_by(user_id=u.id).first()
+        if doc and dept:
+            department = Department.query.filter_by(name=dept).first()
+            if not department:
+                department = Department(name=dept, code=dept[:4].upper())
+                db.session.add(department)
+                db.session.flush()
+            doc.department_id = department.id
             doc.dept = dept
 
         db.session.commit()
-        flash(f'Doctor {username} updated successfully.', 'success')
+        flash(f'Doctor {username} details updated successfully.', 'success')
 
     return redirect(url_for('admin.admin_doctors'))
+
 
 @admin_bp.route('/change_doctor_password', methods=['POST'])
 @login_required
@@ -233,147 +305,164 @@ def admin_change_doctor_password():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    doctor_id        = request.form.get('doctor_id')
-    new_password     = request.form.get('new_password')
-    confirm_password = request.form.get('confirm_password')
+    doctor_id = request.form.get('doctor_id')
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    if not new_password or len(new_password) < 8:
+        flash('Password must be at least 8 characters long.', 'warning')
+        return redirect(url_for('admin.admin_doctors'))
 
     if new_password != confirm_password:
         flash('Passwords do not match. Please try again.', 'danger')
         return redirect(url_for('admin.admin_doctors'))
 
-    u = User.query.get(doctor_id)
+    u = db.session.get(User, int(doctor_id))
     if u and u.usertype == 'Doctor':
-        u.password = generate_password_hash(new_password)
+        u.set_password(new_password)
         db.session.commit()
         flash('Doctor password updated successfully.', 'success')
 
     return redirect(url_for('admin.admin_doctors'))
 
+
 @admin_bp.route('/delete_doctor', methods=['POST'])
 @login_required
 def admin_delete_doctor():
+    """B-19: Soft-deactivate doctor account instead of hard deleting records."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
     doctor_id = request.form.get('doctor_id')
-    u = User.query.get(doctor_id)
+    u = db.session.get(User, int(doctor_id))
     if u and u.usertype == 'Doctor':
-        doc = Doctors.query.filter_by(user_id=u.id).first()
-        if doc:
-            db.session.delete(doc)
-        db.session.delete(u)
-        db.session.commit()
-        flash('Doctor account removed successfully.', 'success')
+        AccountsService.deactivate_user(u.id, actor=current_user)
+        flash(f'Doctor account for {u.username} has been deactivated.', 'success')
 
     return redirect(url_for('admin.admin_doctors'))
+
 
 # ── PATIENTS DIRECTORY ────────────────────────────────────────────────
 
 @admin_bp.route('/patients')
 @login_required
 def admin_patients():
+    """B-20: Patient directory with single aggregated appointment count query."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
     search_query = request.args.get('search', '').strip()
+    query = User.query.filter_by(usertype='Patient', is_active=True)
 
-    query = User.query.filter_by(usertype='Patient')
     if search_query:
         search_term = f'%{search_query}%'
         query = query.filter((User.username.ilike(search_term)) | (User.email.ilike(search_term)))
 
+    patients = query.all()
+
+    # B-20: Pre-compute counts in a single group-by query
+    counts = dict(
+        db.session.query(Appointment.patient_id, db.func.count(Appointment.id))
+        .filter(Appointment.is_active.is_(True))
+        .group_by(Appointment.patient_id)
+        .all()
+    )
+
     patients_list = []
-    for p in query.all():
-        appt_count = Appointments.query.filter_by(user_id=p.id).count()
+    for p in patients:
         patients_list.append({
             'id': p.id,
             'username': p.username,
             'email': p.email,
             'phone': p.phone,
             'gender': p.gender,
-            'appointment_count': appt_count
+            'appointment_count': counts.get(p.id, 0)
         })
 
     return render_template('admin/admin_patients.html', patients=patients_list, search_query=search_query)
+
 
 # ── APPOINTMENTS ──────────────────────────────────────────────────────
 
 @admin_bp.route('/appointments')
 @login_required
 def admin_appointments():
+    """B-09 & B-20: Appointments list with relational sorting on starts_at and joinedload."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    today = date.today().isoformat()
-    yesterday = (date.today() - timedelta(days=1)).isoformat()
-
+    today_str = date.today().isoformat()
     search_query = request.args.get('search', '').strip()
-    default_date = 'all' if search_query else today
+    default_date = 'all' if search_query else today_str
 
     selected_date = request.args.get('date', default_date)
     selected_doctor = request.args.get('doctor_id', '')
 
-    q = Appointments.query
+    q = Appointment.query.options(
+        joinedload(Appointment.patient),
+        joinedload(Appointment.doctor_rel).joinedload(Doctor.user),
+        joinedload(Appointment.department)
+    ).filter(Appointment.is_active.is_(True))
 
     if selected_date and selected_date != 'all':
-        q = q.filter(Appointments.date == selected_date)
+        try:
+            d = datetime.strptime(selected_date, '%Y-%m-%d').date()
+            d_start = datetime.combine(d, datetime.min.time())
+            d_end = datetime.combine(d, datetime.max.time())
+            q = q.filter(Appointment.starts_at >= d_start, Appointment.starts_at <= d_end)
+        except ValueError:
+            pass
 
-    doctor_name = ''
-    if selected_doctor:
-        doc_user = User.query.get(selected_doctor)
-        if doc_user:
-            q = q.filter(Appointments.doctor == doc_user.username)
-            doctor_name = doc_user.username
+    if selected_doctor and selected_doctor.isdigit():
+        q = q.filter(Appointment.doctor_id == int(selected_doctor))
 
     if search_query:
         search_term = f'%{search_query}%'
-        q = q.join(User, Appointments.user_id == User.id).filter(
+        q = q.join(User, Appointment.patient_id == User.id).filter(
             (User.username.ilike(search_term)) | (User.email.ilike(search_term))
         )
 
-    appts = q.order_by(Appointments.date.desc(), Appointments.time.asc()).all()
+    # B-09: Order chronologically by starts_at datetime
+    appts = q.order_by(Appointment.starts_at.desc()).all()
 
     appt_data = []
     for a in appts:
-        u = User.query.get(a.user_id)
-        status = a.slot
-        if status in ['Scheduled']:
-            status = 'Pending'
+        status = 'Pending' if a.status == AppointmentStatus.SCHEDULED else a.status
+        doc_user = a.doctor_rel.user if a.doctor_rel else None
+        doc_name = doc_user.username if doc_user else 'Physician'
+        dept_name = a.department.name if a.department else (a.doctor_rel.dept if a.doctor_rel else 'General')
 
         appt_data.append({
-            'id': a.apt_id,
-            'patient_name': u.username if u else 'Unknown',
-            'patient_email': u.email if u else 'Unknown',
-            'doctor_name': a.doctor,
-            'dept': a.dept,
-            'appointment_date': a.date,
-            'time_slot': a.time,
+            'id': a.id,
+            'patient_name': a.patient.username if a.patient else 'Unknown',
+            'patient_email': a.patient.email if a.patient else 'Unknown',
+            'doctor_name': doc_name,
+            'dept': dept_name,
+            'appointment_date': a.starts_at.strftime('%Y-%m-%d'),
+            'time_slot': a.starts_at.strftime('%I:%M %p'),
             'status': status
         })
 
-    doc_users = User.query.filter_by(usertype='Doctor').all()
-    doctors_list = []
-    for doc in doc_users:
-        d_record = Doctors.query.filter_by(user_id=doc.id).first()
-        doctors_list.append({
+    doctors = Doctor.query.options(joinedload(Doctor.user), joinedload(Doctor.department)).filter_by(is_active=True).all()
+    doctors_list = [
+        {
             'id': doc.id,
-            'username': doc.username,
-            'dept': d_record.dept if d_record else 'Unassigned'
-        })
+            'username': doc.user.username if doc.user else 'Physician',
+            'dept': doc.department.name if doc.department else (doc.dept or 'General')
+        }
+        for doc in doctors
+    ]
 
     return render_template('admin/admin_appointments.html',
-                           appointments=appt_data,
+                           appts=appt_data,
                            doctors=doctors_list,
                            selected_date=selected_date,
                            selected_doctor=selected_doctor,
-                           search_query=search_query,
-                           today=today,
-                           yesterday=yesterday,
-                           total_appointments=Appointments.query.count(),
-                           doctor_name=doctor_name)
+                           search_query=search_query)
+
 
 @admin_bp.route('/update_appointment_status', methods=['POST'])
 @login_required
@@ -387,19 +476,21 @@ def admin_update_appointment_status():
     redirect_url = request.form.get('redirect_url', url_for('admin.admin_appointments'))
 
     if status == 'Pending':
-        status = 'Scheduled'
+        status = AppointmentStatus.SCHEDULED
 
-    a = Appointments.query.get(appointment_id)
+    a = db.session.get(Appointment, int(appointment_id))
     if a:
-        a.slot = status
+        a.status = status
         db.session.commit()
         flash('Appointment status updated successfully.', 'success')
 
     return redirect(redirect_url)
 
+
 @admin_bp.route('/delete_appointment', methods=['POST'])
 @login_required
 def admin_delete_appointment():
+    """B-19: Soft-deactivate appointment instead of hard delete."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
@@ -407,11 +498,20 @@ def admin_delete_appointment():
     appointment_id = request.form.get('appointment_id')
     redirect_url = request.form.get('redirect_url', url_for('admin.admin_appointments'))
 
-    a = Appointments.query.get(appointment_id)
+    a = db.session.get(Appointment, int(appointment_id))
     if a:
-        db.session.delete(a)
+        a.is_active = False
+        a.status = AppointmentStatus.CANCELLED
+        a.deleted_at = datetime.now(UTC)
         db.session.commit()
-        flash('Appointment deleted permanently.', 'danger')
+
+        AuditService.record(
+            action='APPOINTMENT_DEACTIVATED',
+            entity_type='Appointment',
+            entity_id=a.id,
+            actor=current_user
+        )
+        flash('Appointment deactivated and archived successfully.', 'info')
 
     return redirect(redirect_url)
 
@@ -425,15 +525,16 @@ def admin_financials():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    all_bills = Billing.query.order_by(Billing.issued_on.desc()).all()
+    all_invoices = Invoice.query.options(joinedload(Invoice.patient)).order_by(Invoice.issued_at.desc()).all()
 
-    total_collected = sum(bill.amount for bill in all_bills if bill.status == 'Paid')
-    pending_revenue = sum(bill.amount for bill in all_bills if bill.status == 'Unpaid')
+    total_collected = sum((inv.total for inv in all_invoices if inv.status == 'Paid'), Decimal('0.00'))
+    pending_revenue = sum((inv.total for inv in all_invoices if inv.status != 'Paid'), Decimal('0.00'))
 
     return render_template('admin/admin_financials.html',
-                           bills=all_bills,
+                           bills=all_invoices,
                            total_collected=total_collected,
                            pending_revenue=pending_revenue)
+
 
 @admin_bp.route('/financials/<int:bill_id>/invoice')
 @login_required
@@ -442,8 +543,13 @@ def view_invoice(bill_id):
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    invoice = Billing.query.get_or_404(bill_id)
+    invoice = db.session.get(Invoice, bill_id)
+    if not invoice:
+        flash("Invoice not found.", "danger")
+        return redirect(url_for('admin.admin_financials'))
+
     return render_template('admin/admin_view_invoice.html', invoice=invoice)
+
 
 @admin_bp.route('/financials/<int:bill_id>/receipt')
 @login_required
@@ -452,10 +558,15 @@ def view_receipt(bill_id):
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    invoice = Billing.query.get_or_404(bill_id)
+    invoice = db.session.get(Invoice, bill_id)
+    if not invoice:
+        flash("Invoice not found.", "danger")
+        return redirect(url_for('admin.admin_financials'))
+
     return render_template('bookings/receipt.html', invoice=invoice)
 
-# 🏥 ── ROOM & WARD MANAGEMENT ─────────────────────────────────────────
+
+# ── ROOM & WARD MANAGEMENT ────────────────────────────────────────────
 
 @admin_bp.route('/rooms')
 @login_required
@@ -464,15 +575,17 @@ def admin_rooms():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    all_rooms = Room.query.order_by(Room.room_number).all()
-
-    # 🚨 NEW: Fetch active admissions to display in the UI table
-    active_admissions = Admission.query.filter_by(status='Admitted').order_by(Admission.admission_date.desc()).all()
+    all_rooms = Room.query.filter_by(is_active=True).order_by(Room.room_number).all()
+    active_admissions = Admission.query.options(
+        joinedload(Admission.patient),
+        joinedload(Admission.doctor).joinedload(Doctor.user),
+        joinedload(Admission.room)
+    ).filter_by(status=AdmissionStatus.ADMITTED).order_by(Admission.admission_date.desc()).all()
 
     total_rooms = len(all_rooms)
-    available_rooms = sum(1 for r in all_rooms if r.status == 'Available')
-    occupied_rooms = sum(1 for r in all_rooms if r.status == 'Occupied')
-    maintenance_rooms = sum(1 for r in all_rooms if r.status == 'Maintenance')
+    available_rooms = sum(1 for r in all_rooms if r.status == RoomStatus.AVAILABLE)
+    occupied_rooms = sum(1 for r in all_rooms if r.status == RoomStatus.OCCUPIED)
+    maintenance_rooms = sum(1 for r in all_rooms if r.status == RoomStatus.MAINTENANCE)
 
     return render_template('admin/admin_rooms.html',
                            rooms=all_rooms,
@@ -482,80 +595,137 @@ def admin_rooms():
                            occupied_rooms=occupied_rooms,
                            maintenance_rooms=maintenance_rooms)
 
+
 @admin_bp.route('/add_room', methods=['POST'])
 @login_required
 def add_room():
+    """B-16: Safe input validation for room creation."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
-    room_number = request.form.get('room_number').strip()
-    ward_type = request.form.get('ward_type').strip()
-    rate_per_day = request.form.get('rate_per_day').strip()
+    room_number = (request.form.get('room_number') or '').strip()
+    ward_type = (request.form.get('ward_type') or '').strip()
+    rate_str = (request.form.get('rate_per_day') or '').strip()
 
-    if Room.query.filter_by(room_number=room_number).first():
-        flash(f"Room {room_number} already exists.", "danger")
+    if not room_number or not ward_type or not rate_str:
+        flash("All room fields are required.", "warning")
+        return redirect(url_for('admin.admin_rooms'))
+
+    if ward_type not in ALLOWED_WARD_TYPES:
+        flash(f"Invalid ward type. Choose from: {', '.join(ALLOWED_WARD_TYPES)}", "danger")
         return redirect(url_for('admin.admin_rooms'))
 
     try:
-        new_room = Room(room_number=room_number, ward_type=ward_type, rate_per_day=float(rate_per_day))
-        db.session.add(new_room)
-        db.session.commit()
-        flash(f"Room {room_number} successfully added to the {ward_type} ward.", "success")
-    except Exception:
-        db.session.rollback()
-        flash("Error adding room. Please check input values.", "danger")
+        rate = Decimal(rate_str)
+        if rate <= Decimal('0.00'):
+            raise ValueError("Rate must be positive")
+    except (InvalidOperation, ValueError):
+        flash("Daily rate must be a valid positive number.", "danger")
+        return redirect(url_for('admin.admin_rooms'))
 
+    if Room.query.filter_by(room_number=room_number, is_active=True).first():
+        flash(f"Room {room_number} already exists in the system.", "danger")
+        return redirect(url_for('admin.admin_rooms'))
+
+    new_room = Room(room_number=room_number, ward_type=ward_type, rate_per_day=rate)
+    db.session.add(new_room)
+    db.session.commit()
+
+    AuditService.record(
+        action='ROOM_CREATED',
+        entity_type='Room',
+        entity_id=new_room.id,
+        actor=current_user,
+        after={'room_number': room_number, 'ward': ward_type, 'rate': str(rate)}
+    )
+
+    flash(f"Room {room_number} successfully added to the {ward_type} ward.", "success")
     return redirect(url_for('admin.admin_rooms'))
+
 
 @admin_bp.route('/edit_room', methods=['POST'])
 @login_required
 def edit_room():
+    """B-16: Safe input validation for editing rooms."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
     room_id = request.form.get('room_id')
-    room = Room.query.get_or_404(room_id)
+    room = db.session.get(Room, int(room_id)) if room_id and room_id.isdigit() else None
+    if not room:
+        flash("Room not found.", "danger")
+        return redirect(url_for('admin.admin_rooms'))
 
-    room.room_number = request.form.get('room_number').strip()
-    room.ward_type = request.form.get('ward_type').strip()
-    room.rate_per_day = float(request.form.get('rate_per_day').strip())
+    room_number = (request.form.get('room_number') or '').strip()
+    ward_type = (request.form.get('ward_type') or '').strip()
+    rate_str = (request.form.get('rate_per_day') or '').strip()
+    new_status = (request.form.get('status') or '').strip()
 
-    new_status = request.form.get('status').strip()
-    if room.status == 'Occupied' and new_status != 'Occupied':
-        flash(f"Cannot manually change status of Room {room.room_number}. It must be freed by a patient discharge.", "warning")
-    else:
-        room.status = new_status
+    if ward_type and ward_type in ALLOWED_WARD_TYPES:
+        room.ward_type = ward_type
+
+    if room_number:
+        room.room_number = room_number
+
+    if rate_str:
+        try:
+            rate = Decimal(rate_str)
+            if rate > Decimal('0.00'):
+                room.rate_per_day = rate
+        except (InvalidOperation, ValueError):
+            pass
+
+    if new_status in RoomStatus.ALL:
+        if room.status == RoomStatus.OCCUPIED and new_status != RoomStatus.OCCUPIED:
+            flash(f"Cannot manually change status of Room {room.room_number}. It must be freed by a patient discharge.", "warning")
+        else:
+            room.status = new_status
 
     db.session.commit()
     flash(f"Room {room.room_number} details updated.", "success")
     return redirect(url_for('admin.admin_rooms'))
 
+
 @admin_bp.route('/delete_room', methods=['POST'])
 @login_required
 def delete_room():
+    """B-19: Soft-deactivate room instead of hard delete."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
 
     room_id = request.form.get('room_id')
-    room = Room.query.get_or_404(room_id)
+    room = db.session.get(Room, int(room_id)) if room_id and room_id.isdigit() else None
+    if not room:
+        flash("Room not found.", "danger")
+        return redirect(url_for('admin.admin_rooms'))
 
-    if room.status == 'Occupied':
+    if room.status == RoomStatus.OCCUPIED:
         flash(f"Cannot delete Room {room.room_number} because a patient is currently admitted there.", "danger")
-    else:
-        db.session.delete(room)
-        db.session.commit()
-        flash(f"Room {room.room_number} has been removed from the system.", "success")
+        return redirect(url_for('admin.admin_rooms'))
 
+    room.is_active = False
+    room.deleted_at = datetime.now(UTC)
+    db.session.commit()
+
+    AuditService.record(
+        action='ROOM_DEACTIVATED',
+        entity_type='Room',
+        entity_id=room.id,
+        actor=current_user
+    )
+
+    flash(f"Room {room.room_number} has been archived from active service.", "success")
     return redirect(url_for('admin.admin_rooms'))
 
-# 🚨 THE DISCHARGE ROUTE (B-06: Consolidated via AdmissionService)
+
 @admin_bp.route('/discharge', methods=['POST'])
 @admin_bp.route('/discharge/<int:admission_id>', methods=['POST'])
 @login_required
 def discharge_patient(admission_id=None):
+    """Consolidated discharge & final billing (B-06, B-07)."""
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
@@ -563,11 +733,15 @@ def discharge_patient(admission_id=None):
     if not admission_id:
         admission_id = request.form.get('admission_id')
 
-    from hms.services.admissions import AdmissionError, AdmissionService
     try:
         admission = AdmissionService.discharge(int(admission_id), actor=current_user)
-        flash(f"Patient {admission.patient.username} has been officially discharged. Final invoice generated and Room {admission.room.room_number if admission.room else ''} is now Available.", "success")
+        room_name = admission.room.room_number if admission.room else ''
+        flash(f"Patient {admission.patient.username} has been officially discharged. Final invoice generated and Room {room_name} is now Available.", "success")
     except AdmissionError as e:
         flash(str(e), "danger")
+    except Exception as e:
+        req_id = getattr(g, 'request_id', 'ERR')
+        current_app.logger.exception("Admin discharge failed: %s [Req: %s]", e, req_id)
+        flash(f"Discharge error. (Reference: {req_id})", "danger")
 
     return redirect(url_for('admin.admin_rooms'))

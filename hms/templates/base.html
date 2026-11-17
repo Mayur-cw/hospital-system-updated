@@ -191,7 +191,7 @@
                 </ul>
 
                 <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
-                    <form class="d-none d-lg-block position-relative" action="/search" method="post">
+                    <form class="position-relative" action="{{ url_for('main.search') }}" method="GET">
                         <input class="form-control glass-search" type="search" name="search" 
                                placeholder="{% if current_user.usertype == 'Doctor' %}Search patients...{% else %}Search doctors...{% endif %}" required>
                         <i class="fas fa-search position-absolute top-50 translate-middle-y end-0 me-3 opacity-50 text-white" style="font-size: 0.8rem;"></i>
@@ -226,23 +226,29 @@
     </main>
 
     <!-- ── FOOTER ── -->
-    <footer class="footer-premium mt-auto">
+    <footer class="footer-premium mt-auto py-4">
         <div class="container text-center">
-            <h5 class="brand-font text-white mb-3 tracking-wide">
-                <i class="fas fa-shield-virus me-2" style="color: var(--hms-teal);"></i>HMS CORE
+            <h5 class="brand-font text-white mb-2 tracking-wide">
+                <i class="fas fa-hospital me-2" style="color: var(--hms-teal);"></i>Hedgewar Hospital
             </h5>
-            <p class="mb-4 small" style="max-width: 600px; margin: 0 auto; line-height: 1.6;">
-                A premium medical management interface built with advanced relational integrity and secure clinical workflow standards.
+            <p class="mb-3 small text-white-50" style="max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                Dedicated to advanced medical care, clinical precision, and patient-first healthcare operations.
             </p>
             
-            <div class="d-flex justify-content-center gap-4 mb-4 fs-5 text-white">
-                <a href="#" class="text-white opacity-50 text-decoration-none" style="transition: 0.2s;"><i class="fab fa-github"></i></a>
-                <a href="#" class="text-white opacity-50 text-decoration-none" style="transition: 0.2s;"><i class="fab fa-linkedin"></i></a>
-                <a href="#" class="text-white opacity-50 text-decoration-none" style="transition: 0.2s;"><i class="fas fa-envelope"></i></a>
+            <div class="d-flex justify-content-center gap-3 mb-3 small text-white-50">
+                <a href="{{ url_for('main.doctors') }}" class="text-white-50 text-decoration-none hover-light">Doctors Directory</a>
+                <span>·</span>
+                {% if current_user.is_authenticated and current_user.usertype == 'Patient' %}
+                <a href="{{ url_for('patient.patient_booking') }}" class="text-white-50 text-decoration-none hover-light">Book Appointment</a>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="text-white-50 text-decoration-none hover-light">Patient Portal</a>
+                {% endif %}
+                <span>·</span>
+                <span>Emergency: +91 1800-123-4567</span>
             </div>
             
-            <hr class="border-light opacity-10 mx-auto w-50 mb-3">
-            <p class="small opacity-10 mb-0">&copy; 2026 DBMS Mini-Project. Engineered by<br> <strong style="font-size: 20px;">Mayur</strong>.</p>
+            <hr class="border-secondary opacity-25 mx-auto w-50 mb-3">
+            <p class="small text-white-50 mb-0">&copy; 2026 Hedgewar Hospital Management System. All rights reserved.</p>
         </div>
     </footer>
 

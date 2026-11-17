@@ -1,3 +1,4 @@
+import math
 import random
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -97,9 +98,9 @@ class BillingService:
         if adm_date.tzinfo is None:
             adm_date = adm_date.replace(tzinfo=UTC)
 
-        # Calculate days admitted (minimum 1 day)
-        delta_days = (now - adm_date).days
-        days = max(1, delta_days if delta_days > 0 else admission.tentative_days or 1)
+        # Calculate started 24-hour blocks (minimum 1 day) - resolves B-07
+        total_seconds = max(0.0, (now - adm_date).total_seconds())
+        days = max(1, math.ceil(total_seconds / 86400.0))
 
         room = admission.room
         rate = room.rate_per_day if room and room.rate_per_day else Decimal('1000.00')

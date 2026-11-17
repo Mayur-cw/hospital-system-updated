@@ -55,6 +55,7 @@ def upgrade():
     sa.Column('usertype', sa.String(length=20), nullable=False),
     sa.Column('phone', sa.String(length=20), nullable=True),
     sa.Column('gender', sa.String(length=10), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.text('1')),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('deleted_at', sa.DateTime(), nullable=True),

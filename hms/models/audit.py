@@ -28,6 +28,18 @@ class AuditEvent(db.Model):
     user_id = db.synonym('actor_id')
     timestamp = db.synonym('created_at')
 
+    @property
+    def pid(self) -> str:
+        return str(self.entity_id or (self.actor.id if self.actor else ''))
+
+    @property
+    def email(self) -> str:
+        return self.actor.email if self.actor else 'system@hospital.internal'
+
+    @property
+    def name(self) -> str:
+        return self.actor.username if self.actor else (self.actor_role or 'System')
+
     # D-11 Composite index
     __table_args__ = (
         db.Index('ix_audit_entity_created', 'entity_type', 'entity_id', 'created_at'),
@@ -35,3 +47,7 @@ class AuditEvent(db.Model):
 
     def __repr__(self) -> str:
         return f"<AuditEvent {self.id}: {self.action} on {self.entity_type} {self.entity_id} by {self.actor_id}>"
+
+
+# Legacy synonym
+AuditLog = AuditEvent

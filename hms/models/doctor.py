@@ -47,3 +47,7 @@ class Doctor(TimestampMixin, SoftDeleteMixin, db.Model):
 
     def __repr__(self) -> str:
         return f"<Doctor id={self.id} user_id={self.user_id}>"
+
+
+# Legacy synonym
+Doctors = Doctor

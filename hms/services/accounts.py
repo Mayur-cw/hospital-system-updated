@@ -22,6 +22,15 @@ class InvalidCredentialsError(AccountServiceError):
 
 class AccountService:
     @staticmethod
+    def create_user(username: str, email: str, password: str, usertype: str = UserRole.PATIENT,
+                    phone: str | None = None, gender: str | None = None,
+                    dept: str | None = None, actor=None) -> User:
+        """Unified user creation helper."""
+        if usertype == UserRole.PATIENT:
+            return AccountService.create_patient(username, email, password, phone=phone, gender=gender, actor=actor)
+        return AccountService.create_staff(username, email, password, usertype=usertype, dept_name=dept, actor=actor)
+
+    @staticmethod
     def create_patient(username: str, email: str, password: str,
                        phone: str | None = None, gender: str | None = None,
                        profile_data: dict[str, Any] | None = None,
@@ -147,3 +156,7 @@ class AccountService:
             actor=actor
         )
         return user
+
+
+# Plural alias
+AccountsService = AccountService

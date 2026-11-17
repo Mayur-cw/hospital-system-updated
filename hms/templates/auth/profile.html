@@ -358,7 +358,7 @@
                 <i class="fas fa-phone pf-ico"></i>
                 <input id="pf-phone" type="text" name="phone"
                   value="{{ current_user.phone if current_user.phone != None else '' }}"
-                  pattern="\d{10}" title="Please enter exactly 10 digits">
+                  placeholder="+91 98765 43210">
               </div>
             </div>
             <div class="pf-field">
@@ -382,21 +382,29 @@
             <label class="pf-label">Assigned Department</label>
             <div class="pf-input-wrap">
               <i class="fas fa-stethoscope pf-ico"></i>
-              <input type="text" value="{{ doctor_info.dept if doctor_info else 'Unassigned' }}" readonly>
+              <input type="text" value="{{ doctor_info.department.name if doctor_info and doctor_info.department else (doctor_info.dept if doctor_info else 'Unassigned') }}" readonly>
             </div>
             <p class="pf-hint"><i class="fas fa-lock"></i> Department transfers must be processed by an Administrator.</p>
           </div>
           {% endif %}
 
           <hr class="pf-divider">
-          <p class="pf-section-tag">Security</p>
+          <p class="pf-section-tag">Security & Credentials</p>
 
           <div class="pf-pw-zone">
+            <div class="pf-field mb-3">
+              <label class="pf-label" for="pf-curr-pass">Current Password</label>
+              <div class="pf-input-wrap">
+                <i class="fas fa-key pf-ico"></i>
+                <input id="pf-curr-pass" type="password" name="current_password" placeholder="Required only if changing password or email">
+              </div>
+              <p class="pf-hint"><i class="fas fa-shield-alt"></i> Re-authentication required for sensitive account modifications.</p>
+            </div>
             <div class="pf-field">
               <label class="pf-label" for="pf-pass">New Password</label>
               <div class="pf-input-wrap">
                 <i class="fas fa-lock pf-ico"></i>
-                <input id="pf-pass" type="password" name="password" placeholder="Leave blank to keep current password">
+                <input id="pf-pass" type="password" name="password" placeholder="Leave blank to keep current password" minlength="8">
               </div>
             </div>
           </div>

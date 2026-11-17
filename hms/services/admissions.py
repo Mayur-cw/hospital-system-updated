@@ -19,7 +19,8 @@ class AdmissionService:
               appointment_id: int | None = None, tentative_days: int = 1,
               actor=None) -> Admission:
         """Admit a patient to an available hospital room."""
-        room = db.session.get(Room, room_id)
+        # Lock room row for update to eliminate admission race condition (B-13)
+        room = Room.query.filter_by(id=room_id).with_for_update().first()
         if not room:
             raise AdmissionError("Room not found.")
 

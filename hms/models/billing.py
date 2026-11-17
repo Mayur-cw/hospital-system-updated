@@ -95,6 +95,19 @@ class Invoice(TimestampMixin, db.Model):
     def date(self, val):
         self.issued_at = val
 
+    @property
+    def paid_on(self):
+        success_payments = [p for p in self.payments if p.status == PaymentStatus.SUCCESS]
+        if success_payments:
+            return sorted(success_payments, key=lambda p: p.paid_at, reverse=True)[0].paid_at
+        return self.updated_at or self.issued_at or datetime.now(UTC)
+
+    @property
+    def payment_mode(self):
+        if self.payments:
+            return self.payments[-1].method.lower()
+        return 'online'
+
     def recalculate_totals(self):
         self.subtotal = sum((item.total_price for item in self.items), Decimal('0.00'))
         self.total = max(Decimal('0.00'), self.subtotal + self.tax - self.discount)
@@ -134,3 +147,7 @@ class Payment(TimestampMixin, db.Model):
 
     def __repr__(self) -> str:
         return f"<Payment {self.id}: ₹{self.amount} ({self.status}) for Invoice {self.invoice_id}>"
+
+
+# Legacy synonym
+Billing = Invoice
