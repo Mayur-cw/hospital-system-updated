@@ -70,6 +70,61 @@
 
         @keyframes shimmer { to { background-position: 200% center; } }
 
+        /* ── ELEGANT NAVBAR NAVIGATION LINKS & ICON BADGES ── */
+        .navbar-premium .navbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .navbar-premium .nav-link-item {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            white-space: nowrap !important;
+            color: rgba(255, 255, 255, 0.82) !important;
+            font-weight: 600 !important;
+            font-size: 0.86rem !important;
+            padding: 0.44rem 0.78rem !important;
+            border-radius: 9px !important;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            text-decoration: none !important;
+            line-height: 1.2 !important;
+        }
+        .navbar-premium .nav-link-item:hover,
+        .navbar-premium .nav-link-item:focus {
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            transform: translateY(-1px);
+        }
+
+        /* Dedicated Micro Icon Badges for Clean Separation & Sizing */
+        .nav-ico-badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.76rem;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+        .nav-link-item:hover .nav-ico-badge {
+            transform: scale(1.12);
+        }
+        .nav-ico-home    { background: rgba(255, 255, 255, 0.1);  color: #ffffff; }
+        .nav-ico-queue   { background: rgba(56, 189, 248, 0.18);  color: #38bdf8; }
+        .nav-ico-patient { background: rgba(34, 197, 94, 0.18);   color: #4ade80; }
+        .nav-ico-ops     { background: rgba(168, 85, 247, 0.18);  color: #c084fc; }
+        .nav-ico-add     { background: rgba(245, 158, 11, 0.22);  color: #fbbf24; }
+        .nav-ico-audit   { background: rgba(239, 68, 68, 0.18);   color: #f87171; }
+        .nav-ico-clinic  { background: rgba(13, 148, 136, 0.22);  color: #2dd4bf; }
+        .nav-ico-consult { background: rgba(59, 130, 246, 0.18);  color: #60a5fa; }
+        .nav-ico-ward    { background: rgba(245, 158, 11, 0.22);  color: #fbbf24; }
+        .nav-ico-bills   { background: rgba(34, 197, 94, 0.18);   color: #4ade80; }
+        .nav-ico-rx      { background: rgba(168, 85, 247, 0.18);  color: #c084fc; }
+
         .nav-link {
             color: rgba(255,255,255,0.7) !important;
             font-weight: 500; font-size: 0.95rem;
@@ -146,59 +201,119 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
-                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 d-flex align-items-center gap-1 gap-xl-2">
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-item" href="/">
+                            <span class="nav-ico-badge nav-ico-home"><i class="fas fa-home"></i></span>
+                            <span>Home</span>
+                        </a>
+                    </li>
 
                     {% if current_user.is_authenticated %}
                         {% if current_user.usertype == "Admin" %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('reception.queue_board') }}"><i class="fas fa-list-ol me-1 text-info"></i> OPD Queue</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('reception.register_patient') }}"><i class="fas fa-user-plus me-1 text-success"></i> New Patient</a></li>
-                        {% endif %}
-
-                        {% if current_user.usertype == "Admin" %}
-                            <!-- 1.. Directories Dropdown -->
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="fas fa-folder-open me-1"></i> Operations
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="{{ url_for('reception.queue_board') }}">
+                                    <span class="nav-ico-badge nav-ico-queue"><i class="fas fa-clipboard-list"></i></span>
+                                    <span>OPD Queue</span>
                                 </a>
-                                <ul class="dropdown-menu shadow-sm border-0 mt-2 rounded-3">
-                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="/admin/doctors"><i class="fas fa-user-md me-2 text-primary"></i>Doctors Directory</a></li>
-                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="/admin/patients"><i class="fas fa-procedures me-2 text-success"></i>Patient Registry</a></li>
-                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="/admin/appointments"><i class="fas fa-calendar-check me-2 text-info"></i>Appointments Roster</a></li>
-                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="/admin/rooms"><i class="fas fa-bed me-2 text-warning"></i>Ward Bed Board</a></li>
-                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="/admin/financials"><i class="fas fa-file-invoice-dollar me-2 text-success"></i>Revenue & Billing</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="/admin/staff"><i class="fas fa-user-shield me-2 text-dark"></i>System Staff & Roles</a></li>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="{{ url_for('reception.register_patient') }}">
+                                    <span class="nav-ico-badge nav-ico-patient"><i class="fas fa-user-plus"></i></span>
+                                    <span>New Patient</span>
+                                </a>
+                            </li>
+
+                            <!-- Operations Dropdown -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link nav-link-item dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <span class="nav-ico-badge nav-ico-ops"><i class="fas fa-layer-group"></i></span>
+                                    <span>Operations</span>
+                                </a>
+                                <ul class="dropdown-menu shadow-lg border-0 mt-2 rounded-4 p-2">
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="/admin/doctors"><i class="fas fa-user-md me-2 text-primary"></i>Doctors Directory</a></li>
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="/admin/patients"><i class="fas fa-procedures me-2 text-success"></i>Patient Registry</a></li>
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="/admin/appointments"><i class="fas fa-calendar-check me-2 text-info"></i>Appointments Roster</a></li>
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="/admin/rooms"><i class="fas fa-bed me-2 text-warning"></i>Ward Bed Board</a></li>
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="/admin/financials"><i class="fas fa-file-invoice-dollar me-2 text-success"></i>Revenue & Billing</a></li>
+                                    <li><hr class="dropdown-divider opacity-10 my-1"></li>
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="/admin/staff"><i class="fas fa-user-shield me-2 text-dark"></i>System Staff & Roles</a></li>
                                 </ul>
                             </li>
 
-                            <!-- 2.. Quick Create Dropdown -->
+                            <!-- Quick Create Dropdown -->
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-warning fw-bold" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="fas fa-plus-circle me-1"></i> Quick Add
+                                <a class="nav-link nav-link-item dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <span class="nav-ico-badge nav-ico-add"><i class="fas fa-plus"></i></span>
+                                    <span>Quick Add</span>
                                 </a>
-                                <ul class="dropdown-menu shadow-sm border-0 mt-2 rounded-3">
-                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="#" data-bs-toggle="modal" data-bs-target="#globalAddDoctorModal"><i class="fas fa-user-md me-2 text-primary"></i>New Doctor</a></li>
-                                    <li><a class="dropdown-item py-2 fw-bold text-dark" href="#" data-bs-toggle="modal" data-bs-target="#globalAddStaffModal"><i class="fas fa-user-shield me-2 text-warning"></i>New Admin</a></li>
+                                <ul class="dropdown-menu shadow-lg border-0 mt-2 rounded-4 p-2">
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="#" data-bs-toggle="modal" data-bs-target="#globalAddDoctorModal"><i class="fas fa-user-md me-2 text-primary"></i>New Doctor</a></li>
+                                    <li><a class="dropdown-item py-2 fw-bold text-dark rounded-3" href="#" data-bs-toggle="modal" data-bs-target="#globalAddStaffModal"><i class="fas fa-user-shield me-2 text-warning"></i>New Admin</a></li>
                                 </ul>
                             </li>
                             
-                            <!-- 3.. Audit Logs -->
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.details') }}"><i class="fas fa-clipboard-list me-1"></i> Audit Logs</a></li>
+                            <!-- Audit Logs -->
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="{{ url_for('admin.details') }}">
+                                    <span class="nav-ico-badge nav-ico-audit"><i class="fas fa-history"></i></span>
+                                    <span>Audit Logs</span>
+                                </a>
+                            </li>
 
                         {% elif current_user.usertype == "Doctor" %}
-                            <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="fas fa-stethoscope me-1"></i> Clinic Workspace</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/dashboard?filter=Pending"><i class="fas fa-calendar-alt me-1"></i> My Consultations</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/my_admissions"><i class="fas fa-procedures me-1"></i> Inpatient Ward</a></li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="/dashboard">
+                                    <span class="nav-ico-badge nav-ico-clinic"><i class="fas fa-stethoscope"></i></span>
+                                    <span>Clinic Workspace</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="/dashboard?filter=Pending">
+                                    <span class="nav-ico-badge nav-ico-consult"><i class="fas fa-calendar-alt"></i></span>
+                                    <span>My Consultations</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="/my_admissions">
+                                    <span class="nav-ico-badge nav-ico-ward"><i class="fas fa-procedures"></i></span>
+                                    <span>Inpatient Ward</span>
+                                </a>
+                            </li>
 
                         {% elif current_user.usertype == "Cashier" %}
-                            <li class="nav-item"><a class="nav-link" href="/admin/financials"><i class="fas fa-cash-register me-1 text-success"></i> Billing Counter</a></li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="/admin/financials">
+                                    <span class="nav-ico-badge nav-ico-bills"><i class="fas fa-cash-register"></i></span>
+                                    <span>Billing Counter</span>
+                                </a>
+                            </li>
 
                         {% elif current_user.usertype == "Patient" %}
-                            <li class="nav-item"><a class="nav-link" href="/patients?new=1"><i class="fas fa-calendar-plus me-1"></i> Book Appointment</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="fas fa-folder-open me-1"></i> My Appointments</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/dashboard?filter=Completed"><i class="fas fa-file-prescription me-1"></i> Prescriptions & Rx</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('patient.my_bills') }}"><i class="fas fa-file-invoice-dollar me-1"></i> Invoices & Receipts</a></li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="/patients?new=1">
+                                    <span class="nav-ico-badge nav-ico-clinic"><i class="fas fa-calendar-plus"></i></span>
+                                    <span>Book Appointment</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="/dashboard">
+                                    <span class="nav-ico-badge nav-ico-ops"><i class="fas fa-folder-open"></i></span>
+                                    <span>My Appointments</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="/dashboard?filter=Completed">
+                                    <span class="nav-ico-badge nav-ico-rx"><i class="fas fa-file-prescription"></i></span>
+                                    <span>Prescriptions & Rx</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link nav-link-item" href="{{ url_for('patient.my_bills') }}">
+                                    <span class="nav-ico-badge nav-ico-bills"><i class="fas fa-file-invoice-dollar"></i></span>
+                                    <span>Invoices & Receipts</span>
+                                </a>
+                            </li>
                         {% endif %}
                     {% endif %}
                 </ul>
