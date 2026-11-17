@@ -9,4 +9,4 @@ MarkupSafe==2.1.5
 Werkzeug==2.3.7
 
 pytz==2024.1
-mysqlclient==2.2.4
+mysqlclient==2.3.1
