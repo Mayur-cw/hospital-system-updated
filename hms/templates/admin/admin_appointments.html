@@ -251,6 +251,7 @@ Appointments Log | Hospital Management System
                 
                 <!-- Status Update Form -->
                 <form action="/admin/update_appointment_status" method="POST" class="m-0">
+                  {{ csrf_field() }}
                   <input type="hidden" name="appointment_id" value="{{ appt.id }}">
                   <input type="hidden" name="redirect_url" value="{{ request.url }}">
                   <select name="status" class="form-control-modern py-1 px-2 text-muted fw-bold" style="width: auto; height: 32px;" onchange="this.form.submit()">
@@ -263,6 +264,7 @@ Appointments Log | Hospital Management System
 
                 <!-- Delete Form -->
                 <form action="/admin/delete_appointment" method="POST" class="m-0" onsubmit="return confirm('WARNING: Permanently delete this appointment?')">
+                  {{ csrf_field() }}
                   <input type="hidden" name="appointment_id" value="{{ appt.id }}">
                   <input type="hidden" name="redirect_url" value="{{ request.url }}">
                   <button type="submit" class="hms-btn hms-btn-ghost-light hms-btn-sm text-danger border-danger px-2" style="height: 32px;" title="Delete Record">

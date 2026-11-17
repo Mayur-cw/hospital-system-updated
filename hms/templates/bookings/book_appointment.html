@@ -177,6 +177,7 @@ Book Appointment | Hospital Management System
 
           <!-- THE FORM -->
           <form action="/patients" method="POST" id="bookingForm">
+            {{ csrf_field() }}
             <input type="hidden" name="slot" value="Scheduled">
             <!-- 🚨 FIXED: Removed required from hidden fields and added selected_dept -->
             <input type="hidden" id="selected_doctor" name="doctor">
@@ -597,7 +598,10 @@ Book Appointment | Hospital Management System
 
     fetch('/get_booked_slots', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
       body: JSON.stringify({ date: dateStr, doctor: doctorStr })
     })
     .then(r => r.json())

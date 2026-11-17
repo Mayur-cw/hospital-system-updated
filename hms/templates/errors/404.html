@@ -1,0 +1,7 @@
+{% extends 'errors/error_base.html' %}
+{% block error_code %}404 Not Found{% endblock %}
+{% block icon_bg %}bg-info bg-opacity-10 text-info{% endblock %}
+{% block error_icon %}fa-compass{% endblock %}
+{% block error_title %}Resource Not Found{% endblock %}
+{% block error_status %}404 Not Found{% endblock %}
+{% block error_description %}{{ message or "The page, appointment, record, or ward you requested does not exist or has been relocated." }}{% endblock %}

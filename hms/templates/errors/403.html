@@ -1,0 +1,7 @@
+{% extends 'errors/error_base.html' %}
+{% block error_code %}403 Forbidden{% endblock %}
+{% block icon_bg %}bg-danger bg-opacity-10 text-danger{% endblock %}
+{% block error_icon %}fa-user-shield{% endblock %}
+{% block error_title %}Access Denied{% endblock %}
+{% block error_status %}403 Forbidden{% endblock %}
+{% block error_description %}{{ message or "You do not have the required authorization or role permissions to access this clinical or administrative resource." }}{% endblock %}

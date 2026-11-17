@@ -151,6 +151,7 @@ Manage System Staff | Hospital Management System
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form action="/admin/edit_staff" method="POST">
+        {{ csrf_field() }}
         <div class="modal-body p-4">
           <input type="hidden" name="staff_id" id="editStaffId">
           <div class="mb-3">
@@ -182,6 +183,7 @@ Manage System Staff | Hospital Management System
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form action="/admin/change_staff_password" method="POST">
+        {{ csrf_field() }}
         <div class="modal-body p-4">
           <input type="hidden" name="staff_id" id="pwStaffId">
           <div class="alert alert-warning border-0 rounded-3 small">
@@ -227,6 +229,7 @@ Manage System Staff | Hospital Management System
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form action="/admin/delete_staff" method="POST">
+        {{ csrf_field() }}
         <div class="modal-body p-4 text-center">
           <input type="hidden" name="staff_id" id="deleteStaffId">
           <i class="fas fa-user-minus fa-4x text-danger mb-3 opacity-75"></i>
@@ -256,6 +259,7 @@ Manage System Staff | Hospital Management System
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form action="{{ url_for('admin.add_staff') }}" method="POST">
+        {{ csrf_field() }}
         <div class="modal-body p-4 bg-light">
           <!-- Hidden input forces the role to Admin -->
           <input type="hidden" name="usertype" value="Admin">

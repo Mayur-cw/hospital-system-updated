@@ -131,8 +131,8 @@ def test_b12_add_record_ownership_and_safe_error(client, app):
         'diagnosis': 'Unauthorized Entry Attempt',
         'prescription': 'None'
     }, follow_redirects=True)
-    assert resp.status_code == 200
-    assert b"Unauthorized! You are not the assigned doctor" in resp.data
+    assert resp.status_code == 403
+    assert b"Access Denied" in resp.data
 
     with app.app_context():
         rec = MedicalRecord.query.filter_by(appointment_id=1).first()

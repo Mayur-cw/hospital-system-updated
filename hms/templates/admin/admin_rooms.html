@@ -258,6 +258,7 @@ Ward & Room Management | Admin Control
             <td class="text-end pe-4">
               <form action="/admin/discharge" method="POST" class="m-0" 
                     onsubmit="return confirm('Officially discharge this patient? This will generate their final bill.');">
+                {{ csrf_field() }}
                 <input type="hidden" name="admission_id" value="{{ admission.admission_id }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-4 py-2 hover-lift">
                   Discharge
@@ -338,6 +339,7 @@ Ward & Room Management | Admin Control
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form action="/admin/add_room" method="POST">
+        {{ csrf_field() }}
         <div class="modal-body p-4">
           <div class="mb-3"><label class="form-label fw-bold">Room Number</label><input type="text" class="form-control" name="room_number" required></div>
           <div class="mb-3"><label class="form-label fw-bold">Ward Type</label>
@@ -362,6 +364,7 @@ Ward & Room Management | Admin Control
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form action="/admin/edit_room" method="POST">
+        {{ csrf_field() }}
         <div class="modal-body p-4">
           <input type="hidden" name="room_id" id="editRoomId">
           <div class="mb-3"><label class="form-label fw-bold">Room Number</label><input type="text" class="form-control" name="room_number" id="editRoomNumber" required></div>
@@ -387,6 +390,7 @@ Ward & Room Management | Admin Control
         <h5 class="modal-title fw-bold">Confirm Deletion</h5>
       </div>
       <form action="/admin/delete_room" method="POST">
+        {{ csrf_field() }}
         <div class="modal-body p-4 text-center">
           <input type="hidden" name="room_id" id="deleteRoomId">
           <i class="fas fa-ban fa-4x text-danger mb-3 opacity-75"></i>

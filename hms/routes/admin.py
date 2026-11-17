@@ -2,7 +2,17 @@
 from datetime import UTC, date, datetime
 from decimal import Decimal, InvalidOperation
 
-from flask import Blueprint, current_app, flash, g, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload
 
@@ -21,6 +31,16 @@ from hms.services.audit import AuditService
 admin_bp = Blueprint('admin', __name__)
 
 ALLOWED_WARD_TYPES = ('General', 'ICU', 'VIP', 'Maternity')
+
+
+@admin_bp.before_request
+@login_required
+def enforce_admin_rbac():
+    """Central RBAC guard for all administrator endpoints (S-05)."""
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login', next=request.path))
+    if current_user.usertype != 'Admin':
+        abort(403)
 
 
 # ── DASHBOARD ────────────────────────────────────────────────────────

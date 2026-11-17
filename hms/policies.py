@@ -1,13 +1,55 @@
 """
-hms/policies.py — Central Object-Level Authorization Policies
+hms/policies.py — Central Object-Level Authorization Policies & RBAC
 Follows the principle of least privilege: Deny by default.
 """
+from functools import wraps
+
+from flask import abort, flash, redirect, request, url_for
+from flask_login import current_user
 
 from hms.models.admission import Admission
 from hms.models.appointment import Appointment
 from hms.models.billing import Invoice
 from hms.models.record import MedicalRecord
 from hms.models.user import User, UserRole
+
+
+def roles_required(*roles):
+    """
+    Decorator enforcing role-based access control (S-05).
+    Deny by default.
+    - Unauthenticated: Redirects to login (or 401 for API)
+    - Unauthorized: Raises HTTP 403 Forbidden
+    """
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            if not current_user.is_authenticated:
+                if request.is_json or request.path.startswith('/api/'):
+                    abort(401)
+                flash("Please log in to access this page.", "warning")
+                return redirect(url_for('auth.login', next=request.path))
+
+            user_role = getattr(current_user, 'usertype', None)
+            role_values = [getattr(r, 'value', r) for r in roles]
+            if user_role not in role_values:
+                abort(403)
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def admin_required(fn):
+    return roles_required(UserRole.ADMIN)(fn)
+
+
+def doctor_required(fn):
+    return roles_required(UserRole.DOCTOR)(fn)
+
+
+def patient_required(fn):
+    return roles_required(UserRole.PATIENT)(fn)
+
 
 
 def can_view_appointment(user: User, appointment: Appointment) -> bool:

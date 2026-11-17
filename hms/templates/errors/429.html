@@ -1,0 +1,7 @@
+{% extends 'errors/error_base.html' %}
+{% block error_code %}429 Too Many Requests{% endblock %}
+{% block icon_bg %}bg-warning bg-opacity-10 text-warning{% endblock %}
+{% block error_icon %}fa-gauge-high{% endblock %}
+{% block error_title %}Rate Limit Exceeded{% endblock %}
+{% block error_status %}429 Too Many Requests{% endblock %}
+{% block error_description %}{{ message or "Too many requests have been submitted from your device. Please wait a moment before trying again to protect hospital services." }}{% endblock %}

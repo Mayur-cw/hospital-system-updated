@@ -1,0 +1,7 @@
+{% extends 'errors/error_base.html' %}
+{% block error_code %}500 Internal Error{% endblock %}
+{% block icon_bg %}bg-danger bg-opacity-10 text-danger{% endblock %}
+{% block error_icon %}fa-server{% endblock %}
+{% block error_title %}System Error{% endblock %}
+{% block error_status %}500 Internal Server Error{% endblock %}
+{% block error_description %}{{ message or "An internal hospital system fault occurred. Our engineering and IT team has been notified with the incident identifier below." }}{% endblock %}

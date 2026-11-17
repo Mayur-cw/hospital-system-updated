@@ -56,6 +56,7 @@
         <h6 class="fw-bold text-uppercase text-muted mb-4" style="letter-spacing: 1px;">Select Payment Mode</h6>
         
         <form action="{{ url_for('patient.process_payment', bill_id=invoice.bill_id) }}" method="POST" id="paymentForm">
+          {{ csrf_field() }}
           <input type="hidden" name="payment_mode" id="paymentMode">
           <input type="hidden" name="bank_name" id="bankName">
 

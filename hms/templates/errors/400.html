@@ -1,0 +1,7 @@
+{% extends 'errors/error_base.html' %}
+{% block error_code %}400 Bad Request{% endblock %}
+{% block icon_bg %}bg-warning bg-opacity-10 text-warning{% endblock %}
+{% block error_icon %}fa-hand-paper{% endblock %}
+{% block error_title %}Bad Request{% endblock %}
+{% block error_status %}400 Bad Request{% endblock %}
+{% block error_description %}{{ message or "The server could not understand your request. This may be due to an expired form session or invalid security token (CSRF). Please refresh and try again." }}{% endblock %}

@@ -1,7 +1,17 @@
 # routes/doctor.py
 from decimal import Decimal
 
-from flask import Blueprint, current_app, flash, g, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user, login_required
 
 from hms.extensions import db
@@ -26,17 +36,21 @@ doctor_bp = Blueprint('doctor', __name__)
 @doctor_bp.route('/cancel_apt/<int:apt_id>', methods=['POST'])
 @login_required
 def cancel_apt(apt_id):
-    """Cancel an appointment with ownership verification (B-14, B-17)."""
+    """Cancel an appointment with ownership verification (B-14, B-17, S-05)."""
     appointment = db.session.get(Appointment, apt_id)
     if not appointment:
         flash("Appointment not found.", "danger")
         return redirect(url_for('main.index'))
 
+    doc_profile = Doctor.query.filter_by(user_id=current_user.id).first()
+    if current_user.usertype != "Admin" and (not doc_profile or appointment.doctor_id != doc_profile.id):
+        abort(403)
+
     try:
         AppointmentService.cancel(apt_id, actor=current_user, reason="Cancelled via schedule view")
         flash("Appointment has been successfully cancelled.", "warning")
     except UnauthorizedAppointmentActionError:
-        flash("Unauthorized! You can only cancel your own appointments.", "danger")
+        abort(403)
     except InvalidStateTransitionError as e:
         flash(str(e), "warning")
     except Exception as e:
@@ -50,10 +64,9 @@ def cancel_apt(apt_id):
 @doctor_bp.route('/mark_missed/<int:apt_id>', methods=['POST'])
 @login_required
 def mark_missed(apt_id):
-    """Mark appointment missed with doctor ownership verification (B-14, B-17)."""
+    """Mark appointment missed with doctor ownership verification (B-14, B-17, S-05)."""
     if current_user.usertype != "Doctor":
-        flash("Unauthorized!", "danger")
-        return redirect(url_for('main.index'))
+        abort(403)
 
     doc_profile = Doctor.query.filter_by(user_id=current_user.id).first()
     appointment = db.session.get(Appointment, apt_id)
@@ -62,8 +75,7 @@ def mark_missed(apt_id):
         return redirect(url_for('main.index'))
 
     if not doc_profile or appointment.doctor_id != doc_profile.id:
-        flash("Unauthorized! You can only manage appointments on your own schedule.", "danger")
-        return redirect(url_for('main.index'))
+        abort(403)
 
     try:
         AppointmentService.mark_missed(apt_id, actor=current_user)
@@ -77,10 +89,9 @@ def mark_missed(apt_id):
 @doctor_bp.route('/mark_attended/<int:apt_id>', methods=['POST'])
 @login_required
 def mark_attended(apt_id):
-    """Check in patient with doctor ownership verification (B-14, B-17)."""
+    """Check in patient with doctor ownership verification (B-14, B-17, S-05)."""
     if current_user.usertype != "Doctor":
-        flash("Unauthorized!", "danger")
-        return redirect(url_for('main.index'))
+        abort(403)
 
     doc_profile = Doctor.query.filter_by(user_id=current_user.id).first()
     appointment = db.session.get(Appointment, apt_id)
@@ -89,8 +100,7 @@ def mark_attended(apt_id):
         return redirect(url_for('main.index'))
 
     if not doc_profile or appointment.doctor_id != doc_profile.id:
-        flash("Unauthorized! You can only attend patients on your own schedule.", "danger")
-        return redirect(url_for('main.index'))
+        abort(403)
 
     try:
         AppointmentService.check_in(apt_id, actor=current_user)
@@ -106,10 +116,9 @@ def mark_attended(apt_id):
 @doctor_bp.route('/add_record/<int:apt_id>', methods=['GET', 'POST'])
 @login_required
 def add_record(apt_id):
-    """Add clinical chart / prescription and optionally admit (B-12, B-13, B-14)."""
+    """Add clinical chart / prescription and optionally admit (B-12, B-13, B-14, S-05)."""
     if current_user.usertype != "Doctor":
-        flash("Unauthorized! Only doctors can add medical records.", "danger")
-        return redirect(url_for('main.index'))
+        abort(403)
 
     appointment = db.session.get(Appointment, apt_id)
     if not appointment:
@@ -117,7 +126,8 @@ def add_record(apt_id):
         return redirect(url_for('main.index'))
 
     doc_profile = Doctor.query.filter_by(user_id=current_user.id).first()
-    if not doc_profile:
+    if not doc_profile or appointment.doctor_id != doc_profile.id:
+        abort(403)
         flash("Doctor profile not found.", "danger")
         return redirect(url_for('main.index'))
 
@@ -190,11 +200,12 @@ def add_record(apt_id):
 
 
 @doctor_bp.route('/my_admissions')
+@doctor_bp.route('/doctor_admissions')
 @login_required
 def my_admissions():
-    """Doctor view of their active admitted patients."""
+    """Doctor view of their active admitted patients (S-05)."""
     if current_user.usertype != "Doctor":
-        return redirect(url_for('main.index'))
+        abort(403)
 
     doc_profile = Doctor.query.filter_by(user_id=current_user.id).first()
     if not doc_profile:
@@ -211,9 +222,9 @@ def my_admissions():
 @doctor_bp.route('/discharge_patient', methods=['POST'])
 @login_required
 def discharge_patient():
-    """Consolidated discharge & final billing (B-06, B-07)."""
-    if current_user.usertype != "Doctor":
-        return redirect(url_for('main.index'))
+    """Consolidated discharge & final billing (B-06, B-07, S-05)."""
+    if current_user.usertype not in ("Doctor", "Admin"):
+        abort(403)
 
     admission_id = request.form.get('admission_id')
     if not admission_id:
@@ -248,8 +259,7 @@ def view_record(apt_id):
     record = MedicalRecord.query.filter_by(appointment_id=apt_id).first()
 
     if record and not can_view_medical_record(current_user, record):
-        flash("Unauthorized access to medical record.", "danger")
-        return redirect(url_for('main.index'))
+        abort(403)
 
     if not record:
         flash("No medical record has been generated yet.", "info")
@@ -261,10 +271,9 @@ def view_record(apt_id):
 @doctor_bp.route('/edit_record/<int:apt_id>', methods=['GET', 'POST'])
 @login_required
 def edit_record(apt_id):
-    """Amend clinical record with amendment history snapshot (D-10, B-14)."""
+    """Amend clinical record with amendment history snapshot (D-10, B-14, S-05)."""
     if current_user.usertype != "Doctor":
-        flash("Unauthorized! Only doctors can edit medical records.", "danger")
-        return redirect(url_for('main.index'))
+        abort(403)
 
     appointment = db.session.get(Appointment, apt_id)
     if not appointment:
@@ -277,8 +286,7 @@ def edit_record(apt_id):
         return redirect(url_for('doctor.add_record', apt_id=apt_id))
 
     if not can_edit_medical_record(current_user, record):
-        flash("Unauthorized! You cannot edit another doctor's clinical record.", "danger")
-        return redirect(url_for('main.index'))
+        abort(403)
 
     if request.method == "POST":
         diagnosis = request.form.get('diagnosis', '').strip()

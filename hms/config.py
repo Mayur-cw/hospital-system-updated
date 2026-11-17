@@ -16,9 +16,20 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 
-    # Session / Cookie safety defaults
+    # Session / Cookie safety defaults (S-07)
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = 7200  # 2 hours
+    SESSION_PROTECTION = 'strong'
+
+    # Security / Talisman Settings (S-08)
+    FORCE_HTTPS = False
+    CSP_DIRECTIVES = None
+
+    # Rate Limiting Settings (S-04)
+    RATELIMIT_ENABLED = True
+    RATELIMIT_STORAGE_URI = 'memory://'
+    RATELIMIT_STRATEGY = 'fixed-window'
 
     # Clinical, Scheduling & Regional Settings (A-03, A-04)
     TIMEZONE = os.environ.get('HOSPITAL_TIMEZONE', 'Asia/Kolkata')
@@ -53,6 +64,7 @@ class TestingConfig(Config):
     TESTING = True
     FLASK_DEBUG = False
     WTF_CSRF_ENABLED = False
+    RATELIMIT_ENABLED = False
     SECRET_KEY = 'test-secret-key-for-automated-suites'
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', 'sqlite:///:memory:')
 
@@ -62,6 +74,8 @@ class ProductionConfig(Config):
     FLASK_DEBUG = False
     TESTING = False
     SESSION_COOKIE_SECURE = True
+    FORCE_HTTPS = True
+    RATELIMIT_STORAGE_URI = os.environ.get('REDIS_URL', 'memory://')
 
     def __init__(self):
         super().__init__()

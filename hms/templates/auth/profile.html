@@ -332,6 +332,7 @@
 
       <div class="pf-card-body">
         <form action="/profile" method="POST">
+          {{ csrf_field() }}
 
           <p class="pf-section-tag">Personal Details</p>
 

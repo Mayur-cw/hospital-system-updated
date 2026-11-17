@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from flask import (
     Blueprint,
+    abort,
     current_app,
     flash,
     g,
@@ -183,8 +184,7 @@ def reschedule_appointment(apt_id):
         return redirect(url_for('patient.dashboard'))
 
     if not can_modify_appointment(current_user, appointment):
-        flash("Unauthorized: You do not have permission to modify this appointment.", "danger")
-        return redirect(url_for('patient.dashboard'))
+        abort(403)
 
     if request.method == 'POST':
         date_str = request.form.get('date', '').strip()
@@ -247,8 +247,7 @@ def cancel_appointment(apt_id):
         return redirect(url_for('patient.dashboard'))
 
     if not can_cancel_appointment(current_user, appointment):
-        flash("Unauthorized: You can only cancel your own appointments.", "danger")
-        return redirect(url_for('patient.dashboard'))
+        abort(403)
 
     try:
         AppointmentService.cancel(apt_id, actor=current_user, reason="Cancelled by patient")
@@ -407,8 +406,7 @@ def view_invoice(bill_id):
         return redirect(url_for('patient.my_bills'))
 
     if not can_view_invoice(current_user, invoice):
-        flash("Security Alert: Unauthorized billing access.", "danger")
-        return redirect(url_for('patient.my_bills'))
+        abort(403)
 
     if invoice.status == 'Paid':
         return redirect(url_for('patient.view_receipt', bill_id=bill_id))
@@ -430,8 +428,7 @@ def process_payment(bill_id):
         return redirect(url_for('patient.my_bills'))
 
     if not can_view_invoice(current_user, invoice):
-        flash("Unauthorized billing action.", "danger")
-        return redirect(url_for('patient.my_bills'))
+        abort(403)
 
     if invoice.status == 'Paid':
         flash("This invoice is already settled.", "info")
@@ -487,8 +484,7 @@ def view_receipt(bill_id):
         return redirect(url_for('patient.my_bills'))
 
     if not can_view_invoice(current_user, invoice):
-        flash("Unauthorized access.", "danger")
-        return redirect(url_for('patient.my_bills'))
+        abort(403)
 
     if invoice.status != 'Paid':
         flash('This invoice has not been settled yet.', 'warning')

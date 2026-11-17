@@ -67,6 +67,7 @@ Edit Prescription | Hospital Management System
       <div class="hms-panel p-5 h-100">
         
         <form action="/edit_record/{{ appointment.apt_id }}" method="POST">
+          {{ csrf_field() }}
           
           <div class="mb-4">
             <label for="diagnosis" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">

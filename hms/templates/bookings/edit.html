@@ -28,6 +28,7 @@ Edit Booking | Hospital Management System
         <div class="card-body p-4 bg-light">
           <!-- 🔄 UPDATED: posts.apt_id -->
           <form action="/edit/{{ posts.apt_id }}" method="POST">
+            {{ csrf_field() }}
             
             <input type="hidden" name="slot" value="{{ posts.slot }}">
 
@@ -183,7 +184,10 @@ Edit Booking | Hospital Management System
 
     fetch('/get_booked_slots', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
         body: JSON.stringify({ 
             date: dateStr, 
             doctor: doctorStr,
