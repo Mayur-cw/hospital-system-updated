@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/csrf_field.html' import csrf_field %}
+
+{% block title %}Hospital Configuration & Settings | Hedgewar Hospital Care{% endblock title %}
+
+{% block body %}
+<div class="container-xl py-4">
+  {{ page_header(
+    title="Hospital System Configuration",
+    subtitle="Global facility parameters, consultation defaults, operational timezones, and scheduling rules.",
+    breadcrumbs=[
+      {"label": "Admin Dashboard", "url": url_for('admin.admin_dashboard')},
+      {"label": "System Settings"}
+    ],
+    actions=[
+      {"label": "Audit Logs", "url": url_for('admin.details'), "icon": "fas fa-shield-alt", "class": "btn-outline-secondary"}
+    ]
+  ) }}
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm overflow-hidden mb-4">
+        <div class="card-header bg-surface border-bottom py-3">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-sliders-h text-primary"></i>
+            <h5 class="mb-0 fw-bold">Enterprise Operating Parameters</h5>
+          </div>
+        </div>
+
+        <form action="{{ url_for('admin.admin_settings') }}" method="POST">
+          {{ csrf_field() }}
+          <div class="card-body p-4 p-md-5">
+            <!-- Hospital Name -->
+            <div class="mb-4">
+              <label for="hospital_name" class="form-label fw-semibold">Hospital Facility Name</label>
+              <input type="text" class="form-control" name="hospital_name" id="hospital_name"
+                     value="{{ settings.hospital_name }}" required>
+              <div class="form-text text-muted">Brand name displayed on public banners, invoices, and diagnostic receipts.</div>
+            </div>
+
+            <!-- Timezone -->
+            <div class="mb-4">
+              <label for="timezone" class="form-label fw-semibold">Operational Timezone</label>
+              <select class="form-select" name="timezone" id="timezone" required>
+                <option value="Asia/Kolkata" {% if settings.timezone == 'Asia/Kolkata' %}selected{% endif %}>Asia/Kolkata (IST - UTC+05:30)</option>
+                <option value="UTC" {% if settings.timezone == 'UTC' %}selected{% endif %}>UTC (Coordinated Universal Time)</option>
+                <option value="America/New_York" {% if settings.timezone == 'America/New_York' %}selected{% endif %}>America/New_York (EST/EDT)</option>
+                <option value="Europe/London" {% if settings.timezone == 'Europe/London' %}selected{% endif %}>Europe/London (GMT/BST)</option>
+              </select>
+              <div class="form-text text-muted">Timezone applied for clinical scheduling and doctor shift rosters.</div>
+            </div>
+
+            <div class="row g-3 mb-4">
+              <!-- Slot Duration -->
+              <div class="col-md-6">
+                <label for="slot_duration_minutes" class="form-label fw-semibold">Slot Duration (Minutes)</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" name="slot_duration_minutes" id="slot_duration_minutes"
+                         value="{{ settings.slot_duration_minutes }}" min="10" max="120" step="5" required>
+                  <span class="input-group-text bg-surface">min</span>
+                </div>
+                <div class="form-text text-muted">Standard outpatient consultation appointment duration.</div>
+              </div>
+
+              <!-- Cancellation Cutoff -->
+              <div class="col-md-6">
+                <label for="cancellation_window_hours" class="form-label fw-semibold">Cancellation Cutoff Window</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" name="cancellation_window_hours" id="cancellation_window_hours"
+                         value="{{ settings.cancellation_window_hours }}" min="0" max="48" step="1" required>
+                  <span class="input-group-text bg-surface">hours</span>
+                </div>
+                <div class="form-text text-muted">Minimum lead time required before start time for patient reschedule/cancel.</div>
+              </div>
+            </div>
+
+            <!-- Default Consultation Fee -->
+            <div class="mb-4">
+              <label for="default_consultation_fee" class="form-label fw-semibold">Default Specialist Consultation Fee</label>
+              <div class="input-group">
+                <span class="input-group-text bg-surface">₹</span>
+                <input type="number" class="form-control" name="default_consultation_fee" id="default_consultation_fee"
+                       value="{{ settings.default_consultation_fee }}" min="0" max="10000" step="50" required>
+              </div>
+              <div class="form-text text-muted">Base consultation rate applied when doctor profile fee is unspecified.</div>
+            </div>
+          </div>
+
+          <div class="card-footer bg-surface border-top p-4 d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="fas fa-save me-1"></i> Save Configuration
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Quick Export Card -->
+      <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="card-header bg-surface border-bottom py-3">
+          <h6 class="mb-0 fw-bold"><i class="fas fa-file-export text-primary me-2"></i>Data & Ledger Exports</h6>
+        </div>
+        <div class="card-body p-4">
+          <p class="text-sm text-muted mb-3">Download complete operational logs and ledgers for offline reconciliation and reporting.</p>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('admin.export_appointments_csv') }}" class="btn btn-outline-secondary btn-sm">
+              <i class="fas fa-calendar-alt me-1"></i> Export Appointments (CSV)
+            </a>
+            <a href="{{ url_for('admin.export_invoices_csv') }}" class="btn btn-outline-secondary btn-sm">
+              <i class="fas fa-file-invoice-dollar me-1"></i> Export Invoices (CSV)
+            </a>
+            <a href="{{ url_for('admin.export_audit_logs_csv') }}" class="btn btn-outline-secondary btn-sm">
+              <i class="fas fa-shield-alt me-1"></i> Export Audit Logs (CSV)
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock body %}

@@ -90,6 +90,15 @@ def create_app(config_object=None):
             return {"error": "Bad Request", "description": getattr(e, 'description', str(e)), "request_id": req_id}, 400
         return render_template('errors/400.html', message=getattr(e, 'description', None), request_id=req_id), 400
 
+    from hms.services.appointments import InvalidStateTransitionError
+
+    @app.errorhandler(InvalidStateTransitionError)
+    def handle_invalid_transition(e):
+        req_id = getattr(g, 'request_id', None)
+        if request.is_json or request.path.startswith('/api/'):
+            return {"error": "Conflict", "description": str(e), "request_id": req_id}, 409
+        return render_template('errors/400.html', message=f"State Conflict: {e}", request_id=req_id), 409
+
     @app.errorhandler(403)
     def handle_forbidden(e):
         req_id = getattr(g, 'request_id', None)
@@ -123,6 +132,7 @@ def create_app(config_object=None):
 
     # Register Blueprints
     from hms.routes.admin import admin_bp
+    from hms.routes.api import api_bp
     from hms.routes.auth import auth_bp
     from hms.routes.doctor import doctor_bp
     from hms.routes.main import main_bp
@@ -133,6 +143,12 @@ def create_app(config_object=None):
     app.register_blueprint(patient_bp)
     app.register_blueprint(doctor_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(api_bp)
+
+    @app.route('/api/docs')
+    def redirect_api_docs():
+        from flask import redirect
+        return redirect('/api/v1/docs')
 
     # Register CLI
     register_cli(app)

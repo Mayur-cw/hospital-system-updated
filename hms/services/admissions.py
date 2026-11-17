@@ -139,3 +139,61 @@ class AdmissionService:
             }
         )
         return admission
+
+    @staticmethod
+    def transfer_room(admission_id: int, new_room_id: int, actor=None) -> Admission:
+        """Transfer admitted patient to another available room (F-08)."""
+        admission = Admission.query.filter_by(id=admission_id).with_for_update().first()
+        if not admission:
+            raise AdmissionError("Admission record not found.")
+
+        if admission.status != AdmissionStatus.ADMITTED:
+            raise AdmissionError(f"Cannot transfer patient in '{admission.status}' state.")
+
+        if admission.room_id == new_room_id:
+            return admission
+
+        new_room = Room.query.filter_by(id=new_room_id).with_for_update().first()
+        if not new_room:
+            raise AdmissionError("Target room not found.")
+        if new_room.status != RoomStatus.AVAILABLE:
+            raise RoomNotAvailableError(f"Target room {new_room.room_number} is {new_room.status}.")
+
+        old_room = admission.room
+        if old_room:
+            old_room.status = RoomStatus.AVAILABLE
+
+        new_room.status = RoomStatus.OCCUPIED
+        admission.room_id = new_room.id
+        db.session.commit()
+
+        AuditService.record(
+            action='PATIENT_TRANSFERRED',
+            entity_type='Admission',
+            entity_id=admission.id,
+            actor=actor,
+            before={'room_id': old_room.id if old_room else None},
+            after={'room_id': new_room.id}
+        )
+        return admission
+
+    @staticmethod
+    def set_room_maintenance(room_id: int, reason: str = "Sanitization and Maintenance", actor=None) -> Room:
+        """Place an available room into maintenance mode (F-08)."""
+        room = Room.query.filter_by(id=room_id).with_for_update().first()
+        if not room:
+            raise AdmissionError("Room not found.")
+        if room.status == RoomStatus.OCCUPIED:
+            raise AdmissionError("Cannot place an occupied room into maintenance.")
+
+        room.status = RoomStatus.MAINTENANCE
+        db.session.commit()
+
+        AuditService.record(
+            action='ROOM_MAINTENANCE',
+            entity_type='Room',
+            entity_id=room.id,
+            actor=actor,
+            after={'status': room.status, 'reason': reason}
+        )
+        return room

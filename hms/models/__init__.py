@@ -14,8 +14,10 @@ from hms.models.billing import (
 )
 from hms.models.department import Department
 from hms.models.doctor import Doctor
+from hms.models.notification import InAppNotification, NotificationOutbox, NotificationStatus
 from hms.models.patient import PatientProfile
 from hms.models.record import MedicalRecord, MedicalRecordVersion, PrescriptionItem
+from hms.models.settings import HospitalSetting
 from hms.models.user import User, UserRole
 
 # Legacy compatibility aliases
@@ -40,11 +42,15 @@ __all__ = [
     'DoctorLeave',
     'DoctorSchedule',
     'Doctors',
+    'HospitalSetting',
+    'InAppNotification',
     'Invoice',
     'InvoiceItem',
     'InvoiceStatus',
     'MedicalRecord',
     'MedicalRecordVersion',
+    'NotificationOutbox',
+    'NotificationStatus',
     'PatientProfile',
     'Payment',
     'PaymentMethod',

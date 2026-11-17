@@ -27,6 +27,10 @@ class User(SoftDeleteMixin, UserMixin, TimestampMixin, db.Model):
     patient_profile = db.relationship('PatientProfile', backref='user', uselist=False, cascade='all, delete-orphan')
     doctor_profile = db.relationship('Doctor', backref='user', uselist=False, cascade='all, delete-orphan')
 
+    def __init__(self, **kwargs):
+        kwargs.setdefault('is_active', True)
+        super().__init__(**kwargs)
+
     def set_password(self, raw_password: str) -> None:
         self.password = generate_password_hash(raw_password)
 

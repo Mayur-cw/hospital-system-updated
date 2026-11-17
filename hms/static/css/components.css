@@ -944,4 +944,27 @@
     align-items: flex-start;
     gap: var(--space-3);
   }
+
+  /* Typeahead Dropdown */
+  .typeahead-dropdown {
+    position: absolute;
+    top: calc(100% + var(--space-1));
+    left: 0;
+    right: 0;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: var(--z-dropdown);
+  }
+
+  .typeahead-item {
+    transition: background-color var(--duration-fast) var(--ease-standard);
+  }
+
+  .typeahead-item:hover,
+  .typeahead-item.active {
+    background-color: var(--color-surface-hover);
+  }
 }

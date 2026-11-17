@@ -150,3 +150,17 @@ def can_manage_staff(user: User) -> bool:
     if not user or not user.is_authenticated:
         return False
     return user.usertype == UserRole.ADMIN
+
+
+def can_book_on_behalf(user: User) -> bool:
+    """Receptionist and Admin can book appointments on behalf of patients (F-10)."""
+    if not user or not user.is_authenticated:
+        return False
+    return user.usertype in (UserRole.ADMIN, UserRole.RECEPTIONIST)
+
+
+def can_check_in_patient(user: User) -> bool:
+    """Receptionist, Doctor, and Admin can check in an arriving patient (F-10)."""
+    if not user or not user.is_authenticated:
+        return False
+    return user.usertype in (UserRole.ADMIN, UserRole.DOCTOR, UserRole.RECEPTIONIST)
