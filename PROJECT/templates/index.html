@@ -492,6 +492,10 @@ Home | Hospital Management System
     z-index: 2;
   }
   .patient-banner-content { position: relative; z-index: 3; max-width: 600px; color: white; }
+  .patient-banner-content h1 {
+    color: #ffffff !important;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+  }
   
   .hms-card-action {
     background: #ffffff; border: 1px solid var(--hms-border); border-radius: 20px;
@@ -513,7 +517,7 @@ Home | Hospital Management System
     <div class="patient-banner-overlay"></div>
     <div class="patient-banner-content">
       <div class="hms-badge mb-3 bg-white bg-opacity-10 text-white border border-white border-opacity-25" style="padding: 6px 14px; border-radius: 50px; font-size: 11px; letter-spacing: 1px;">PATIENT DASHBOARD</div>
-      <h1 class="brand-font fw-bold mb-2" style="font-size: clamp(32px, 4vw, 45px);">Hello, {{ current_user.username | capitalize }} 👋</h1>
+      <h1 class="brand-font fw-bold mb-2 text-white" style="font-size: clamp(32px, 4vw, 45px); text-shadow: 0 2px 14px rgba(0,0,0,0.6);">Hello, {{ current_user.username | capitalize }} 👋</h1>
       <p class="mb-4 opacity-75 fs-5">Manage your health journey, view prescriptions, and book specialist consultations seamlessly.</p>
       <p class="mb-0 fw-bold text-info"><i class="fas fa-calendar-day me-2"></i>{{ today_date }}</p>
     </div>

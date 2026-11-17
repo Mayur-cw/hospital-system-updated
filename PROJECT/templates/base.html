@@ -84,8 +84,8 @@
             white-space: nowrap !important;
             color: rgba(255, 255, 255, 0.82) !important;
             font-weight: 600 !important;
-            font-size: 0.84rem !important;
-            padding: 0.38rem 0.65rem !important;
+            font-size: 0.83rem !important;
+            padding: 0.36rem 0.62rem !important;
             border-radius: 8px !important;
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
             text-decoration: none !important;
@@ -134,14 +134,14 @@
 
         /* ── GLASS SEARCH BAR ── */
         .glass-search {
-            width: 140px;
+            width: 125px;
             background: rgba(255,255,255,0.08) !important;
             border: 1px solid rgba(255,255,255,0.1) !important;
             color: white !important; border-radius: var(--radius-pill);
-            padding-left: 1.1rem; font-size: 0.85rem; transition: all 0.3s ease;
+            padding-left: 1rem; font-size: 0.82rem; transition: all 0.3s ease;
         }
         .glass-search:focus {
-            width: 175px;
+            width: 165px;
             background: rgba(255,255,255,0.15) !important;
             border-color: var(--hms-teal) !important;
             box-shadow: 0 0 0 4px rgba(0, 201, 167, 0.15) !important;
@@ -153,7 +153,7 @@
             background: rgba(0, 201, 167, 0.1);
             border: 1px solid rgba(0, 201, 167, 0.3);
             color: var(--hms-teal-soft); border-radius: var(--radius-pill);
-            padding: 0.38rem 0.95rem; font-weight: 600; font-size: 0.84rem; transition: all 0.2s;
+            padding: 0.35rem 0.85rem; font-weight: 600; font-size: 0.83rem; transition: all 0.2s;
             white-space: nowrap;
         }
         .user-pill:hover {
@@ -194,7 +194,7 @@
 
     <!-- ── NAVBAR ── -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-premium sticky-top shadow-sm">
-        <div class="container-fluid px-3 px-xl-4 px-xxl-5">
+        <div class="container-fluid px-3 px-lg-4">
             
             <a class="navbar-brand brand-font d-flex align-items-center" href="/">
                 <div class="rounded-3 p-1 d-flex align-items-center justify-content-center me-2 shadow-sm" style="width: 36px; height: 36px; background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);">
@@ -304,19 +304,19 @@
                             <li class="nav-item">
                                 <a class="nav-link nav-link-item" href="/dashboard">
                                     <span class="nav-ico-badge nav-ico-ops"><i class="fas fa-folder-open"></i></span>
-                                    <span>My Appointments</span>
+                                    <span>Appointments</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link nav-link-item" href="/dashboard?filter=Completed">
                                     <span class="nav-ico-badge nav-ico-rx"><i class="fas fa-file-prescription"></i></span>
-                                    <span>Prescriptions & Rx</span>
+                                    <span>Prescriptions</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link nav-link-item" href="{{ url_for('patient.my_bills') }}">
                                     <span class="nav-ico-badge nav-ico-bills"><i class="fas fa-file-invoice-dollar"></i></span>
-                                    <span>Invoices & Receipts</span>
+                                    <span>Invoices & Bills</span>
                                 </a>
                             </li>
                         {% endif %}
