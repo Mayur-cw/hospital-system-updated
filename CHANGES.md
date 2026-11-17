@@ -328,11 +328,11 @@ These are the forks in the road. Each lists the options considered so the owner 
 
 ## PHASE 8 — Packaging, deployment, documentation
 
-- [ ] **P-01 · P1 · Docker** — multi-stage `Dockerfile` (non-root, gunicorn, healthcheck); `docker-compose.yml` with app, MySQL 8, Mailpit, optional Redis; `make up | down | test | lint | seed | migrate`.
-- [ ] **P-02 · P2 · Deployment guide** — env-var table, first-run checklist (migrate → create-admin → settings), one worked example on a free-tier host, backup/restore notes.
-- [ ] **P-03 · P1 · Documentation set** — `README.md` (what/why, screenshots, quickstart, architecture + ER diagrams in Mermaid, feature list by role, testing, roadmap), `docs/ARCHITECTURE.md`, `docs/SECURITY.md` (threat model, what is and is not claimed), `docs/billing.md` (business rules), `docs/analytics.md`, `docs/adr/000N-*.md` for decisions D1–D11, `CONTRIBUTING.md`, `CHANGELOG.md`, `LICENSE`.
-- [ ] **P-04 · P2 · Demo data** — Faker-based `flask seed-demo` producing ~6 months of realistic appointments, records, invoices and admissions (dev only; random passwords printed once).
-- [ ] **P-05 · P2 · Release** — tag `v1.0.0`, changelog, release notes with screenshots.
+- [x] **P-01 · P1 · Docker** — multi-stage `Dockerfile` (non-root, gunicorn, healthcheck); `docker-compose.yml` with app, MySQL 8, Mailpit, optional Redis; `make up | down | test | lint | seed | migrate`.
+- [x] **P-02 · P2 · Deployment guide** — env-var table, first-run checklist (migrate → create-admin → settings), one worked example on a free-tier host, backup/restore notes.
+- [x] **P-03 · P1 · Documentation set** — `README.md` (what/why, screenshots, quickstart, architecture + ER diagrams in Mermaid, feature list by role, testing, roadmap), `docs/ARCHITECTURE.md`, `docs/SECURITY.md` (threat model, what is and is not claimed), `docs/billing.md` (business rules), `docs/analytics.md`, `docs/adr/000N-*.md` for decisions D1–D11, `CONTRIBUTING.md`, `CHANGELOG.md`, `LICENSE`.
+- [x] **P-04 · P2 · Demo data** — Faker-based `flask seed-demo` producing ~6 months of realistic appointments, records, invoices and admissions (dev only; random passwords printed once).
+- [x] **P-05 · P2 · Release** — tag `v1.0.0`, changelog, release notes with screenshots.
 
 ---
 

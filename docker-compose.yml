@@ -1,0 +1,77 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: hms-mysql
+    restart: unless-stopped
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --innodb-buffer-pool-size=256M
+    environment:
+      MYSQL_ROOT_PASSWORD: RootPassword@123
+      MYSQL_DATABASE: hms_prod
+      MYSQL_USER: hms_user
+      MYSQL_PASSWORD: HmsSecurePassword@123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "hms_user", "-pHmsSecurePassword@123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: hms-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port
+
+  redis:
+    image: redis:7-alpine
+    container_name: hms-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hms-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: production
+      SECRET_KEY: "change-this-in-production-secure-random-token-32b"
+      DATABASE_URL: "mysql+pymysql://hms_user:HmsSecurePassword%40123@db:3306/hms_prod"
+      RATELIMIT_STORAGE_URI: "redis://redis:6379/0"
+      MAIL_SERVER: "mailpit"
+      MAIL_PORT: "1025"
+      PAYMENT_GATEWAY: "mock"
+      HOSPITAL_NAME: "Hedgewar Hospital Care"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,web"
+    ports:
+      - "5000:5000"
+    volumes:
+      - uploads_data:/app/uploads
+
+volumes:
+  mysql_data:
+  uploads_data:

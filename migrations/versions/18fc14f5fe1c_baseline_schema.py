@@ -135,7 +135,7 @@ def upgrade():
     sa.Column('reason', sa.Text(), nullable=True),
     sa.Column('cancelled_by', sa.Integer(), nullable=True),
     sa.Column('cancel_reason', sa.String(length=255), nullable=True),
-    sa.Column('active_slot_key', sa.String(length=64), sa.Computed("CASE WHEN status IN ('Cancelled', 'Missed') THEN NULL ELSE CONCAT(doctor_id, '|', DATE_FORMAT(starts_at, '%%Y-%%m-%%d %%H:%%i')) END", persisted=True), nullable=True),
+    sa.Column('active_slot_key', sa.String(length=64), sa.Computed("CASE WHEN status IN ('Cancelled', 'Missed') THEN NULL ELSE CONCAT(doctor_id, '|', DATE_FORMAT(starts_at, '%Y-%m-%d %H:%i')) END", persisted=True), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),

@@ -61,15 +61,17 @@ class ActiveSlotExpr(FunctionElement):
 
 @compiles(ActiveSlotExpr, 'mysql')
 def compile_mysql(element, compiler, **kw):
-    return "CASE WHEN status IN ('Cancelled', 'Missed') THEN NULL ELSE CONCAT(doctor_id, '|', DATE_FORMAT(starts_at, '%%Y-%%m-%%d %%H:%%i')) END"
+    return "CASE WHEN status IN ('Cancelled', 'Missed') THEN NULL ELSE CONCAT(doctor_id, '|', DATE_FORMAT(starts_at, '%Y-%m-%d %H:%i')) END"
+
 
 @compiles(ActiveSlotExpr, 'sqlite')
 def compile_sqlite(element, compiler, **kw):
     return "CASE WHEN status IN ('Cancelled', 'Missed') THEN NULL ELSE CAST(doctor_id AS TEXT) || '|' || starts_at END"
 
+
 @compiles(ActiveSlotExpr)
 def compile_default(element, compiler, **kw):
-    return "CASE WHEN status IN ('Cancelled', 'Missed') THEN NULL ELSE CONCAT(doctor_id, '|', DATE_FORMAT(starts_at, '%%Y-%%m-%%d %%H:%%i')) END"
+    return "CASE WHEN status IN ('Cancelled', 'Missed') THEN NULL ELSE CONCAT(doctor_id, '|', DATE_FORMAT(starts_at, '%Y-%m-%d %H:%i')) END"
 
 
 class AppointmentStatus:
