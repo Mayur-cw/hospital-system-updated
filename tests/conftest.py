@@ -1,17 +1,26 @@
-import pytest
 import sys
-from pathlib import Path
-from decimal import Decimal
 from datetime import date
+from pathlib import Path
 
-# Add PROJECT directory to sys.path
+import pytest
+
+# Add base and hms directory to sys.path
 BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(BASE_DIR / 'PROJECT'))
+sys.path.insert(0, str(BASE_DIR))
+sys.path.insert(0, str(BASE_DIR / 'hms'))
 
-from app import create_app
-from config import TestingConfig
-from models import db, User, Doctors, Appointments, MedicalRecord, Billing, Room, Admission
 from werkzeug.security import generate_password_hash
+
+from hms import create_app
+from hms.config import TestingConfig
+from hms.models import (
+    Appointments,
+    Doctors,
+    Room,
+    User,
+    db,
+)
+
 
 @pytest.fixture
 def app():

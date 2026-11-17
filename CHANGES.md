@@ -57,65 +57,65 @@ These are the forks in the road. Each lists the options considered so the owner 
 
 ## PHASE 0 — Repo hygiene and safety net
 
-- [ ] **H-01 · P0 · ✅ Remove committed virtualenvs and OS junk**
+- [x] **H-01 · P0 · ✅ Remove committed virtualenvs and OS junk**
   - **Where:** `venv/` (23 MB), `PROJECT/venv/` (9.6 MB, contains macOS `.so` builds), `.DS_Store` ×3 (root, `PROJECT/`, `PROJECT/static/`), `.vscode/`.
   - **Change:** `git rm -r --cached` them; add a real `.gitignore` (Python, venv, `.env`, `.DS_Store`, IDE, `instance/`, `uploads/`, coverage, `node_modules`).
   - **Done when:** `git ls-files | wc -l` is under ~80 and a fresh clone has no `venv/`.
   - **Note:** history still contains them. Rewriting history (`git filter-repo`) is optional and **requires the owner's explicit approval**.
-- [ ] **H-02 · P0 · ✅ Remove hard-coded secrets**
+- [x] **H-02 · P0 · ✅ Remove hard-coded secrets**
   - **Where:** `PROJECT/config.py:5` (fallback `SECRET_KEY='hmsprojects_dev_key'`), `:8` (DB URI with `root` and a password).
   - **Change:** read everything from env; `Config` classes (Dev/Test/Prod); Prod **refuses to start** without `SECRET_KEY` and `DATABASE_URL`; add `.env.example` (no real values).
   - **Done when:** `grep -rnE "mysql://[^ ]*:[^ ]*@" --include=*.py .` finds nothing and Prod boot without env vars fails with a clear message.
   - **Owner action (not code):** the old DB password is in public git history. Change it on any machine/DB that ever used it.
-- [ ] **H-03 · P0 · ✅ Remove default credentials from the repo**
+- [x] **H-03 · P0 · ✅ Remove default credentials from the repo**
   - **Where:** `seed_secure_accounts.sql` header documents that admin/sample accounts use password `mayur`, doctor `siddhi`, patient `rehman`, and includes the hash recipe.
   - **Change:** delete credential hints. Provide `flask create-admin` (prompts for email + password, no echo) and `flask seed-demo` (dev only, refuses to run when `FLASK_ENV=production`, generates random passwords and prints them once).
   - **Done when:** no plaintext/guessable credential appears in any tracked file.
-- [ ] **H-04 · P1 · Python and dependency baseline**
+- [x] **H-04 · P1 · Python and dependency baseline**
   - **Where:** `Commands/requirements.txt` (Flask 2.3.3, Werkzeug 2.3.7, Jinja2 3.1.4, SQLAlchemy 1.4.52; venv is Python 3.9.6 — Python 3.9 reached end of life in Oct 2025).
   - **Change:** Python 3.12; Flask 3.x, Werkzeug 3.x, SQLAlchemy 2.x (2.0-style queries), Flask-SQLAlchemy 3.1; move to root `requirements.txt` (+ `requirements-dev.txt`) or `pyproject.toml`; run `pip-audit`; add Dependabot.
   - **Done when:** `pip-audit` reports no known vulnerabilities and the app boots on 3.12.
-- [ ] **H-05 · P2 · ✅ Delete dead code**
+- [x] **H-05 · P2 · ✅ Delete dead code**
   - **Where:** `testing.sql` (contains `use hms;use hms;INSERT…`), `Test` model + `test` table (`models.py:11-15`, `hms.sql`), `PROJECT/static/css/virtualregister.css` (not referenced by any template; imports the Itim font; different palette), `Commands/one step command.txt` (superseded by README/Makefile).
-- [ ] **H-06 · P1 · Characterization tests before refactoring**
+- [x] **H-06 · P1 · Characterization tests before refactoring**
   - **Change:** pytest smoke tests that pin *current* behavior of: signup/login, booking, doctor check-in, record creation → invoice, payment, admission/discharge, admin CRUD. They will fail on the bugs in Phase 1; mark those `xfail(strict=True)` with the bug ID so fixing a bug flips it to a pass.
   - **Why:** refactoring without a safety net is how working features silently break.
-- [ ] **H-07 · P2 · README, LICENSE, CONTRIBUTING, `docs/` skeleton** (full content in Phase 8).
+- [x] **H-07 · P2 · README, LICENSE, CONTRIBUTING, `docs/` skeleton** (full content in Phase 8).
 
 ---
 
 ## PHASE 1 — Fix what is broken today (all independent, do in any order)
 
-- [ ] **B-01 · P0 · ✅ "Create doctor / admin" forms 404**
+- [x] **B-01 · P0 · ✅ "Create doctor / admin" forms 404**
   - **Where:** `base.html:263`, `base.html:303`, `admin/admin_doctors.html:255`, `admin/admin_staff.html:258` all post to `/add_staff`. The blueprint is registered with `url_prefix='/admin'` (`app.py:39`), so the real URL is `/admin/add_staff`.
   - **Change:** `action="{{ url_for('admin.add_staff') }}"`.
   - **Done when:** creating a doctor from the navbar creates `user` + `doctors` rows (test).
 - [ ] **B-02 · P0 · ✅ Navbar search posts to a route that does not exist**
   - **Where:** `base.html:194` → `POST /search`; no such route. Also `d-none d-lg-block` hides it on mobile.
   - **Change:** implement F-02, visible on all breakpoints.
-- [ ] **B-03 · P0 · ✅ Dead dashboard links**
+- [x] **B-03 · P0 · ✅ Dead dashboard links**
   - **Where:** `/admin` in `admin_patients.html:15`, `admin_doctors.html:15`; `/admin_dashboard` in `admin_staff.html:15`, `admin_appointments.html:90`, `index.html:461`. Real URL is `/admin/dashboard`.
   - **Change:** `url_for('admin.admin_dashboard')`. Add a test that crawls every `href`/`action` in rendered pages and asserts no 404 (see T-08).
-- [ ] **B-04 · P0 · ✅ Invoice pages: missing template and wrong-role links**
+- [x] **B-04 · P0 · ✅ Invoice pages: missing template and wrong-role links**
   - **Where:** `admin.py:434` renders `admin/admin_view_invoice.html`, which does not exist → 500. `bookings/appointment_history.html:322` and `:326` (shown to patients and doctors) link to `admin.view_receipt` / `admin.view_invoice`, which are admin-only → patients get "Unauthorized".
   - **Change:** one `billing.invoice_detail` / `billing.receipt` endpoint per role-appropriate policy (owner patient, admin/billing staff), one template; templates use a `bill_url(bill)` helper.
   - **Done when:** patient, admin each open their allowed invoice and receipt; others get 403 (authorization matrix test T-04).
 - [ ] **B-05 · P1 · ✅ Appointment edit has no route**
   - **Where:** `bookings/edit.html:30` posts to `/edit/{{ posts.apt_id }}`; no such route exists and no route renders the template. It is dead code that hints at a missing feature.
   - **Change:** implement reschedule (F-01) and delete the orphan template once replaced.
-- [ ] **B-06 · P0 · ✅ Two inconsistent discharge flows**
+- [x] **B-06 · P0 · ✅ Two inconsistent discharge flows**
   - **Where:** `doctor.py:118-146` (bills; no check that this doctor owns the admission; no guard against discharging twice → duplicate invoice on double-click) vs `admin.py:543-566` (marks discharged but **never creates an invoice**).
   - **Change:** one `AdmissionService.discharge(admission_id, actor)`: row-lock the admission (`SELECT … FOR UPDATE`), reject if already discharged, verify actor permission, compute charges once, create one invoice (D-04), write an audit event, free the room. Both UIs call it. Disable the submit button on first click (U-10).
   - **Done when:** concurrent double-submit produces exactly one invoice (test T-03).
 - [ ] **B-07 · P1 · ✅ Room-day billing under-charges**
   - **Where:** `doctor.py:132-137` uses `delta.days` (floors) with a minimum of 1: a 47-hour stay bills 1 day. Consultation fee `500.00` is hard-coded at `doctor.py:89` and `:137`; amounts are cast through `float`.
   - **Change:** `Decimal` arithmetic; rule = number of started 24-hour blocks, minimum 1 (**confirm this business rule with the owner** and document it in `docs/billing.md`); fee comes from the doctor/department (D-06), not a constant.
-- [ ] **B-08 · P1 · ✅ Date comparison inconsistency**
+- [x] **B-08 · P1 · ✅ Date comparison inconsistency**
   - **Where:** `models.py:41-42` declares `time`/`date` as `String(50)` but `hms.sql` defines `date DATE`. `patient.py:160` compares `apt.date == today` (a `date`) while `main.py:88` compares `apt.date == str(today)`; one of them can never be true depending on what the driver returns. 🔎 Reproduce which branch is wrong, then remove the whole class of bug via D-01.
 - [ ] **B-09 · P1 · ✅ Appointments sorted by time *string***
   - **Where:** `admin.py:327` `order_by(Appointments.time.asc())` on values like `'01:00 PM'`, `'09:00 AM'` — sorts "01:00 PM" before "09:00 AM". Same pattern in Python sorts using `strptime` over the whole table (`main.py:24`, `patient.py:128`).
   - **Change:** resolved by D-01 (`starts_at DATETIME`).
-- [ ] **B-10 · P1 · ✅ `get_booked_slots` crashes on bad input**
+- [x] **B-10 · P1 · ✅ `get_booked_slots` crashes on bad input**
   - **Where:** `patient.py:25-28` — `request.get_json()` returns `None` for a non-JSON body → `AttributeError` → 500. No validation of date format or doctor.
   - **Change:** validate (F-03 replaces it with a typed `GET /api/doctors/<id>/slots?date=`), return 400 on bad input.
 - [ ] **B-11 · P1 · ✅ Booking swallows real errors and can redirect to the wrong appointment**
@@ -155,7 +155,7 @@ These are the forks in the road. Each lists the options considered so the owner 
   - **Change:** S-06/S-12.
 - [ ] **B-23 · P2 · ✅ Phone column too short**
   - **Where:** `models.py:25` / `hms.sql` `VARCHAR(12)` — `+91 98500 64866` does not fit. Widen to 20 and validate (D-07).
-- [ ] **B-24 · P2 · 🔎 Toast close button**
+- [x] **B-24 · P2 · 🔎 Toast close button**
   - **Where:** `base.html` toast markup uses `data-bs-dismiss="alert"` on an element without the Bootstrap `.alert` class. Confirm the ✕ works; if not, use the new toast component (U-04).
 - [ ] **B-25 · P3 · ✅ Invisible footer text and placeholder links**
   - **Where:** `base.html` footer — copyright uses `opacity-10` (effectively unreadable) and social links are `href="#"`. Footer brands the app as "DBMS Mini-Project". Replace with a real, accessible footer (U-05).
@@ -187,7 +187,7 @@ These are the forks in the road. Each lists the options considered so the owner 
 
 ## PHASE 3 — Architecture and data model
 
-- [ ] **A-01 · P1 · Application factory and layering**
+- [x] **A-01 · P1 · Application factory and layering**
   ```
   hms/
     __init__.py            # create_app(config_name)
@@ -203,19 +203,19 @@ These are the forks in the road. Each lists the options considered so the owner 
   migrations/  tests/  docs/  docker/  .github/
   ```
   **Done when:** routes contain no business rules or raw SQL (grep test), only parse input → call service → render.
-- [ ] **A-02 · P1 · Flask-Migrate baseline** — generate the baseline migration from the *corrected* models; a migration test upgrades an empty DB to head and a DB seeded from the old schema to head (T-07).
-- [ ] **A-03 · P2 · Config and feature flags** — env-driven settings: timezone (`Asia/Kolkata` default), slot length, cancellation window, reminder lead time, payment gateway, mail backend.
-- [ ] **A-04 · P2 · Time handling** — store `DATETIME` in the hospital time zone **or** UTC (pick one, document it, and convert only at the edges); one `format_date/time/currency` filter set (en-IN, `₹`).
+- [x] **A-02 · P1 · Flask-Migrate baseline** — generate the baseline migration from the *corrected* models; a migration test upgrades an empty DB to head and a DB seeded from the old schema to head (T-07).
+- [x] **A-03 · P2 · Config and feature flags** — env-driven settings: timezone (`Asia/Kolkata` default), slot length, cancellation window, reminder lead time, payment gateway, mail backend.
+- [x] **A-04 · P2 · Time handling** — store `DATETIME` in the hospital time zone **or** UTC (pick one, document it, and convert only at the edges); one `format_date/time/currency` filter set (en-IN, `₹`).
 
 ### Data model changes
 
-- [ ] **D-01 · P0 · Typed, relational appointments**
+- [x] **D-01 · P0 · Typed, relational appointments**
   - **Today:** `date` and `time` strings; `doctor` is a name; `slot` is a status. (`models.py:35-44`)
   - **Target:** `appointment(id, patient_id FK, doctor_id FK, department_id FK, starts_at DATETIME, duration_min, status ENUM, reason TEXT, cancelled_by, cancel_reason, created_at, updated_at, deleted_at)`.
   - **Data migration:** map `appointments.doctor` → `doctors.did` via `user.username`; **duplicates or no-matches go to a `migration_unmatched` report for manual review — never guess.** Parse `time`/`date` with `STR_TO_DATE`; rows that fail to parse are reported, not dropped.
   - **Done when:** all sorting/filtering is done in SQL on `starts_at`; no `strptime` in routes.
-- [ ] **D-02 · P1 · Status vocabulary** — one enum used by DB, services and UI: `Scheduled → CheckedIn → Completed`; `Scheduled → Cancelled | Missed`. Today's `Attended` maps to `CheckedIn`. UI labels come from one `status_badge` macro (U-04).
-- [ ] **D-03 · P0 · Double-booking enforced by the schema**
+- [x] **D-02 · P1 · Status vocabulary** — one enum used by DB, services and UI: `Scheduled → CheckedIn → Completed`; `Scheduled → Cancelled | Missed`. Today's `Attended` maps to `CheckedIn`. UI labels come from one `status_badge` macro (U-04).
+- [x] **D-03 · P0 · Double-booking enforced by the schema**
   ```sql
   ALTER TABLE appointments
     ADD COLUMN active_slot_key VARCHAR(64) GENERATED ALWAYS AS (
@@ -226,15 +226,15 @@ These are the forks in the road. Each lists the options considered so the owner 
   ```
   MySQL has no partial unique indexes; unique indexes allow many NULLs, so cancelled/missed slots free up automatically. The service catches `IntegrityError` → "slot taken". Retire `BookAppointmentSafe`.
   **Done when:** 20 parallel booking attempts for one slot yield exactly 1 success (T-03).
-- [ ] **D-04 · P0 · Money and invoices** — `DECIMAL` end-to-end (no `float`); `invoice(id, number UNIQUE 'INV-2026-000123', patient_id, appointment_id, admission_id NULL, status ENUM(Draft,Issued,Paid,Void,Refunded), issued_at, due_at, subtotal, tax, discount, total)`, `invoice_item(invoice_id, description, qty, unit_price)`, `payment(id, invoice_id, method, amount, status, gateway_ref, idempotency_key UNIQUE, paid_at, recorded_by)`. Totals are computed from items, never hand-typed.
-- [ ] **D-05 · P0 · Soft delete and referential safety** — `deleted_at`/`is_active` on user, doctor, appointment, room; `ON DELETE RESTRICT` on all clinical/financial foreign keys; "delete" in the UI means deactivate; a user with history can never be hard-deleted.
-- [ ] **D-06 · P1 · Departments and doctor profile** — `department` table replaces free-text `dept` (appears in 3 form placeholders, the DDL and the seed data); `doctor(department_id, consultation_fee, qualifications, bio, photo, years_experience)`.
-- [ ] **D-07 · P1 · Patient profile** — `patient_profile(user_id, dob, blood_group, address, emergency_contact_name/phone, allergies, chronic_conditions)`; widen `phone` to 20.
-- [ ] **D-08 · P1 · Doctor availability** — `doctor_schedule(doctor_id, weekday, start_time, end_time, slot_minutes)`, `doctor_break`, `doctor_leave(date_from, date_to, reason)`. Slots are **generated server-side** from these rules minus booked appointments (today slot generation lives in browser JS in `book_appointment.html`).
-- [ ] **D-09 · P1 · Audit events** — `audit_event(id, actor_id NULL, actor_role, action, entity_type, entity_id, before JSON, after JSON, ip, user_agent, request_id, created_at)`; append-only (no UPDATE/DELETE grants); written by a single `audit.record()` helper from services; covers logins, failed logins, role changes, record views/edits, billing, discharge, deletes.
-- [ ] **D-10 · P1 · Medical records** — `prescription_item(record_id, medicine, dose, frequency, duration, instructions)`; **edits create a new `medical_record_version`** (today `doctor.py:185-191` overwrites silently; clinical records need an amendment history).
-- [ ] **D-11 · P2 · Indexes** — `(patient_id, starts_at)`, `(doctor_id, starts_at)`, `invoice(patient_id, status)`, `audit_event(entity_type, entity_id, created_at)`; verify with `EXPLAIN` on the dashboard queries.
-- [ ] **D-12 · P1 · Model ↔ DDL parity test** — fail CI if SQLAlchemy metadata and the migrated database disagree (today: `date`, `time`, `usertype`, `gender`, `ward_type`, `audit_log.timestamp` all differ between `models.py` and `hms.sql`).
+- [x] **D-04 · P0 · Money and invoices** — `DECIMAL` end-to-end (no `float`); `invoice(id, number UNIQUE 'INV-2026-000123', patient_id, appointment_id, admission_id NULL, status ENUM(Draft,Issued,Paid,Void,Refunded), issued_at, due_at, subtotal, tax, discount, total)`, `invoice_item(invoice_id, description, qty, unit_price)`, `payment(id, invoice_id, method, amount, status, gateway_ref, idempotency_key UNIQUE, paid_at, recorded_by)`. Totals are computed from items, never hand-typed.
+- [x] **D-05 · P0 · Soft delete and referential safety** — `deleted_at`/`is_active` on user, doctor, appointment, room; `ON DELETE RESTRICT` on all clinical/financial foreign keys; "delete" in the UI means deactivate; a user with history can never be hard-deleted.
+- [x] **D-06 · P1 · Departments and doctor profile** — `department` table replaces free-text `dept` (appears in 3 form placeholders, the DDL and the seed data); `doctor(department_id, consultation_fee, qualifications, bio, photo, years_experience)`.
+- [x] **D-07 · P1 · Patient profile** — `patient_profile(user_id, dob, blood_group, address, emergency_contact_name/phone, allergies, chronic_conditions)`; widen `phone` to 20.
+- [x] **D-08 · P1 · Doctor availability** — `doctor_schedule(doctor_id, weekday, start_time, end_time, slot_minutes)`, `doctor_break`, `doctor_leave(date_from, date_to, reason)`. Slots are **generated server-side** from these rules minus booked appointments (today slot generation lives in browser JS in `book_appointment.html`).
+- [x] **D-09 · P1 · Audit events** — `audit_event(id, actor_id NULL, actor_role, action, entity_type, entity_id, before JSON, after JSON, ip, user_agent, request_id, created_at)`; append-only (no UPDATE/DELETE grants); written by a single `audit.record()` helper from services; covers logins, failed logins, role changes, record views/edits, billing, discharge, deletes.
+- [x] **D-10 · P1 · Medical records** — `prescription_item(record_id, medicine, dose, frequency, duration, instructions)`; **edits create a new `medical_record_version`** (today `doctor.py:185-191` overwrites silently; clinical records need an amendment history).
+- [x] **D-11 · P2 · Indexes** — `(patient_id, starts_at)`, `(doctor_id, starts_at)`, `invoice(patient_id, status)`, `audit_event(entity_type, entity_id, created_at)`; verify with `EXPLAIN` on the dashboard queries.
+- [x] **D-12 · P1 · Model ↔ DDL parity test** — fail CI if SQLAlchemy metadata and the migrated database disagree (today: `date`, `time`, `usertype`, `gender`, `ward_type`, `audit_log.timestamp` all differ between `models.py` and `hms.sql`).
 
 ---
 

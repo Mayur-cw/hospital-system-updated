@@ -1,11 +1,21 @@
 # routes/patient.py
-from datetime import datetime, date
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from flask_login import login_required, current_user
-from sqlalchemy import text 
+from datetime import date, datetime
+from decimal import Decimal
+
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 
 # 🏥 UPGRADE: Imported Admission model to check for active inpatient status
-from models import db, Appointments, Doctors, MedicalRecord, Billing, Admission
+from hms.models import (
+    Admission,
+    Appointments,
+    Billing,
+    Doctor,
+    Doctors,
+    MedicalRecord,
+    User,
+    db,
+)
 
 patient_bp = Blueprint('patient', __name__)
 
@@ -22,10 +32,10 @@ def is_slot_booked(requested_date, requested_time, target_doctor, current_apt_id
 @patient_bp.route('/get_booked_slots', methods=['POST'])
 @login_required
 def get_booked_slots():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     req_date = data.get('date')
     req_doctor = data.get('doctor')
-    current_apt_id = data.get('current_pid') 
+    current_apt_id = data.get('current_pid')
 
     if not req_date or not req_doctor:
         return jsonify({'booked_times': []})
@@ -62,39 +72,52 @@ def patient_booking():
         try:
             appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             today_date = datetime.today().date()
-            
+
             if appointment_date < today_date:
                 flash("Error: You cannot book an appointment in the past.", "danger")
                 return redirect(url_for('patient.patient_booking'))
-                
+
             if appointment_date == today_date:
                 appointment_time = datetime.strptime(time, '%I:%M %p').time()
                 current_time = datetime.now().time()
-                
+
                 if appointment_time < current_time:
                     flash("Error: That time slot has already passed today. Please select a future time.", "danger")
                     return redirect(url_for('patient.patient_booking'))
-                    
+
         except ValueError:
             flash("Invalid date or time format.", "danger")
             return redirect(url_for('patient.patient_booking'))
 
+        # D-01 & D-03: Use AppointmentService instead of stored procedure
+        from hms.services.appointments import AppointmentService, SlotAlreadyBookedError
+        from hms.services.billing import BillingService
+
+        # Resolve doctor record
+        doc_user = User.query.filter_by(username=doctor).first()
+        doc_obj = Doctor.query.filter_by(user_id=doc_user.id).first() if doc_user else None
+        doc_id = doc_obj.id if doc_obj else 1
+
+        starts_at_dt = datetime.combine(appointment_date, datetime.strptime(time, '%I:%M %p').time())
+
         try:
-            db.session.execute(
-                text("CALL BookAppointmentSafe(:uid, :slot, :disease, :time, :date, :dept, :doc)"),
-                {
-                    "uid": current_user.id, "slot": slot, "disease": disease, 
-                    "time": time, "date": date_str, "dept": dept, "doc": doctor
-                }
+            new_apt = AppointmentService.book(
+                patient_id=current_user.id,
+                doctor_id=doc_id,
+                starts_at=starts_at_dt,
+                reason=disease,
+                actor=current_user
             )
-            db.session.commit()
-            
-            new_apt = Appointments.query.filter_by(user_id=current_user.id).order_by(Appointments.apt_id.desc()).first()
-            return redirect(url_for('patient.booking_success', apt_id=new_apt.apt_id))
-            
+            # Generate consultation invoice
+            fee = doc_obj.consultation_fee if (doc_obj and doc_obj.consultation_fee) else Decimal('500.00')
+            BillingService.create_appointment_invoice(new_apt, fee=fee, actor=current_user)
+
+            return redirect(url_for('patient.booking_success', apt_id=new_apt.id))
+        except SlotAlreadyBookedError:
+            flash("Slot Unavailable: That time slot was just taken. Please choose another.", "warning")
+            return redirect(url_for('patient.patient_booking'))
         except Exception as e:
-            db.session.rollback()
-            flash(f"Slot Unavailable: That time slot was just taken. Please choose another.", "warning")
+            flash(f"Booking error: {e}", "danger")
             return redirect(url_for('patient.patient_booking'))
 
     pre_dept = request.args.get('dept', '')
@@ -124,11 +147,11 @@ def dashboard():
         query = Appointments.query.filter_by(user_id=current_user.id).all()
         # 🏥 NEW: Fetch active admission for Patient
         active_admission = Admission.query.filter_by(patient_id=current_user.id, status='Admitted').first()
-    
+
     query.sort(key=lambda x: datetime.strptime(f"{x.date} {x.time}", '%Y-%m-%d %I:%M %p'), reverse=True)
     records = MedicalRecord.query.all()
     prescribed_apt_ids = [r.apt_id for r in records]
-    
+
     return render_template('bookings/appointment_history.html', query=query, page_title="Appointment Log", prescribed_apt_ids=prescribed_apt_ids, active_admission=active_admission)
 
 @patient_bp.route('/upcoming_bookings')
@@ -140,17 +163,17 @@ def upcoming_bookings():
 
     if current_user.usertype == "Doctor":
         raw_query = Appointments.query.filter(
-            Appointments.doctor == current_user.username, 
+            Appointments.doctor == current_user.username,
             Appointments.date >= today
         ).all()
     else:
         raw_query = Appointments.query.filter(
-            Appointments.user_id == current_user.id, 
+            Appointments.user_id == current_user.id,
             Appointments.date >= today
         ).all()
         # 🏥 NEW: Fetch active admission for Patient
         active_admission = Admission.query.filter_by(patient_id=current_user.id, status='Admitted').first()
-    
+
     records = MedicalRecord.query.all()
     prescribed_apt_ids = [r.apt_id for r in records]
 
@@ -162,7 +185,7 @@ def upcoming_bookings():
         if apt.slot in ['Completed', 'Missed', 'Attended', 'Cancelled'] or apt.apt_id in prescribed_apt_ids:
             continue
         upcoming_list.append(apt)
-        
+
     upcoming_list.sort(key=lambda x: datetime.strptime(f"{x.date} {x.time}", '%Y-%m-%d %I:%M %p'))
 
     return render_template('bookings/appointment_history.html', query=upcoming_list, page_title="Upcoming Appointments", prescribed_apt_ids=[], active_admission=active_admission)
@@ -170,7 +193,7 @@ def upcoming_bookings():
 @patient_bp.route('/past_records')
 @login_required
 def past_records():
-    today_str = str(date.today()) 
+    today_str = str(date.today())
     records = MedicalRecord.query.all()
     prescribed_apt_ids = [r.apt_id for r in records]
     active_admission = None
@@ -181,13 +204,13 @@ def past_records():
         raw_query = Appointments.query.filter_by(user_id=current_user.id).all()
         # 🏥 NEW: Fetch active admission for Patient
         active_admission = Admission.query.filter_by(patient_id=current_user.id, status='Admitted').first()
-    
+
     history_list = []
     for apt in raw_query:
         is_completed = (apt.apt_id in prescribed_apt_ids) or (apt.slot == 'Completed')
         is_pending_rx = (apt.slot == 'Attended')
         is_past_unverified = (str(apt.date) < today_str and apt.slot not in ['Completed', 'Attended', 'Missed', 'Cancelled'])
-        
+
         if is_completed or is_pending_rx or is_past_unverified:
             history_list.append(apt)
 
@@ -203,9 +226,9 @@ def my_bills():
     if current_user.usertype != 'Patient':
         flash("Unauthorized access.", "danger")
         return redirect(url_for('main.index'))
-    
+
     my_invoices = Billing.query.filter_by(user_id=current_user.id).order_by(Billing.issued_on.desc()).all()
-    
+
     return render_template('bookings/my_bills.html', invoices=my_invoices)
 
 @patient_bp.route('/bills/<int:bill_id>/invoice')
@@ -213,15 +236,15 @@ def my_bills():
 def view_invoice(bill_id):
     if current_user.usertype != 'Patient':
         return redirect(url_for('main.index'))
-        
+
     invoice = Billing.query.get_or_404(bill_id)
     if invoice.user_id != current_user.id:
         flash("Security Alert: Invalid billing ID.", "danger")
         return redirect(url_for('patient.my_bills'))
-        
+
     if invoice.status == 'Paid':
         return redirect(url_for('patient.view_receipt', bill_id=bill_id))
-        
+
     return render_template('bookings/pay_invoice.html', invoice=invoice)
 
 @patient_bp.route('/bills/<int:bill_id>/pay', methods=['POST'])
@@ -245,23 +268,23 @@ def process_payment(bill_id):
     invoice.paid_on = db.func.now()
     invoice.payment_mode = payment_mode
     invoice.bank_name = bank_name if payment_mode == 'netbanking' else None
-    
+
     db.session.commit()
     flash("Transaction successful! Your receipt is ready.", "success")
-    
+
     return redirect(url_for('patient.view_receipt', bill_id=bill_id))
 
 @patient_bp.route('/bills/<int:bill_id>/receipt')
 @login_required
 def view_receipt(bill_id):
     invoice = Billing.query.get_or_404(bill_id)
-    
+
     if current_user.usertype == 'Patient' and invoice.user_id != current_user.id:
         flash("Unauthorized access.", "danger")
         return redirect(url_for('patient.my_bills'))
-        
+
     if invoice.status != 'Paid':
         flash('This invoice has not been settled yet.', 'warning')
         return redirect(url_for('patient.view_invoice', bill_id=bill_id))
-        
+
     return render_template('bookings/receipt.html', invoice=invoice)

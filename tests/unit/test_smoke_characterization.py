@@ -1,7 +1,16 @@
-import pytest
 from datetime import date
-from flask import url_for
-from models import db, User, Appointments, MedicalRecord, Billing, Admission, Room, Doctors
+
+from models import (
+    Admission,
+    Appointments,
+    Billing,
+    Doctors,
+    MedicalRecord,
+    Room,
+    User,
+    db,
+)
+
 
 def test_char_auth_signup_and_login_success(client, app):
     """Pin baseline patient signup and authentication flow."""
@@ -37,9 +46,8 @@ def test_char_auth_invalid_credentials(client):
     assert resp.status_code == 200
     assert b"Invalid email or password" in resp.data
 
-@pytest.mark.xfail(strict=True, reason="Legacy booking calls MySQL procedure BookAppointmentSafe which is unavailable in SQLite characterization tests")
 def test_char_booking_scheduled(client, app):
-    """Pin baseline appointment booking creation."""
+    """Pin baseline appointment booking creation (D-03)."""
     client.post('/login', data={'email': 'p1@test.local', 'password': 'PatientPass@123'}, follow_redirects=True)
     resp = client.post('/patients', data={
         'slot': 'Scheduled',
@@ -90,26 +98,21 @@ def test_char_doctor_create_medical_record(client, app):
 # Characterization Tests for Known Phase 1 Bugs (pinned with xfail)
 # ─────────────────────────────────────────────────────────────────────────────
 
-@pytest.mark.xfail(strict=True, reason="B-10: get_booked_slots crashes with AttributeError when body is null/non-dict JSON")
 def test_char_b10_get_booked_slots_crash(client):
-    """B-10: POST to /get_booked_slots with null JSON body crashes with AttributeError."""
+    """B-10: POST to /get_booked_slots with null JSON body returns safe 200 response."""
     client.post('/login', data={'email': 'p1@test.local', 'password': 'PatientPass@123'}, follow_redirects=True)
     resp = client.post('/get_booked_slots', data='null', content_type='application/json')
     assert resp.status_code == 200
 
-@pytest.mark.xfail(strict=True, reason="B-08: patient.py compares str with datetime.date object (always evaluates False)")
 def test_char_b08_date_comparison_inconsistency(app):
-    """B-08: SQLAlchemy models.py String(50) date compared with datetime.date object."""
+    """B-08: SQLAlchemy date comparisons evaluate consistently across str and date."""
     with app.app_context():
         apt = db.session.get(Appointments, 1)
         today = date.today()
-        # In patient.py:160, 'if apt.date == today' is executed.
-        # This asserts what patient.py intends: that apt.date matches today's date
-        assert apt.date == today  # FAILS because str != date in Python!
+        assert apt.date == today
 
-@pytest.mark.xfail(strict=True, reason="B-06: admin discharge does not create billing record")
 def test_char_b06_two_discharge_flows_discrepancy(client, app):
-    """B-06: Admin discharge marks room available but fails to generate billing invoice."""
+    """B-06: Consolidated discharge creates billing invoice and frees room."""
     with app.app_context():
         adm = Admission(
             admission_id=1, apt_id=1, patient_id=4, doctor_id=1, room_id=1, status='Admitted'

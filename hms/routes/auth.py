@@ -1,8 +1,9 @@
 # routes/auth.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, User, Doctors
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required, login_user, logout_user
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from hms.models import Doctors, User, db
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -33,7 +34,7 @@ def signup():
 
     if request.method == "POST":
         username = request.form.get('username', '').strip()
-        usertype = "Patient"  
+        usertype = "Patient"
         email    = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
 
@@ -68,8 +69,8 @@ def profile():
         new_username = request.form.get('username', '').strip()
         new_email = request.form.get('email', '').strip()
         new_password = request.form.get('password', '').strip()
-        new_phone = request.form.get('phone', '').strip()     
-        new_gender = request.form.get('gender', '').strip()   
+        new_phone = request.form.get('phone', '').strip()
+        new_gender = request.form.get('gender', '').strip()
 
         user = User.query.get(current_user.id)
 
@@ -84,7 +85,7 @@ def profile():
         if new_username and new_username != current_user.username:
             # 🎓 UPGRADE: No longer need to update doctors table username! (3NF)
             user.username = new_username
-            
+
         user.phone = new_phone
         user.gender = new_gender
 

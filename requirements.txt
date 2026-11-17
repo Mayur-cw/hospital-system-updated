@@ -1,6 +1,7 @@
 # Production Dependencies (Patched for Zero Known Vulnerabilities)
 Flask>=3.1.0
 Flask-SQLAlchemy>=3.1.1
+Flask-Migrate>=4.1.0
 SQLAlchemy>=2.0.36
 Flask-Login>=0.6.3
 Flask-WTF>=1.2.2

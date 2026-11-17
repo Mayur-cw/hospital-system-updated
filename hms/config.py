@@ -1,5 +1,4 @@
 import os
-import secrets
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -9,24 +8,32 @@ class Config:
     APP_ENV = os.environ.get('APP_ENV', 'development').lower()
     FLASK_DEBUG = False
     TESTING = False
-    
+
     # Secret Key
     SECRET_KEY = os.environ.get('SECRET_KEY')
-    
+
     # Database
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
-    
+
     # Session / Cookie safety defaults
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+
+    # Clinical, Scheduling & Regional Settings (A-03, A-04)
+    TIMEZONE = os.environ.get('HOSPITAL_TIMEZONE', 'Asia/Kolkata')
+    SLOT_DURATION_MINUTES = int(os.environ.get('SLOT_DURATION_MINUTES', '30'))
+    CANCELLATION_WINDOW_HOURS = int(os.environ.get('CANCELLATION_WINDOW_HOURS', '2'))
+    REMINDER_LEAD_HOURS = int(os.environ.get('REMINDER_LEAD_HOURS', '24'))
+    PAYMENT_GATEWAY = os.environ.get('PAYMENT_GATEWAY', 'mock')
+    MAIL_BACKEND = os.environ.get('MAIL_BACKEND', 'mailpit')
 
 
 class DevelopmentConfig(Config):
     """Development configuration with safe defaults."""
     FLASK_DEBUG = os.environ.get('FLASK_DEBUG', 'false').lower() in ('true', '1', 't')
     SECRET_KEY = os.environ.get('SECRET_KEY') or os.environ.get('DEV_SECRET_KEY') or 'dev-insecure-secret-key-change-me'
-    
+
     # Fallback to local SQLite development database if DATABASE_URL is not set
     if not os.environ.get('DATABASE_URL'):
         instance_dir = BASE_DIR / 'instance'
@@ -55,7 +62,7 @@ class ProductionConfig(Config):
     FLASK_DEBUG = False
     TESTING = False
     SESSION_COOKIE_SECURE = True
-    
+
     def __init__(self):
         super().__init__()
         secret = os.environ.get('SECRET_KEY')
@@ -64,7 +71,7 @@ class ProductionConfig(Config):
                 "CRITICAL: Refusing to start in production without a secure, cryptographically random SECRET_KEY environment variable."
             )
         self.SECRET_KEY = secret
-        
+
         db_url = os.environ.get('DATABASE_URL')
         if not db_url:
             raise RuntimeError(

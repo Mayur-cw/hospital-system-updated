@@ -1,11 +1,21 @@
 # routes/admin.py
 from datetime import date, timedelta
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 from werkzeug.security import generate_password_hash
 
 # 🏥 UPGRADE: Imported Room and Admission models
-from models import db, User, Appointments, Doctors, AuditLog, Billing, Room, Admission
+from hms.models import (
+    Admission,
+    Appointments,
+    AuditLog,
+    Billing,
+    Doctors,
+    Room,
+    User,
+    db,
+)
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -28,9 +38,9 @@ def admin_dashboard():
     available_rooms = Room.query.filter_by(status='Available').count()
     occupied_rooms = Room.query.filter_by(status='Occupied').count()
 
-    return render_template('admin/admin_dashboard.html', 
-                           total_doctors=total_doctors, 
-                           total_users=total_users, 
+    return render_template('admin/admin_dashboard.html',
+                           total_doctors=total_doctors,
+                           total_users=total_users,
                            total_appointments=total_appointments,
                            recent_logs=recent_logs,
                            total_rooms=total_rooms,
@@ -47,7 +57,7 @@ def details():
         return redirect(url_for('main.index'))
 
     logs_data = db.session.query(AuditLog, User).outerjoin(User, AuditLog.user_id == User.id).order_by(AuditLog.tid.desc()).all()
-    
+
     posts = []
     for log, user in logs_data:
         posts.append({
@@ -93,13 +103,13 @@ def add_staff():
     hashed_password = generate_password_hash(password)
     new_user = User(username=username, usertype=usertype, email=email, password=hashed_password)
     db.session.add(new_user)
-    
+
     db.session.flush()
-    
+
     if usertype == "Doctor":
         new_doc = Doctors(user_id=new_user.id, dept=dept)
         db.session.add(new_doc)
-        
+
     db.session.commit()
     flash(f"Success! {usertype} account for {username} has been provisioned.", "success")
     return redirect(request.referrer or url_for('admin.admin_dashboard'))
@@ -155,7 +165,7 @@ def admin_delete_staff():
         return redirect(url_for('main.index'))
 
     staff_id = request.form.get('staff_id')
-    
+
     if int(staff_id) == current_user.id:
         flash('Safety Protocol: You cannot delete your own active session.', 'warning')
         return redirect(url_for('admin.admin_staff'))
@@ -206,11 +216,11 @@ def admin_edit_doctor():
     if u and u.usertype == 'Doctor':
         u.username = username
         u.email = email
-        
+
         doc = Doctors.query.filter_by(user_id=u.id).first()
         if doc:
             doc.dept = dept
-            
+
         db.session.commit()
         flash(f'Doctor {username} updated successfully.', 'success')
 
@@ -268,12 +278,12 @@ def admin_patients():
         return redirect(url_for('main.index'))
 
     search_query = request.args.get('search', '').strip()
-    
+
     query = User.query.filter_by(usertype='Patient')
     if search_query:
         search_term = f'%{search_query}%'
         query = query.filter((User.username.ilike(search_term)) | (User.email.ilike(search_term)))
-    
+
     patients_list = []
     for p in query.all():
         appt_count = Appointments.query.filter_by(user_id=p.id).count()
@@ -299,10 +309,10 @@ def admin_appointments():
 
     today = date.today().isoformat()
     yesterday = (date.today() - timedelta(days=1)).isoformat()
-    
+
     search_query = request.args.get('search', '').strip()
     default_date = 'all' if search_query else today
-    
+
     selected_date = request.args.get('date', default_date)
     selected_doctor = request.args.get('doctor_id', '')
 
@@ -310,14 +320,14 @@ def admin_appointments():
 
     if selected_date and selected_date != 'all':
         q = q.filter(Appointments.date == selected_date)
-        
+
     doctor_name = ''
     if selected_doctor:
         doc_user = User.query.get(selected_doctor)
         if doc_user:
             q = q.filter(Appointments.doctor == doc_user.username)
             doctor_name = doc_user.username
-            
+
     if search_query:
         search_term = f'%{search_query}%'
         q = q.join(User, Appointments.user_id == User.id).filter(
@@ -330,8 +340,9 @@ def admin_appointments():
     for a in appts:
         u = User.query.get(a.user_id)
         status = a.slot
-        if status in ['Scheduled']: status = 'Pending'
-        
+        if status in ['Scheduled']:
+            status = 'Pending'
+
         appt_data.append({
             'id': a.apt_id,
             'patient_name': u.username if u else 'Unknown',
@@ -375,13 +386,14 @@ def admin_update_appointment_status():
     status = request.form.get('status')
     redirect_url = request.form.get('redirect_url', url_for('admin.admin_appointments'))
 
-    if status == 'Pending': status = 'Scheduled'
+    if status == 'Pending':
+        status = 'Scheduled'
 
     a = Appointments.query.get(appointment_id)
     if a:
         a.slot = status
         db.session.commit()
-        flash(f'Appointment status updated successfully.', 'success')
+        flash('Appointment status updated successfully.', 'success')
 
     return redirect(redirect_url)
 
@@ -414,13 +426,13 @@ def admin_financials():
         return redirect(url_for('main.index'))
 
     all_bills = Billing.query.order_by(Billing.issued_on.desc()).all()
-    
+
     total_collected = sum(bill.amount for bill in all_bills if bill.status == 'Paid')
     pending_revenue = sum(bill.amount for bill in all_bills if bill.status == 'Unpaid')
-    
-    return render_template('admin/admin_financials.html', 
-                           bills=all_bills, 
-                           total_collected=total_collected, 
+
+    return render_template('admin/admin_financials.html',
+                           bills=all_bills,
+                           total_collected=total_collected,
                            pending_revenue=pending_revenue)
 
 @admin_bp.route('/financials/<int:bill_id>/invoice')
@@ -429,7 +441,7 @@ def view_invoice(bill_id):
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
-        
+
     invoice = Billing.query.get_or_404(bill_id)
     return render_template('admin/admin_view_invoice.html', invoice=invoice)
 
@@ -439,7 +451,7 @@ def view_receipt(bill_id):
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
-        
+
     invoice = Billing.query.get_or_404(bill_id)
     return render_template('bookings/receipt.html', invoice=invoice)
 
@@ -453,16 +465,16 @@ def admin_rooms():
         return redirect(url_for('main.index'))
 
     all_rooms = Room.query.order_by(Room.room_number).all()
-    
+
     # 🚨 NEW: Fetch active admissions to display in the UI table
     active_admissions = Admission.query.filter_by(status='Admitted').order_by(Admission.admission_date.desc()).all()
-    
+
     total_rooms = len(all_rooms)
     available_rooms = sum(1 for r in all_rooms if r.status == 'Available')
     occupied_rooms = sum(1 for r in all_rooms if r.status == 'Occupied')
     maintenance_rooms = sum(1 for r in all_rooms if r.status == 'Maintenance')
 
-    return render_template('admin/admin_rooms.html', 
+    return render_template('admin/admin_rooms.html',
                            rooms=all_rooms,
                            active_admissions=active_admissions,
                            total_rooms=total_rooms,
@@ -490,9 +502,9 @@ def add_room():
         db.session.add(new_room)
         db.session.commit()
         flash(f"Room {room_number} successfully added to the {ward_type} ward.", "success")
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        flash(f"Error adding room. Please check input values.", "danger")
+        flash("Error adding room. Please check input values.", "danger")
 
     return redirect(url_for('admin.admin_rooms'))
 
@@ -505,62 +517,57 @@ def edit_room():
 
     room_id = request.form.get('room_id')
     room = Room.query.get_or_404(room_id)
-    
+
     room.room_number = request.form.get('room_number').strip()
     room.ward_type = request.form.get('ward_type').strip()
     room.rate_per_day = float(request.form.get('rate_per_day').strip())
-    
+
     new_status = request.form.get('status').strip()
     if room.status == 'Occupied' and new_status != 'Occupied':
         flash(f"Cannot manually change status of Room {room.room_number}. It must be freed by a patient discharge.", "warning")
     else:
         room.status = new_status
-        
+
     db.session.commit()
     flash(f"Room {room.room_number} details updated.", "success")
     return redirect(url_for('admin.admin_rooms'))
-    
+
 @admin_bp.route('/delete_room', methods=['POST'])
 @login_required
 def delete_room():
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
-        
+
     room_id = request.form.get('room_id')
     room = Room.query.get_or_404(room_id)
-    
+
     if room.status == 'Occupied':
         flash(f"Cannot delete Room {room.room_number} because a patient is currently admitted there.", "danger")
     else:
         db.session.delete(room)
         db.session.commit()
         flash(f"Room {room.room_number} has been removed from the system.", "success")
-        
+
     return redirect(url_for('admin.admin_rooms'))
 
-# 🚨 NEW: THE DISCHARGE ROUTE 🚨
+# 🚨 THE DISCHARGE ROUTE (B-06: Consolidated via AdmissionService)
 @admin_bp.route('/discharge', methods=['POST'])
+@admin_bp.route('/discharge/<int:admission_id>', methods=['POST'])
 @login_required
-def discharge_patient():
+def discharge_patient(admission_id=None):
     if current_user.usertype != 'Admin':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.index'))
-        
-    admission_id = request.form.get('admission_id')
-    admission = Admission.query.get_or_404(admission_id)
-    
-    if admission.status == 'Discharged':
-        flash(f"Patient {admission.patient.username} has already been discharged.", "info")
-        return redirect(url_for('admin.admin_rooms'))
-        
-    # Mark as discharged and record the timestamp
-    admission.status = 'Discharged'
-    admission.discharge_date = db.func.now()
-    
-    # 🎓 DBMS POWER MOVE: The `admission_update` MySQL trigger we built
-    # will automatically intercept this commit and flip the room's status back to 'Available'!
-    db.session.commit()
-    
-    flash(f"Patient {admission.patient.username} has been officially discharged. Room {admission.room.room_number} is now Available.", "success")
+
+    if not admission_id:
+        admission_id = request.form.get('admission_id')
+
+    from hms.services.admissions import AdmissionError, AdmissionService
+    try:
+        admission = AdmissionService.discharge(int(admission_id), actor=current_user)
+        flash(f"Patient {admission.patient.username} has been officially discharged. Final invoice generated and Room {admission.room.room_number if admission.room else ''} is now Available.", "success")
+    except AdmissionError as e:
+        flash(str(e), "danger")
+
     return redirect(url_for('admin.admin_rooms'))
