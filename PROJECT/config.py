@@ -1,11 +1,92 @@
 import os
+import secrets
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Config:
-    # Use environment variable for secret key; fallback for dev only
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'hmsprojects_dev_key')
+    """Base application configuration."""
+    APP_ENV = os.environ.get('APP_ENV', 'development').lower()
+    FLASK_DEBUG = False
+    TESTING = False
     
-    # Database URI — set via env var in production
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'mysql://root:Mayur@localhost/hms')
+    # Secret Key
+    SECRET_KEY = os.environ.get('SECRET_KEY')
     
-    # Suppress warning
+    # Database
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    
+    # Session / Cookie safety defaults
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+
+
+class DevelopmentConfig(Config):
+    """Development configuration with safe defaults."""
+    FLASK_DEBUG = os.environ.get('FLASK_DEBUG', 'false').lower() in ('true', '1', 't')
+    SECRET_KEY = os.environ.get('SECRET_KEY') or os.environ.get('DEV_SECRET_KEY') or 'dev-insecure-secret-key-change-me'
+    
+    # Fallback to local SQLite development database if DATABASE_URL is not set
+    if not os.environ.get('DATABASE_URL'):
+        instance_dir = BASE_DIR / 'instance'
+        instance_dir.mkdir(exist_ok=True)
+        SQLALCHEMY_DATABASE_URI = f"sqlite:///{instance_dir / 'hms_dev.db'}"
+    else:
+        raw_db_url = os.environ.get('DATABASE_URL')
+        if 'mysql://root:Mayur' in raw_db_url:
+            raise RuntimeError(
+                "CRITICAL SECURITY BLOCKED: Prohibited legacy hardcoded root MySQL connection string detected."
+            )
+        SQLALCHEMY_DATABASE_URI = raw_db_url
+
+
+class TestingConfig(Config):
+    """Testing configuration for automated tests."""
+    TESTING = True
+    FLASK_DEBUG = False
+    WTF_CSRF_ENABLED = False
+    SECRET_KEY = 'test-secret-key-for-automated-suites'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', 'sqlite:///:memory:')
+
+
+class ProductionConfig(Config):
+    """Strict fail-closed production configuration."""
+    FLASK_DEBUG = False
+    TESTING = False
+    SESSION_COOKIE_SECURE = True
+    
+    def __init__(self):
+        super().__init__()
+        secret = os.environ.get('SECRET_KEY')
+        if not secret or secret in ('hmsprojects_dev_key', 'dev-insecure-secret-key-change-me'):
+            raise RuntimeError(
+                "CRITICAL: Refusing to start in production without a secure, cryptographically random SECRET_KEY environment variable."
+            )
+        self.SECRET_KEY = secret
+        
+        db_url = os.environ.get('DATABASE_URL')
+        if not db_url:
+            raise RuntimeError(
+                "CRITICAL: Refusing to start in production without a valid DATABASE_URL environment variable."
+            )
+        if 'mysql://root:Mayur' in db_url or 'root:' in db_url:
+            raise RuntimeError(
+                "CRITICAL: Refusing to start in production with default or root database credentials."
+            )
+        self.SQLALCHEMY_DATABASE_URI = db_url
+
+
+config_by_name = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+}
+
+def get_config(env_name=None):
+    """Retrieve configuration object by environment name."""
+    env = (env_name or os.environ.get('APP_ENV') or os.environ.get('FLASK_ENV') or 'development').lower()
+    config_cls = config_by_name.get(env, DevelopmentConfig)
+    if env == 'production':
+        return config_cls()
+    return config_cls
