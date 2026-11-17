@@ -1,0 +1,16 @@
+# Production Dependencies (Patched for Zero Known Vulnerabilities)
+Flask>=3.1.0
+Flask-SQLAlchemy>=3.1.1
+SQLAlchemy>=2.0.36
+Flask-Login>=0.6.3
+Flask-WTF>=1.2.2
+Werkzeug>=3.1.3
+Jinja2>=3.1.6
+MarkupSafe>=2.1.5
+email-validator>=2.2.0
+dnspython>=2.9.2
+click>=8.1.7
+pytz>=2024.2
+cryptography>=42.0.8
+PyMySQL>=1.1.1
+gunicorn>=22.0.0
