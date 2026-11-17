@@ -178,22 +178,27 @@ class AdmissionService:
         return admission
 
     @staticmethod
-    def set_room_maintenance(room_id: int, reason: str = "Sanitization and Maintenance", actor=None) -> Room:
-        """Place an available room into maintenance mode (F-08)."""
+    def set_room_maintenance(
+        room_id: int,
+        reason: str = "Sanitization and Maintenance",
+        actor=None,
+        maintenance: bool = True,
+    ) -> Room:
+        """Place a room into maintenance mode or return it to available (F-08)."""
         room = Room.query.filter_by(id=room_id).with_for_update().first()
         if not room:
             raise AdmissionError("Room not found.")
-        if room.status == RoomStatus.OCCUPIED:
+        if maintenance and room.status == RoomStatus.OCCUPIED:
             raise AdmissionError("Cannot place an occupied room into maintenance.")
 
-        room.status = RoomStatus.MAINTENANCE
+        room.status = RoomStatus.MAINTENANCE if maintenance else RoomStatus.AVAILABLE
         db.session.commit()
 
         AuditService.record(
-            action='ROOM_MAINTENANCE',
+            action='ROOM_MAINTENANCE' if maintenance else 'ROOM_AVAILABLE',
             entity_type='Room',
             entity_id=room.id,
             actor=actor,
-            after={'status': room.status, 'reason': reason}
+            after={'status': room.status, 'reason': reason},
         )
         return room

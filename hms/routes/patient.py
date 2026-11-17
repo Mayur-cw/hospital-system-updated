@@ -20,7 +20,7 @@ from flask_login import current_user, login_required
 from hms.extensions import db
 from hms.models.admission import Admission, AdmissionStatus
 from hms.models.appointment import Appointment, AppointmentStatus
-from hms.models.billing import Billing, Invoice, PaymentMethod
+from hms.models.billing import Invoice, PaymentMethod
 from hms.models.doctor import Doctor
 from hms.models.record import MedicalRecord
 from hms.models.user import User
@@ -300,6 +300,7 @@ def dashboard():
     )
 
 
+@patient_bp.route('/my_appointments')
 @patient_bp.route('/upcoming_bookings')
 @login_required
 def upcoming_bookings():
@@ -334,6 +335,7 @@ def upcoming_bookings():
     )
 
 
+@patient_bp.route('/my_records')
 @patient_bp.route('/past_records')
 @login_required
 def past_records():
@@ -392,7 +394,7 @@ def my_bills():
         flash("Unauthorized access.", "danger")
         return redirect(url_for('main.index'))
 
-    my_invoices = Billing.query.filter_by(user_id=current_user.id).order_by(Billing.issued_on.desc()).all()
+    my_invoices = Invoice.query.filter_by(patient_id=current_user.id).order_by(Invoice.issued_at.desc()).all()
     return render_template('bookings/my_bills.html', invoices=my_invoices)
 
 

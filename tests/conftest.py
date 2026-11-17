@@ -6,8 +6,8 @@ import pytest
 
 # Add base and hms directory to sys.path
 BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(BASE_DIR))
-sys.path.insert(0, str(BASE_DIR / 'hms'))
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
 from werkzeug.security import generate_password_hash
 

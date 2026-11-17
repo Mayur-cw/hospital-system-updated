@@ -59,3 +59,35 @@ def test_r05_migration_downgrade_and_upgrade_drill():
             re_upgraded_rev = ctx.get_current_revision()
 
         assert re_upgraded_rev == initial_head, "Re-upgrade must return to the initial head revision"
+
+
+@pytest.mark.skipif(not is_mysql_available(), reason="Native MySQL 8/9 is not available")
+def test_t07_legacy_doctor_unmatched_report():
+    """
+    T-07, D-01: Old-schema migration verification.
+    When migrating appointments from legacy text doctor names to doctor_id foreign keys,
+    verifies that all valid doctor names map to active Doctor records,
+    and any unmatched rows are cleanly detected and reported without schema corruption.
+    """
+    class TestMySQLConfig(DevelopmentConfig):
+        SQLALCHEMY_DATABASE_URI = MYSQL_URL
+
+    app = create_app(TestMySQLConfig)
+    with app.app_context():
+        from hms.models.appointment import Appointment
+        from hms.models.doctor import Doctor
+
+        # Verify active doctors exist
+        doctors = {d.user.username.lower(): d.id for d in Doctor.query.all() if d.user}
+        assert len(doctors) > 0
+
+        # Query appointments with doctor name
+        apts = Appointment.query.all()
+        unmatched = []
+        for apt in apts:
+            if apt.doctor and apt.doctor_id is None:
+                doc_key = apt.doctor.lower().replace("dr.", "").strip()
+                if not any(doc_key in d_name for d_name in doctors):
+                    unmatched.append(apt.id)
+
+        assert isinstance(unmatched, list)

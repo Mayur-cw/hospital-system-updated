@@ -3,6 +3,8 @@ import random
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
+from sqlalchemy.exc import IntegrityError
+
 from hms.extensions import db
 from hms.models.admission import Admission
 from hms.models.appointment import Appointment
@@ -185,7 +187,15 @@ class BillingService:
         if total_paid >= invoice.total:
             invoice.status = InvoiceStatus.PAID
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            if idempotency_key:
+                existing = Payment.query.filter_by(idempotency_key=idempotency_key).first()
+                if existing:
+                    return existing
+            raise
 
         AuditService.record(
             action='PAYMENT_RECORDED',

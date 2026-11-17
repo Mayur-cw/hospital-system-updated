@@ -314,15 +314,15 @@ These are the forks in the road. Each lists the options considered so the owner 
 
 ## PHASE 7 — Testing and CI/CD
 
-- [ ] **T-01 · P0 · Test layout** — `tests/unit` (services, policies, state machine), `tests/integration` (real MySQL via Docker/CI service — **not SQLite**, because the unique-slot index, generated column and row locks are MySQL behavior), `tests/e2e` (Playwright). Coverage gate: ≥ 85 % on `services/` and `policies.py`.
-- [ ] **T-02 · P1 · Fixtures** — `factory_boy` factories for every model; per-test transaction rollback; frozen clock fixture for time-dependent logic.
-- [ ] **T-03 · P0 · Concurrency tests** — N parallel bookings for one slot → exactly one succeeds; double-submitted discharge → exactly one invoice; two admissions into one room → exactly one succeeds; duplicate payment webhook → one payment.
-- [ ] **T-04 · P0 · Authorization matrix** — generated from the Flask URL map: every route × {anonymous, patient (owner), patient (other), doctor (owner), doctor (other), admin} → expected status (200/302/403/404). Fails the build if a new route has no expectation.
-- [ ] **T-05 · P1 · E2E + accessibility** — Playwright: signup → verify → book → doctor check-in → write record → invoice → pay (mock gateway) → receipt; admin discharge flow; axe-core scan on each key page; keyboard-only run of the booking wizard.
-- [ ] **T-06 · P1 · CI (GitHub Actions)** — jobs: lint (`ruff`, `black --check`, `djlint`), type-check (`mypy` on `services/`), tests with MySQL service container, `pip-audit`, Docker build; required status checks on `main`; `pre-commit` config mirrors CI.
-- [ ] **T-07 · P1 · Migration tests** — empty DB → head; old-schema fixture with representative rows → head with the unmatched-report assertions from D-01.
-- [ ] **T-08 · P1 · Link crawler** — render every page as every role and assert every `href`/`form action` resolves (would have caught B-01/B-02/B-03).
-- [ ] **T-09 · P2 · Performance budget** — dashboard queries ≤ 10 per request (assert with a query counter); no N+1 on list pages.
+- [x] **T-01 · P0 · Test layout** — `tests/unit` (services, policies, state machine), `tests/integration` (real MySQL via Docker/CI service — **not SQLite**, because the unique-slot index, generated column and row locks are MySQL behavior), `tests/e2e` (Playwright). Coverage gate: ≥ 85 % on `services/` and `policies.py`.
+- [x] **T-02 · P1 · Fixtures** — `factory_boy` factories for every model; per-test transaction rollback; frozen clock fixture for time-dependent logic.
+- [x] **T-03 · P0 · Concurrency tests** — N parallel bookings for one slot → exactly one succeeds; double-submitted discharge → exactly one invoice; two admissions into one room → exactly one succeeds; duplicate payment webhook → one payment.
+- [x] **T-04 · P0 · Authorization matrix** — generated from the Flask URL map: every route × {anonymous, patient (owner), patient (other), doctor (owner), doctor (other), admin} → expected status (200/302/403/404). Fails the build if a new route has no expectation.
+- [x] **T-05 · P1 · E2E + accessibility** — Playwright: signup → verify → book → doctor check-in → write record → invoice → pay (mock gateway) → receipt; admin discharge flow; axe-core scan on each key page; keyboard-only run of the booking wizard.
+- [x] **T-06 · P1 · CI (GitHub Actions)** — jobs: lint (`ruff`, `black --check`, `djlint`), type-check (`mypy` on `services/`), tests with MySQL service container, `pip-audit`, Docker build; required status checks on `main`; `pre-commit` config mirrors CI.
+- [x] **T-07 · P1 · Migration tests** — empty DB → head; old-schema fixture with representative rows → head with the unmatched-report assertions from D-01.
+- [x] **T-08 · P1 · Link crawler** — render every page as every role and assert every `href`/`form action` resolves (would have caught B-01/B-02/B-03).
+- [x] **T-09 · P2 · Performance budget** — dashboard queries ≤ 10 per request (assert with a query counter); no N+1 on list pages.
 
 ---
 

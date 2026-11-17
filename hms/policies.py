@@ -7,11 +7,7 @@ from functools import wraps
 from flask import abort, flash, redirect, request, url_for
 from flask_login import current_user
 
-from hms.models.admission import Admission
-from hms.models.appointment import Appointment
-from hms.models.billing import Invoice
-from hms.models.record import MedicalRecord
-from hms.models.user import User, UserRole
+from hms.models import Admission, Appointment, Invoice, MedicalRecord, User, UserRole
 
 
 def roles_required(*roles):
@@ -140,7 +136,13 @@ def can_approve_discharge(user: User, admission: Admission) -> bool:
     if user.usertype == UserRole.ADMIN:
         return True
     if user.usertype == UserRole.DOCTOR:
-        doc = getattr(user, 'doctor_profile', None)
+        try:
+            doc = getattr(user, 'doctor_profile', None)
+        except Exception:
+            doc = None
+        if doc is None:
+            from hms.models.doctor import Doctor
+            doc = Doctor.query.filter_by(user_id=user.id).first()
         return doc is not None and admission.doctor_id == doc.id
     return False
 

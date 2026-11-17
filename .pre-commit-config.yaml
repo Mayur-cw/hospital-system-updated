@@ -1,0 +1,22 @@
+# .pre-commit-config.yaml - Local Git Pre-Commit Hooks (T-06)
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: check-contrast
+        name: WCAG 2.2 AA Contrast Gate
+        entry: python tools/check_contrast.py
+        language: system
+        pass_filenames: false
+
+      - id: no-inline-styles
+        name: Purge Inline Styles Gate
+        entry: bash -c "! grep -rn 'style=' hms/templates/ && ! grep -rn '<style' hms/templates/"
+        language: system
+        pass_filenames: false

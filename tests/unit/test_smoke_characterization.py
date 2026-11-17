@@ -1,6 +1,6 @@
 from datetime import date
 
-from models import (
+from hms.models import (
     Admission,
     Appointments,
     Billing,

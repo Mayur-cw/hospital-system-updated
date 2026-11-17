@@ -100,6 +100,7 @@ def admin_dashboard():
 
 
 @admin_bp.route('/details')
+@admin_bp.route('/audit-logs')
 @admin_bp.route('/audit_logs')
 @login_required
 def details():
@@ -542,6 +543,7 @@ def admin_delete_appointment():
 
 # ── FINANCIALS & BILLING ──────────────────────────────────────────────
 
+@admin_bp.route('/billing')
 @admin_bp.route('/financials')
 @login_required
 def admin_financials():
