@@ -74,19 +74,19 @@
         .navbar-premium .navbar-nav {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
 
         .navbar-premium .nav-link-item {
             display: inline-flex !important;
             align-items: center !important;
-            gap: 8px !important;
+            gap: 6px !important;
             white-space: nowrap !important;
             color: rgba(255, 255, 255, 0.82) !important;
             font-weight: 600 !important;
-            font-size: 0.86rem !important;
-            padding: 0.44rem 0.78rem !important;
-            border-radius: 9px !important;
+            font-size: 0.84rem !important;
+            padding: 0.38rem 0.65rem !important;
+            border-radius: 8px !important;
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
             text-decoration: none !important;
             line-height: 1.2 !important;
@@ -100,13 +100,13 @@
 
         /* Dedicated Micro Icon Badges for Clean Separation & Sizing */
         .nav-ico-badge {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             border-radius: 6px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.76rem;
+            font-size: 0.74rem;
             flex-shrink: 0;
             transition: transform 0.2s ease;
         }
@@ -134,13 +134,14 @@
 
         /* ── GLASS SEARCH BAR ── */
         .glass-search {
-            width: 160px;
+            width: 140px;
             background: rgba(255,255,255,0.08) !important;
             border: 1px solid rgba(255,255,255,0.1) !important;
             color: white !important; border-radius: var(--radius-pill);
-            padding-left: 1.2rem; font-size: 0.9rem; transition: all 0.3s ease;
+            padding-left: 1.1rem; font-size: 0.85rem; transition: all 0.3s ease;
         }
         .glass-search:focus {
+            width: 175px;
             background: rgba(255,255,255,0.15) !important;
             border-color: var(--hms-teal) !important;
             box-shadow: 0 0 0 4px rgba(0, 201, 167, 0.15) !important;
@@ -152,13 +153,22 @@
             background: rgba(0, 201, 167, 0.1);
             border: 1px solid rgba(0, 201, 167, 0.3);
             color: var(--hms-teal-soft); border-radius: var(--radius-pill);
-            padding: 0.4rem 1.2rem; font-weight: 600; font-size: 0.85rem; transition: all 0.2s;
+            padding: 0.38rem 0.95rem; font-weight: 600; font-size: 0.84rem; transition: all 0.2s;
+            white-space: nowrap;
         }
         .user-pill:hover {
             background: rgba(0, 201, 167, 0.2); color: white;
             box-shadow: 0 4px 12px rgba(0, 201, 167, 0.2);
         }
         .dropdown-item-hover:hover { background-color: rgba(0, 201, 167, 0.08) !important; color: var(--hms-navy) !important; }
+
+        /* Ensure dropdown menu in navbar never clips or overflows viewport */
+        .navbar-premium .dropdown-menu-end {
+            right: 0 !important;
+            left: auto !important;
+            min-width: 185px;
+            max-width: calc(100vw - 20px);
+        }
 
         /* ── TOAST ENGINE ── */
         .toast-container { position: fixed; bottom: 25px; right: 25px; z-index: 9999; pointer-events: none; display: flex; flex-direction: column-reverse; gap: 10px; }
@@ -184,7 +194,7 @@
 
     <!-- ── NAVBAR ── -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-premium sticky-top shadow-sm">
-        <div class="container-fluid px-lg-5">
+        <div class="container-fluid px-3 px-xl-4 px-xxl-5">
             
             <a class="navbar-brand brand-font d-flex align-items-center" href="/">
                 <div class="rounded-3 p-1 d-flex align-items-center justify-content-center me-2 shadow-sm" style="width: 36px; height: 36px; background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);">
@@ -201,7 +211,7 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 d-flex align-items-center gap-1 gap-xl-2">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-2 ms-xl-3 d-flex align-items-center gap-1">
                     <li class="nav-item">
                         <a class="nav-link nav-link-item" href="/">
                             <span class="nav-ico-badge nav-ico-home"><i class="fas fa-home"></i></span>
@@ -313,7 +323,7 @@
                     {% endif %}
                 </ul>
 
-                <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
+                <div class="d-flex align-items-center gap-2 gap-xl-3 mt-3 mt-lg-0">
                     <form class="d-none d-lg-block position-relative" action="/search" method="post">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input class="form-control glass-search" type="search" name="search" 
@@ -322,7 +332,7 @@
                     </form>
 
                     {% if current_user.is_authenticated %}
-                        <div class="dropdown ms-lg-2">
+                        <div class="dropdown ms-lg-1 ms-xl-2">
                             <a class="user-pill dropdown-toggle d-flex align-items-center text-decoration-none" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-circle me-2 fs-6"></i> {{ current_user.username | capitalize }} ({{ current_user.usertype }})
                             </a>
