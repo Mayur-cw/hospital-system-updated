@@ -1,0 +1,7 @@
+{% extends 'errors/error_base.html' %}
+{% block error_code %}409 State Conflict{% endblock %}
+{% block icon_bg %}bg-warning-subtle text-warning{% endblock %}
+{% block error_icon %}fa-code-branch{% endblock %}
+{% block error_title %}State Conflict{% endblock %}
+{% block error_status %}409 Conflict{% endblock %}
+{% block error_description %}{{ message or "The requested operation cannot be performed due to a state conflict. For instance, the appointment slot may have already been booked by another patient, or the record has already transitioned to a final status." }}{% endblock %}
