@@ -91,6 +91,12 @@
               <span>Audit Logs</span>
             </a>
           </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('admin.admin_settings') }}" class="nav-link-hms {% if request.endpoint == 'admin.admin_settings' %}active{% endif %}">
+              <i class="fa-solid fa-gear" aria-hidden="true"></i>
+              <span>System Settings</span>
+            </a>
+          </div>
 
         {% elif role == 'Doctor' %}
           {# Doctor Navigation #}
@@ -230,6 +236,7 @@
   <!-- Scripts -->
   <script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/pages/typeahead_search.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

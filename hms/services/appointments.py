@@ -7,6 +7,7 @@ from hms.models.appointment import Appointment, AppointmentStatus
 from hms.models.doctor import Doctor
 from hms.policies import can_cancel_appointment, can_modify_appointment
 from hms.services.audit import AuditService
+from hms.services.notifications import NotificationService
 
 
 class AppointmentError(Exception):
@@ -74,6 +75,7 @@ class AppointmentService:
                 'status': appointment.status
             }
         )
+        NotificationService.send_appointment_confirmation(appointment)
         return appointment
 
     @staticmethod
@@ -122,6 +124,7 @@ class AppointmentService:
             before={'starts_at': old_starts_at.isoformat()},
             after={'starts_at': new_starts_at.isoformat(), 'reason': reason}
         )
+        NotificationService.send_reschedule_notification(appointment, old_starts_at)
         return appointment
 
     @staticmethod
@@ -152,6 +155,7 @@ class AppointmentService:
             actor=actor,
             after={'status': appointment.status, 'cancel_reason': reason}
         )
+        NotificationService.send_cancellation_notification(appointment, actor=actor, reason=reason)
         return appointment
 
     @staticmethod

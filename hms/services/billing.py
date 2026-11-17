@@ -15,6 +15,7 @@ from hms.models.billing import (
     PaymentStatus,
 )
 from hms.services.audit import AuditService
+from hms.services.notifications import NotificationService
 
 
 class BillingError(Exception):
@@ -88,6 +89,7 @@ class BillingService:
                 'appointment_id': appointment.id
             }
         )
+        NotificationService.send_invoice_notification(invoice)
         return invoice
 
     @staticmethod
@@ -142,6 +144,7 @@ class BillingService:
                 'admission_id': admission.id
             }
         )
+        NotificationService.send_invoice_notification(invoice)
         return invoice
 
     @staticmethod
@@ -196,4 +199,5 @@ class BillingService:
                 'invoice_status': invoice.status
             }
         )
+        NotificationService.send_payment_receipt(payment)
         return payment

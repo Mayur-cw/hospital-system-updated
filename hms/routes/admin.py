@@ -1,9 +1,12 @@
 # routes/admin.py
+import csv
+import io
 from datetime import UTC, date, datetime
 from decimal import Decimal, InvalidOperation
 
 from flask import (
     Blueprint,
+    Response,
     abort,
     current_app,
     flash,
@@ -23,6 +26,7 @@ from hms.models.audit import AuditEvent
 from hms.models.billing import Invoice
 from hms.models.department import Department
 from hms.models.doctor import Doctor
+from hms.models.settings import HospitalSetting
 from hms.models.user import User
 from hms.services.accounts import AccountsService
 from hms.services.admissions import AdmissionError, AdmissionService
@@ -765,3 +769,148 @@ def discharge_patient(admission_id=None):
         flash(f"Discharge error. (Reference: {req_id})", "danger")
 
     return redirect(url_for('admin.admin_rooms'))
+
+
+# ── CSV EXPORTS (F-09) ─────────────────────────────────────────────────
+
+@admin_bp.route('/export/appointments')
+@login_required
+def export_appointments_csv():
+    """F-09: Export appointments ledger to CSV."""
+    appts = Appointment.query.options(
+        joinedload(Appointment.patient),
+        joinedload(Appointment.doctor_rel).joinedload(Doctor.user),
+        joinedload(Appointment.department)
+    ).order_by(Appointment.starts_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Appointment ID', 'Patient Name', 'Patient Email', 'Doctor Name', 'Department', 'Scheduled Date', 'Scheduled Time', 'Status', 'Reason'])
+
+    for a in appts:
+        p_name = a.patient.username if a.patient else ''
+        p_email = a.patient.email if a.patient else ''
+        d_name = a.doctor_rel.user.username if a.doctor_rel and a.doctor_rel.user else 'General'
+        dept_name = a.department.name if a.department else ''
+        writer.writerow([
+            a.id,
+            p_name,
+            p_email,
+            d_name,
+            dept_name,
+            a.starts_at.strftime('%Y-%m-%d'),
+            a.starts_at.strftime('%H:%M'),
+            a.status,
+            a.reason or ''
+        ])
+
+    output.seek(0)
+    filename = f"appointments_export_{date.today().strftime('%Y%m%d')}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@admin_bp.route('/export/invoices')
+@login_required
+def export_invoices_csv():
+    """F-09: Export financial invoices to CSV."""
+    invoices = Invoice.query.options(
+        joinedload(Invoice.patient)
+    ).order_by(Invoice.issued_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Invoice Number', 'Patient Name', 'Patient Email', 'Amount', 'Status', 'Issued On', 'Due Date', 'Settled Date'])
+
+    for inv in invoices:
+        p_name = inv.patient.username if inv.patient else ''
+        p_email = inv.patient.email if inv.patient else ''
+        writer.writerow([
+            inv.invoice_number,
+            p_name,
+            p_email,
+            str(inv.total),
+            inv.status,
+            inv.issued_at.strftime('%Y-%m-%d') if inv.issued_at else '',
+            inv.due_at.strftime('%Y-%m-%d') if inv.due_at else '',
+            inv.paid_on.strftime('%Y-%m-%d') if inv.paid_on else ''
+        ])
+
+    output.seek(0)
+    filename = f"invoices_export_{date.today().strftime('%Y%m%d')}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@admin_bp.route('/export/audit-logs')
+@login_required
+def export_audit_logs_csv():
+    """F-09: Export audit trail events to CSV."""
+    logs = AuditEvent.query.order_by(AuditEvent.created_at.desc()).limit(1000).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Event ID', 'Action', 'Entity Type', 'Entity ID', 'Actor ID', 'Actor Role', 'Timestamp', 'IP Address'])
+
+    for log in logs:
+        writer.writerow([
+            log.id,
+            log.action,
+            log.entity_type,
+            log.entity_id or '',
+            log.actor_id or '',
+            log.actor_role or '',
+            log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '',
+            log.ip or ''
+        ])
+
+    output.seek(0)
+    filename = f"audit_logs_export_{date.today().strftime('%Y%m%d')}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+# ── SETTINGS (F-09) ────────────────────────────────────────────────────
+
+@admin_bp.route('/settings', methods=['GET', 'POST'])
+@login_required
+def admin_settings():
+    """F-09: Hospital administration and system configuration settings."""
+    if request.method == 'POST':
+        hospital_name = request.form.get('hospital_name', '').strip()
+        timezone = request.form.get('timezone', '').strip()
+        slot_minutes = request.form.get('slot_duration_minutes', '').strip()
+        cancellation_window = request.form.get('cancellation_window_hours', '').strip()
+        default_fee = request.form.get('default_consultation_fee', '').strip()
+
+        if hospital_name:
+            HospitalSetting.set('hospital_name', hospital_name, 'Official Hospital Organization Name')
+        if timezone:
+            HospitalSetting.set('hospital_timezone', timezone, 'Regional Operating Timezone')
+        if slot_minutes:
+            HospitalSetting.set('slot_duration_minutes', slot_minutes, 'Standard Consultation Slot Duration (minutes)')
+        if cancellation_window:
+            HospitalSetting.set('cancellation_window_hours', cancellation_window, 'Minimum Hours Before Appointment for Cancellation')
+        if default_fee:
+            HospitalSetting.set('default_consultation_fee', default_fee, 'Base Outpatient Specialist Consultation Fee')
+
+        flash('Hospital system settings updated successfully.', 'success')
+        return redirect(url_for('admin.admin_settings'))
+
+    settings = {
+        'hospital_name': HospitalSetting.get('hospital_name', 'Hedgewar Hospital Care'),
+        'timezone': HospitalSetting.get('hospital_timezone', 'Asia/Kolkata'),
+        'slot_duration_minutes': HospitalSetting.get('slot_duration_minutes', '30'),
+        'cancellation_window_hours': HospitalSetting.get('cancellation_window_hours', '2'),
+        'default_consultation_fee': HospitalSetting.get('default_consultation_fee', '500.00'),
+    }
+    return render_template('admin/admin_settings.html', settings=settings)
