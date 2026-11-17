@@ -28,7 +28,6 @@ DROP TABLE IF EXISTS rooms;
 DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS doctors;
 DROP TABLE IF EXISTS user;
-DROP TABLE IF EXISTS test;
 
 -- ------------------------------------------------------------------------------
 -- 2. CREATE TABLES (With Strict Domain Constraints)
