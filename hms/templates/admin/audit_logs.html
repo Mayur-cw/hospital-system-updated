@@ -1,86 +1,81 @@
 {% extends 'base.html' %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/badges.html' import status_badge %}
+{% from 'components/empty_state.html' import empty_state %}
 
-{% block title %}
-Database Logs | Hospital Management System
-{% endblock title %}
+{% block title %}Database Activity Logs | Hedgewar Hospital Care{% endblock title %}
 
 {% block body %}
-<style>
-  .hms-card {
-    background: #ffffff; border: 1px solid var(--hms-border);
-    border-radius: 16px; box-shadow: var(--shadow-sm);
-    transition: all .2s ease; overflow: hidden;
-  }
-  .hms-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-    padding: 4px 12px; border-radius: var(--radius-pill);
-  }
-  .hms-badge-success { background: #dcfce7; color: #15803d; }
-  .hms-badge-warning { background: #fef9c3; color: #854d0e; }
-  .hms-badge-danger  { background: #fee2e2; color: #b91c1c; }
-  .hms-badge-neutral { background: #f1f5f9; color: #475569; }
-</style>
+<div class="container-xl py-4">
+  {{ page_header(
+    title="Database Activity Logs",
+    subtitle="Automated system event logs recorded for clinical and patient modifications.",
+    breadcrumbs=[
+      {"label": "Admin Dashboard", "url": url_for('admin.admin_dashboard')},
+      {"label": "Audit Logs"}
+    ],
+    actions=[
+      {"label": "Back to Dashboard", "url": url_for('admin.admin_dashboard'), "icon": "fas fa-arrow-left", "class": "btn-outline-secondary"}
+    ]
+  ) }}
 
-<div class="container mt-5 mb-5">
-  
-  <div class="row mb-4 align-items-center">
-    <div class="col-md-8">
-      <h2 class="brand-font text-dark mb-1"><i class="fas fa-clipboard-list me-2" style="color: var(--hms-teal);"></i>Database Activity Logs</h2>
-      <p class="text-muted mb-0">Automated system logs recorded by MySQL triggers for patient data modifications.</p>
+  <div class="card border-0 shadow-sm overflow-hidden">
+    <div class="card-header bg-surface py-3 d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 fw-bold"><i class="fas fa-clipboard-list me-2 text-primary"></i>System Audit Trail</h5>
+      <span class="badge bg-surface-subtle text-secondary border">{{ posts | length }} Events</span>
     </div>
-    <div class="col-md-4 text-md-end">
-        <a href="/admin/dashboard" class="hms-btn hms-btn-ghost"><i class="fas fa-arrow-left me-2"></i>Back to Dashboard</a>
-    </div>
-  </div>
-
-  <div class="hms-card" style="overflow:hidden;">
-      <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
-        <thead style="background: rgba(247,249,252,0.5);">
-          <tr>
-            <th class="ps-4 text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">TID</th>
-            <th class="text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">PID</th>
-            <th class="text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">Email</th>
-            <th class="text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">Name</th>
-            <th class="text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">Trigger Action</th>
-            <th class="pe-4 text-uppercase text-muted" style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 16px;">Timestamp</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for post in posts %}
-            <tr style="transition: all 0.2s ease;">
-              <td class="ps-4 fw-bold text-dark border-bottom">{{ post.tid }}</td>
-              <td class="border-bottom"><span class="hms-badge hms-badge-neutral">PID: {{ post.pid }}</span></td>
-              <td class="border-bottom text-muted" style="font-size: 14px;">{{ post.email }}</td>
-              <td class="border-bottom fw-bold" style="font-size: 14px;">{{ post.name }}</td>
-              <td class="border-bottom">
-                {% if 'INSERTED' in post.action.upper() or 'BOOKED' in post.action.upper() %}
-                  <span class="hms-badge hms-badge-success">{{ post.action | upper }}</span>
-                {% elif 'GENERATED' in post.action.upper() %}
-                  <span class="hms-badge hms-badge-teal" style="background:#e0f2fe; color:#0369a1;">{{ post.action | upper }}</span>
-                {% elif 'PAID' in post.action.upper() %}
-                  <span class="hms-badge hms-badge-success" style="background:#dcfce7; color:#15803d;">{{ post.action | upper }}</span>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="ps-4">TID</th>
+              <th scope="col">PID</th>
+              <th scope="col">Email</th>
+              <th scope="col">Name</th>
+              <th scope="col">Trigger Action</th>
+              <th scope="col" class="pe-4 text-end">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for post in posts %}
+            <tr>
+              <td class="ps-4 fw-bold text-dark">#{{ post.tid }}</td>
+              <td><span class="badge bg-surface-subtle text-secondary border">PID: {{ post.pid }}</span></td>
+              <td class="text-sm text-secondary">{{ post.email }}</td>
+              <td class="text-sm fw-semibold text-dark">{{ post.name }}</td>
+              <td>
+                {% if 'INSERTED' in post.action.upper() or 'BOOKED' in post.action.upper() or 'PAID' in post.action.upper() %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">{{ post.action | upper }}</span>
+                {% elif 'GENERATED' in post.action.upper() or 'ACTIVE' in post.action.upper() %}
+                  <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-1">{{ post.action | upper }}</span>
                 {% elif 'UPDATED' in post.action.upper() %}
-                  <span class="hms-badge hms-badge-warning">{{ post.action | upper }}</span>
+                  <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1">{{ post.action | upper }}</span>
                 {% elif 'DELETED' in post.action.upper() or 'CANCELLED' in post.action.upper() %}
-                  <span class="hms-badge hms-badge-danger">{{ post.action | upper }}</span>
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1">{{ post.action | upper }}</span>
                 {% else %}
-                  <span class="hms-badge hms-badge-neutral">{{ post.action | upper }}</span>
+                  <span class="badge bg-surface-subtle text-secondary border rounded-pill px-3 py-1">{{ post.action | upper }}</span>
                 {% endif %}
               </td>
-              <td class="pe-4 border-bottom"><code style="color: var(--hms-navy); background: var(--hms-surface); padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">{{ post.timestamp }}</code></td>
-            </tr>
-          {% else %}
-            <tr>
-              <td colspan="6" class="text-center py-5 text-muted border-0">
-                <i class="fas fa-history fa-3x mb-3 opacity-50"></i>
-                <h5 class="brand-font text-dark">No logs found</h5>
-                <p class="mb-0">The database trigger history is currently empty.</p>
+              <td class="pe-4 text-end">
+                <code class="text-secondary bg-surface-subtle px-2 py-1 rounded text-xs">{{ post.timestamp }}</code>
               </td>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            {% else %}
+            <tr>
+              <td colspan="6" class="py-5 text-center">
+                {{ empty_state(
+                  title="No logs found",
+                  message="The database trigger event history is currently empty.",
+                  icon="fas fa-history"
+                ) }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock body %}

@@ -1,81 +1,54 @@
-{% extends 'base.html' %}
+{% extends 'layouts/public.html' %}
 
-{% block title %}
-Signup | Hospital Management System
-{% endblock title %}
+{% block title %}Register | Hedgewar Hospital Care{% endblock title %}
 
-{% block body %}
-<div class="container mt-5 mb-5">
-
+{% block content %}
+<div class="container py-5 my-auto">
   <div class="row justify-content-center">
     <div class="col-md-6 col-lg-5">
-      
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
-
-      <div class="card shadow border-0 mt-3">
-        
-        <div class="card-header bg-dark text-white text-center py-3">
-          <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>Create an Account</h4>
+      <div class="hms-card">
+        <div class="hms-card-header flex-column text-center py-4">
+          <div class="hms-avatar hms-avatar-lg mb-3">
+            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+          </div>
+          <h1 class="h4 mb-1">Patient Registration</h1>
+          <p class="text-sm text-muted mb-0">Create an account to book consultations and view health records</p>
         </div>
-        
-        <div class="card-body p-4 bg-light">
-          <p class="text-muted text-center mb-4">Join our system to manage your medical history and appointments seamlessly.</p>
 
-          <form action="/signup" method="POST">
-            {{ csrf_field() }}
-            
-            <div class="mb-3">
-              <label for="username" class="form-label fw-bold">Username</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
-                <input type="text" class="form-control" id="username" name="username" placeholder="Choose a username" required autofocus>
-              </div>
+        <div class="hms-card-body p-4">
+          <form action="{{ url_for('auth.signup') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="hms-form-group">
+              <label for="username" class="hms-label">Full Name / Username</label>
+              <input type="text" class="hms-input" id="username" name="username" placeholder="e.g. John Doe" required autofocus autocomplete="name"/>
             </div>
 
-            <div class="mb-3">
-              <label for="email" class="form-label fw-bold">Email Address</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fas fa-envelope text-muted"></i></span>
-                <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email" required>
-              </div>
-              <div class="form-text text-muted small"><i class="fas fa-lock me-1"></i>We'll never share your email with anyone else.</div>
+            <div class="hms-form-group">
+              <label for="email" class="hms-label">Email Address</label>
+              <input type="email" class="hms-input" id="email" name="email" placeholder="patient@example.com" required autocomplete="email"/>
+              <div class="hms-hint">We protect your privacy. Your email is never shared.</div>
             </div>
 
-            <div class="mb-4">
-              <label for="password" class="form-label fw-bold">Password</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fas fa-key text-muted"></i></span>
-                <input type="password" class="form-control" id="password" name="password" placeholder="Create a strong password" required>
-              </div>
-            </div>
-            
-            <div class="d-grid">
-              <button type="submit" class="btn btn-dark btn-lg shadow-sm">
-                Sign Up <i class="fas fa-check ms-2"></i>
-              </button>
+            <div class="hms-form-group">
+              <label for="password" class="hms-label">Password</label>
+              <input type="password" class="hms-input" id="password" name="password" placeholder="Minimum 10 characters" required autocomplete="new-password"/>
+              <div class="hms-hint">Must be at least 10 characters long. Avoid common passwords.</div>
             </div>
 
+            <button type="submit" class="btn-hms btn-hms-primary w-100 btn-hms-lg mt-4">
+              <i class="fa-solid fa-check" aria-hidden="true"></i>
+              <span>Create Account</span>
+            </button>
           </form>
 
-          <div class="text-center mt-4">
-            <span class="text-muted">Already have an account?</span> 
-            <a href="/login" class="text-primary text-decoration-none fw-bold">Login here</a>
+          <div class="text-center mt-4 pt-3 border-top">
+            <span class="text-sm text-muted">Already registered?</span>
+            <a href="{{ url_for('auth.login') }}" class="text-sm fw-bold ms-1">Sign In</a>
           </div>
-
         </div>
       </div>
-
     </div>
   </div>
-
 </div>
-{% endblock body %}
+{% endblock content %}

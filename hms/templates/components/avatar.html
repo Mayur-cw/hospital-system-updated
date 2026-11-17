@@ -1,0 +1,13 @@
+{# Accessible User Avatar Component #}
+{% macro avatar(name, photo_url=None, size='md') %}
+  {% set size_cls = 'hms-avatar-sm' if size == 'sm' else ('hms-avatar-lg' if size == 'lg' else '') %}
+  {% set initials = (name.split()[0][0] ~ (name.split()[-1][0] if name.split()|length > 1 else ''))|upper %}
+
+  <div class="hms-avatar {{ size_cls }}" aria-label="{{ name }}">
+    {% if photo_url %}
+      <img src="{{ photo_url }}" alt="{{ name }}" loading="lazy"/>
+    {% else %}
+      <span aria-hidden="true">{{ initials }}</span>
+    {% endif %}
+  </div>
+{% endmacro %}

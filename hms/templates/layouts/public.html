@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Hedgewar Hospital Care{% endblock %}</title>
+
+  <!-- Self-hosted Assets & WCAG 2.2 AA Design System -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/print.css') }}" media="print">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100">
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Public Navigation Bar -->
+  <header class="navbar navbar-expand-lg public-header">
+    <div class="container px-4">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('main.index') }}" aria-label="Hedgewar Hospital Home">
+        <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Hedgewar Hospital Logo" height="38">
+      </a>
+
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#publicNav" aria-controls="publicNav" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="fa-solid fa-bars text-secondary"></i>
+      </button>
+
+      <div class="collapse navbar-collapse" id="publicNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-lg-2">
+          <li class="nav-item">
+            <a class="nav-link text-secondary fw-medium" href="{{ url_for('main.index') }}">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-secondary fw-medium" href="{{ url_for('main.doctors') }}">Doctors Directory</a>
+          </li>
+        </ul>
+
+        <div class="d-flex align-items-center gap-3">
+          <!-- Theme Toggle Button -->
+          <button type="button" class="btn-hms btn-icon btn-hms-ghost" id="theme-toggle-btn" aria-label="Switch to dark mode">
+            <i class="fa-solid fa-moon" aria-hidden="true"></i>
+          </button>
+
+          {% if current_user.is_authenticated %}
+            {% if current_user.usertype == 'Admin' %}
+              <a href="{{ url_for('admin.admin_dashboard') }}" class="btn-hms btn-hms-primary">
+                <i class="fa-solid fa-gauge" aria-hidden="true"></i>
+                <span>Admin Dashboard</span>
+              </a>
+            {% else %}
+              <a href="{{ url_for('patient.dashboard') }}" class="btn-hms btn-hms-primary">
+                <i class="fa-solid fa-gauge" aria-hidden="true"></i>
+                <span>Dashboard</span>
+              </a>
+            {% endif %}
+          {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-hms btn-hms-secondary">
+              <span>Sign In</span>
+            </a>
+            <a href="{{ url_for('auth.signup') }}" class="btn-hms btn-hms-primary">
+              <span>Register</span>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Flashed Messages / Toasts -->
+  {% from 'components/toast.html' import toast_container %}
+  {{ toast_container() }}
+
+  <!-- Main Content Area -->
+  <main id="main-content" class="flex-grow-1">
+    {% block content %}
+      {% block body %}{% endblock %}
+    {% endblock %}
+  </main>
+
+  <!-- Public Footer -->
+  <footer class="app-footer public-footer mt-auto py-5">
+    <div class="container px-4">
+      <div class="row g-4 justify-content-between align-items-center">
+        <div class="col-md-5">
+          <div class="d-flex align-items-center gap-2 mb-2 text-white">
+            <i class="fa-solid fa-hospital fs-4 text-primary" aria-hidden="true"></i>
+            <span class="fw-bold fs-5">Hedgewar Hospital</span>
+          </div>
+          <p class="small mb-0 text-muted">
+            Dedicated to advanced clinical care, medical excellence, and accessible patient-first healthcare operations.
+          </p>
+        </div>
+
+        <div class="col-md-6 text-md-end">
+          <div class="d-flex flex-wrap justify-content-md-end gap-3 mb-2 small">
+            <a href="{{ url_for('main.doctors') }}" class="public-footer-link">Doctors Directory</a>
+            <span class="text-muted">·</span>
+            <a href="{{ url_for('auth.login') }}" class="public-footer-link">Staff & Patient Portal</a>
+            <span class="text-muted">·</span>
+            <span class="text-muted">Support: emergency@hedgewar.org</span>
+          </div>
+          <p class="small mb-0 text-muted">
+            &copy; 2026 Hedgewar Hospital Care. All rights reserved. Version 1.0.0.
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

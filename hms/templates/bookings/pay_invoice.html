@@ -1,139 +1,107 @@
 {% extends 'base.html' %}
-{% block title %}Checkout | HMS{% endblock %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/badges.html' import status_badge %}
 
-{% block body %}
-<style>
-  body { background-color: var(--hms-surface); }
-  .gateway-wrapper { max-width: 800px; margin: 0 auto; position: relative; }
-  .hms-panel { background: #ffffff; border: 1px solid var(--hms-border); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; }
-  
-  /* Loading Overlay */
-  #processingOverlay { display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.9); z-index: 100; border-radius: 20px; backdrop-filter: blur(5px); flex-direction: column; justify-content: center; align-items: center; }
-  .spinner-grow { width: 3rem; height: 3rem; color: var(--hms-teal); }
+{% block title %}Checkout Invoice #{{ invoice.bill_id }} | Hedgewar Hospital Care{% endblock title %}
 
-  .invoice-header { background: linear-gradient(135deg, var(--hms-navy) 0%, #1e293b 100%); padding: 30px; color: white; }
-  .amount-display { font-family: 'Syne', sans-serif; font-size: 2.5rem; font-weight: 800; color: #10b981; }
-  
-  .mode-card { border: 2px solid var(--hms-border); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.2s; text-align: center; }
-  .mode-card:hover { border-color: var(--hms-teal); transform: translateY(-3px); }
-  .mode-card.selected { border-color: var(--hms-teal); background: #f0fdfa; box-shadow: 0 5px 15px rgba(0,201,167,0.1); }
-  
-  .bank-option { border: 2px solid var(--hms-border); border-radius: 12px; padding: 15px; cursor: pointer; text-align: center; font-weight: 700; transition: all 0.2s; }
-  .bank-option.selected { border-color: var(--hms-teal); background: #f0fdfa; color: var(--hms-teal); }
+{% block content %}
+{{ page_header(
+  title='Hospital Invoice Checkout',
+  subtitle='Complete payment for consultation and hospital services',
+  breadcrumbs=[{'label': 'My Bills', 'url': url_for('patient.my_bills')}, {'label': 'Checkout', 'url': None}]
+) }}
 
-  .btn-pay { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--hms-teal) 0%, #0d9488 100%); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 1.1rem; transition: all 0.3s; }
-  .btn-pay:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(13,148,136,0.3); }
-  .btn-pay:disabled { background: #cbd5e1; cursor: not-allowed; }
-</style>
-
-<div class="container mt-5 mb-5">
-  <div class="gateway-wrapper">
-    
-    <div class="mb-3"><a href="{{ url_for('patient.my_bills') }}" class="btn btn-outline-secondary rounded-pill btn-sm fw-bold"><i class="fas fa-arrow-left me-2"></i>Back</a></div>
-
-    <div class="hms-panel position-relative">
-      
-      <!-- Processing Animation -->
-      <div id="processingOverlay">
-        <div class="spinner-grow mb-3" role="status"></div>
-        <h4 class="brand-font fw-bold text-dark">Processing Payment</h4>
-        <p class="text-muted small">Establishing secure connection to your bank...</p>
-      </div>
-
-      <div class="invoice-header d-flex justify-content-between align-items-center">
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="hms-card">
+      <div class="hms-card-header">
         <div>
-          <span class="badge bg-light text-dark mb-2">Invoice #{{ invoice.bill_id }}</span>
-          <h4 class="mb-0 fw-bold">Consultation Fee</h4>
-          <div class="small opacity-75 mt-1">Dr. {{ invoice.appointment.doctor }} | {{ invoice.appointment.dept }}</div>
+          <span class="text-xs text-muted text-uppercase fw-bold">Invoice Summary</span>
+          <h2 class="h5 mb-0">Consultation Invoice #{{ invoice.bill_id }}</h2>
         </div>
         <div class="text-end">
-          <div class="small text-uppercase opacity-75 fw-bold">Total Due</div>
-          <div class="amount-display">₹{{ invoice.amount }}</div>
+          <span class="text-xs text-muted text-uppercase d-block">Amount Due</span>
+          <span class="text-2xl fw-bold text-primary">₹{{ invoice.amount }}</span>
         </div>
       </div>
 
-      <div class="p-4 p-md-5">
-        <h6 class="fw-bold text-uppercase text-muted mb-4" style="letter-spacing: 1px;">Select Payment Mode</h6>
-        
-        <form action="{{ url_for('patient.process_payment', bill_id=invoice.bill_id) }}" method="POST" id="paymentForm">
-          {{ csrf_field() }}
-          <input type="hidden" name="payment_mode" id="paymentMode">
-          <input type="hidden" name="bank_name" id="bankName">
+      <div class="hms-card-body p-4 p-md-5">
+        {# Invoice details breakdown #}
+        <div class="p-3 rounded border bg-light mb-4">
+          <dl class="row mb-0 text-sm">
+            <dt class="col-sm-4 text-muted">Consulting Specialist:</dt>
+            <dd class="col-sm-8 fw-semibold">Dr. {{ invoice.appointment.doctor if invoice.appointment else 'Physician' }}</dd>
+
+            <dt class="col-sm-4 text-muted">Department:</dt>
+            <dd class="col-sm-8">{{ invoice.appointment.dept if invoice.appointment else 'General Medicine' }}</dd>
+
+            <dt class="col-sm-4 text-muted">Appointment Date:</dt>
+            <dd class="col-sm-8 mb-0">{{ invoice.appointment.date if invoice.appointment else '—' }}</dd>
+          </dl>
+        </div>
+
+        {# Payment Form with real accessible radio controls #}
+        <form action="{{ url_for('patient.process_payment', bill_id=invoice.bill_id) }}" method="POST" id="checkout-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" name="payment_mode" id="paymentMode" value="netbanking" required/>
+          <input type="hidden" name="bank_name" id="bankName" value="HDFC Bank"/>
+
+          <h3 class="h6 fw-bold text-uppercase text-muted mb-3">Select Payment Method</h3>
 
           <div class="row g-3 mb-4">
-            <div class="col-6">
-              <div class="mode-card" onclick="selectMode('netbanking')">
-                <i class="fas fa-university fa-2x mb-2 text-primary"></i>
-                <div class="fw-bold">Net Banking</div>
-              </div>
+            <div class="col-md-6">
+              <label class="hms-card p-3 d-flex align-items-center gap-3 cursor-pointer h-100 mb-0">
+                <input type="radio" name="payment_mode_radio" value="netbanking" checked class="form-check-input mt-0"/>
+                <div class="hms-avatar icon-teal" aria-hidden="true">
+                  <i class="fa-solid fa-building-columns"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-sm">Net Banking</div>
+                  <div class="text-xs text-muted">Online instant verification</div>
+                </div>
+              </label>
             </div>
-            <div class="col-6">
-              <div class="mode-card" onclick="selectMode('cash')">
-                <i class="fas fa-money-bill-wave fa-2x mb-2 text-success"></i>
-                <div class="fw-bold">Pay at Counter</div>
-              </div>
+
+            <div class="col-md-6">
+              <label class="hms-card p-3 d-flex align-items-center gap-3 cursor-pointer h-100 mb-0">
+                <input type="radio" name="payment_mode_radio" value="cash" class="form-check-input mt-0"/>
+                <div class="hms-avatar icon-green" aria-hidden="true">
+                  <i class="fa-solid fa-money-bill-wave"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-sm">Pay at Counter</div>
+                  <div class="text-xs text-muted">Cash settlement at front desk</div>
+                </div>
+              </label>
             </div>
           </div>
 
-          <div id="bankSelection" class="mb-4" style="display: none;">
-            <h6 class="fw-bold text-dark mb-3">Select Bank</h6>
-            <div class="row g-2">
-              <div class="col-4"><div class="bank-option" onclick="selectBank('SBI')">SBI</div></div>
-              <div class="col-4"><div class="bank-option" onclick="selectBank('HDFC')">HDFC</div></div>
-              <div class="col-4"><div class="bank-option" onclick="selectBank('ICICI')">ICICI</div></div>
-              <div class="col-4"><div class="bank-option" onclick="selectBank('Axis')">Axis</div></div>
-              <div class="col-4"><div class="bank-option" onclick="selectBank('Bank of Baroda')">BOB</div></div>
-              <div class="col-4"><div class="bank-option" onclick="selectBank('Other')">Other</div></div>
-            </div>
+          <div id="bankSelection" class="hms-form-group mb-4">
+            <label for="bankSelect" class="hms-label">Select Banking Partner</label>
+            <select id="bankSelect" class="hms-select">
+              <option value="HDFC Bank" selected>HDFC Bank</option>
+              <option value="State Bank of India">State Bank of India (SBI)</option>
+              <option value="ICICI Bank">ICICI Bank</option>
+              <option value="Axis Bank">Axis Bank</option>
+              <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+            </select>
           </div>
 
-          <button type="button" class="btn-pay" id="payBtn" disabled onclick="simulatePayment()">
-            <i class="fas fa-lock me-2"></i> <span id="payBtnText">Select a payment method</span>
-          </button>
-          
-          <div class="text-center mt-3 small text-muted"><i class="fas fa-shield-alt text-success me-1"></i> SSL Secured Transaction</div>
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{{ url_for('patient.my_bills') }}" class="btn-hms btn-hms-secondary">
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              <span>Back</span>
+            </a>
+            <button type="submit" class="btn-hms btn-hms-primary btn-hms-lg" id="pay-submit-btn">
+              <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+              <span>Authorize Payment ₹{{ invoice.amount }}</span>
+            </button>
+          </div>
         </form>
       </div>
-
     </div>
   </div>
 </div>
 
-<script>
-  function selectMode(mode) {
-    document.getElementById('paymentMode').value = mode;
-    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
-    event.currentTarget.classList.add('selected');
-    
-    const bankPanel = document.getElementById('bankSelection');
-    const btn = document.getElementById('payBtn');
-    
-    if (mode === 'netbanking') {
-      bankPanel.style.display = 'block';
-      btn.disabled = true;
-      document.getElementById('payBtnText').innerText = 'Select your bank';
-    } else {
-      bankPanel.style.display = 'none';
-      btn.disabled = false;
-      document.getElementById('payBtnText').innerText = 'Confirm Counter Payment';
-    }
-  }
-
-  function selectBank(bank) {
-    document.getElementById('bankName').value = bank;
-    document.querySelectorAll('.bank-option').forEach(c => c.classList.remove('selected'));
-    event.currentTarget.classList.add('selected');
-    
-    const btn = document.getElementById('payBtn');
-    btn.disabled = false;
-    document.getElementById('payBtnText').innerText = 'Pay ₹{{ invoice.amount }} via ' + bank;
-  }
-
-  function simulatePayment() {
-    document.getElementById('processingOverlay').style.display = 'flex';
-    setTimeout(() => {
-      document.getElementById('paymentForm').submit();
-    }, 2000); // 2 second delay to simulate banking API
-  }
-</script>
-{% endblock %}
+<script src="{{ url_for('static', filename='js/pages/pay_invoice.js') }}"></script>
+{% endblock content %}

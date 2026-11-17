@@ -1,0 +1,82 @@
+{# Unified Status Badge Component (WCAG AA Compliant - Icon + Text) #}
+{% macro status_badge(status, size='md') %}
+  {% set s = (status.value if status is defined and status.value is defined else status)|string|trim %}
+  {% set s_lower = s|lower %}
+
+  {% if s_lower in ['scheduled'] %}
+    <span class="badge-status badge-scheduled" role="status">
+      <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+      <span>Scheduled</span>
+    </span>
+  {% elif s_lower in ['checkedin', 'checked in', 'attended'] %}
+    <span class="badge-status badge-checkedin" role="status">
+      <i class="fa-solid fa-user-clock" aria-hidden="true"></i>
+      <span>Checked In</span>
+    </span>
+  {% elif s_lower in ['completed'] %}
+    <span class="badge-status badge-completed" role="status">
+      <i class="fa-solid fa-check-circle" aria-hidden="true"></i>
+      <span>Completed</span>
+    </span>
+  {% elif s_lower in ['missed'] %}
+    <span class="badge-status badge-missed" role="status">
+      <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
+      <span>Missed</span>
+    </span>
+  {% elif s_lower in ['cancelled', 'canceled'] %}
+    <span class="badge-status badge-cancelled" role="status">
+      <i class="fa-solid fa-ban" aria-hidden="true"></i>
+      <span>Cancelled</span>
+    </span>
+  {% elif s_lower in ['paid', 'succeeded'] %}
+    <span class="badge-status badge-paid" role="status">
+      <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+      <span>Paid</span>
+    </span>
+  {% elif s_lower in ['issued', 'pending'] %}
+    <span class="badge-status badge-issued" role="status">
+      <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+      <span>Payment Pending</span>
+    </span>
+  {% elif s_lower in ['draft'] %}
+    <span class="badge-status badge-draft" role="status">
+      <i class="fa-regular fa-file" aria-hidden="true"></i>
+      <span>Draft</span>
+    </span>
+  {% elif s_lower in ['void', 'refunded', 'failed'] %}
+    <span class="badge-status badge-void" role="status">
+      <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+      <span>{{ s|title }}</span>
+    </span>
+  {% elif s_lower in ['available'] %}
+    <span class="badge-status badge-available" role="status">
+      <i class="fa-solid fa-bed" aria-hidden="true"></i>
+      <span>Available</span>
+    </span>
+  {% elif s_lower in ['occupied'] %}
+    <span class="badge-status badge-occupied" role="status">
+      <i class="fa-solid fa-bed-pulse" aria-hidden="true"></i>
+      <span>Occupied</span>
+    </span>
+  {% elif s_lower in ['maintenance'] %}
+    <span class="badge-status badge-maintenance" role="status">
+      <i class="fa-solid fa-wrench" aria-hidden="true"></i>
+      <span>Maintenance</span>
+    </span>
+  {% elif s_lower in ['admitted'] %}
+    <span class="badge-status badge-admitted" role="status">
+      <i class="fa-solid fa-hospital-user" aria-hidden="true"></i>
+      <span>Admitted</span>
+    </span>
+  {% elif s_lower in ['discharged'] %}
+    <span class="badge-status badge-discharged" role="status">
+      <i class="fa-solid fa-door-open" aria-hidden="true"></i>
+      <span>Discharged</span>
+    </span>
+  {% else %}
+    <span class="badge-status badge-info" role="status">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      <span>{{ s }}</span>
+    </span>
+  {% endif %}
+{% endmacro %}

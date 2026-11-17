@@ -1,0 +1,40 @@
+{# Accessible Confirmation Modal Component #}
+{% macro modal_confirm(id, title, message, form_action, method='POST', confirm_text='Confirm', variant='danger', entity_name=None, entity_id_input=None) %}
+  <div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}-title" aria-modal="true" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-hms">
+      <div class="modal-content modal-content-hms">
+        <form method="{{ method }}" action="{{ form_action }}" class="modal-confirm-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          {% if entity_id_input %}
+            <input type="hidden" name="entity_id" id="{{ id }}-entity-id" value=""/>
+          {% endif %}
+
+          <div class="modal-header modal-header-hms">
+            <h3 class="modal-title h5 mb-0" id="{{ id }}-title">{{ title }}</h3>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body modal-body-hms">
+            <p id="{{ id }}-message" class="mb-3">{{ message }}</p>
+
+            {% if entity_name %}
+              <div class="hms-form-group">
+                <label for="{{ id }}-confirm-input" class="hms-label">
+                  To confirm, type <strong class="text-danger">{{ entity_name }}</strong> below:
+                </label>
+                <input type="text" id="{{ id }}-confirm-input" class="hms-input modal-confirm-challenge" data-target="{{ entity_name }}" autocomplete="off" required/>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="modal-footer modal-footer-hms">
+            <button type="button" class="btn-hms btn-hms-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn-hms btn-hms-{{ variant }} modal-submit-btn" {% if entity_name %}disabled{% endif %}>
+              <span>{{ confirm_text }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endmacro %}

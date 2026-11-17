@@ -1,116 +1,55 @@
 {% extends 'base.html' %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/badges.html' import status_badge %}
 
-{% block title %}Our Specialists | Hospital Management System{% endblock title %}
+{% block title %}Our Medical Specialists | Hedgewar Hospital Care{% endblock title %}
 
-{% block body %}
-<style>
-  /* 🚨 SYNCHRONIZED HMS COLOR PALETTE */
-  :root {
-    --primary:      #0d6efd;
-    --primary-dim:  #0b5ed7;
-    --primary-pale: #e7f1ff;
-    --header-start: #1e3c72;
-    --header-end:   #2a5298;
-    --text-dark:    #212529;
-    --text-hint:    #adb5bd;
-    --border:       #dee2e6;
-    --surface:      #f8f9fa;
-  }
+{% block content %}
+{{ page_header(
+  title='Medical Specialists & Physicians',
+  subtitle='Consult with board-certified clinical experts across our dedicated hospital departments',
+  breadcrumbs=[{'label': 'Doctors Directory', 'url': None}]
+) }}
 
-  .directory-hero {
-    background: linear-gradient(135deg, var(--header-start) 0%, var(--header-end) 100%);
-    padding: 4rem 0 6rem;
-    text-align: center;
-    color: white;
-  }
-
-  .doc-profile-card {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 2rem 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    height: 100%;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
-  }
-
-  .doc-profile-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 25px rgba(0,0,0,0.1);
-    border-color: var(--primary-mid);
-  }
-
-  .doc-avatar-large {
-    width: 90px; height: 90px;
-    border-radius: 50%;
-    background: var(--primary-pale);
-    border: 4px solid #fff;
-    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.15);
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 1.25rem;
-    position: relative;
-  }
-
-  .doc-avatar-large i { font-size: 2.2rem; color: var(--primary); }
-  
-  .verified-badge {
-    position: absolute;
-    bottom: 0; right: 5px;
-    background: #10b981; color: white;
-    width: 24px; height: 24px;
-    border-radius: 50%; border: 2px solid white;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.7rem;
-  }
-</style>
-
-<div class="directory-hero">
-    <div class="container">
-        <span class="badge bg-white text-primary rounded-pill px-3 py-2 mb-3 fw-bold shadow-sm">Meet The Team</span>
-        <h1 class="display-5 fw-bold mb-2">Our Medical Specialists</h1>
-        <p class="lead opacity-75">World-class healthcare professionals dedicated to your well-being.</p>
-    </div>
-</div>
-
-<div class="container mb-5" style="margin-top: -60px; position: relative; z-index: 10;">
-  
-  <div class="row g-4">
-    {% for d in all_doctors %}
+<div class="row g-4">
+  {% for d in all_doctors %}
     <div class="col-md-6 col-lg-4">
-      <div class="doc-profile-card d-flex flex-column">
-        
-        <div class="doc-avatar-large">
-          <i class="fas fa-user-md"></i>
-          <div class="verified-badge" title="Board Certified"><i class="fas fa-check"></i></div>
-        </div>
-        
-        <h4 class="fw-bold text-dark mb-1">Dr. {{ d.doctorname | capitalize }}</h4>
-        <div class="mb-3">
-            <span class="badge bg-primary-pale text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill fw-bold">
-                <i class="fas fa-stethoscope me-1"></i> {{ d.dept | capitalize }}
+      <div class="hms-card h-100 d-flex flex-column">
+        <div class="hms-card-body text-center p-4 flex-grow-1">
+          <div class="hms-avatar hms-avatar-lg mx-auto mb-3">
+            <i class="fa-solid fa-user-doctor fs-3" aria-hidden="true"></i>
+          </div>
+
+          <h2 class="h5 mb-1">Dr. {{ d.doctorname }}</h2>
+          <div class="mb-3">
+            <span class="badge-status badge-info">
+              <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+              <span>{{ d.dept }}</span>
             </span>
-        </div>
-        
-        <p class="text-muted small mb-4 flex-grow-1">Highly experienced specialist in {{ d.dept }}. Dedicated to providing comprehensive and compassionate patient care.</p>
-        
-        <div class="d-grid mt-auto">
-            <!-- 🚨 THIS IS THE MAGIC LINK: It passes dept and doctor to the booking wizard -->
-            <a href="/patients?dept={{ d.dept | urlencode }}&doctor={{ d.doctorname | urlencode }}" class="btn btn-primary rounded-pill fw-bold py-2 shadow-sm">
-                <i class="fas fa-calendar-check me-2"></i> Book Consultation
+          </div>
+
+          <p class="text-sm text-muted mb-4">
+            Board-certified physician in the department of {{ d.dept }}, providing outpatient consultations and inpatient medical care.
+          </p>
+
+          <div class="mt-auto pt-3 border-top">
+            <a href="{{ url_for('patient.patient_booking', dept=d.dept, doctor=d.doctorname) }}" class="btn-hms btn-hms-primary w-100">
+              <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+              <span>Book Consultation</span>
             </a>
+          </div>
         </div>
-        
       </div>
     </div>
-    {% else %}
-    <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm border">
-        <i class="fas fa-user-slash fa-3x text-muted opacity-25 mb-3"></i>
-        <h4 class="fw-bold text-dark">No Doctors Available</h4>
-        <p class="text-muted">There are currently no specialists listed in the directory.</p>
+  {% else %}
+    <div class="col-12">
+      {% from 'components/empty_state.html' import empty_state %}
+      {{ empty_state(
+        title='No specialists found',
+        message='No active medical doctors are registered in the system at this time.',
+        icon='user-doctor'
+      ) }}
     </div>
-    {% endfor %}
-  </div>
-
+  {% endfor %}
 </div>
-{% endblock body %}
+{% endblock content %}

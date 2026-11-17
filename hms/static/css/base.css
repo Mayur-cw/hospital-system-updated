@@ -1,0 +1,127 @@
+/* ==========================================================================
+   Hedgewar Hospital Management System - Base & Reset Styles
+   WCAG 2.2 AA Accessible Base
+   ========================================================================== */
+
+@layer reset, tokens, base, components, utilities;
+
+@layer base {
+  /* Box sizing rules */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  /* HTML & Body Defaults */
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    transition: background-color var(--duration-normal) var(--ease-standard),
+                color var(--duration-normal) var(--ease-standard);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Headings Typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    line-height: var(--leading-tight);
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+    margin-bottom: var(--space-3);
+  }
+
+  h1 { font-size: var(--text-3xl); }
+  h2 { font-size: var(--text-2xl); }
+  h3 { font-size: var(--text-xl); }
+  h4 { font-size: var(--text-lg); }
+  h5 { font-size: var(--text-base); }
+  h6 { font-size: var(--text-sm); }
+
+  p {
+    margin-bottom: var(--space-4);
+    color: var(--color-text);
+  }
+
+  p.lead {
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-muted);
+  }
+
+  /* Links */
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color var(--duration-fast) var(--ease-standard);
+  }
+
+  a:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+  }
+
+  /* Focus Visibility for Accessibility (WCAG 2.2 AA) */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    box-shadow: var(--shadow-focus);
+  }
+
+  /* Skip Link for Screen Readers & Keyboard Navigation */
+  .skip-link {
+    position: absolute;
+    top: -9999px;
+    left: var(--space-4);
+    background: var(--color-navy);
+    color: var(--color-accent);
+    padding: var(--space-2) var(--space-4);
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    z-index: var(--z-tooltip);
+    transition: top var(--duration-fast) var(--ease-standard);
+    text-decoration: none;
+  }
+
+  .skip-link:focus {
+    top: var(--space-4);
+  }
+
+  /* Form Elements Reset */
+  button, input, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  img, svg {
+    max-width: 100%;
+    height: auto;
+    vertical-align: middle;
+  }
+
+  /* Table Reset */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--color-border-subtle);
+    margin: var(--space-6) 0;
+  }
+}

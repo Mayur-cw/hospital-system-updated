@@ -1,0 +1,33 @@
+{# Accessible Page Header with Breadcrumbs and Actions #}
+{% macro page_header(title, subtitle=None, breadcrumbs=[], actions=[]) %}
+  <header class="page-header" role="region" aria-label="Page header">
+    <div class="page-header-main">
+      {% if breadcrumbs %}
+        <nav aria-label="Breadcrumb">
+          <ol class="breadcrumb-hms">
+            <li><a href="{{ url_for('main.index') }}">Home</a></li>
+            {% for crumb in breadcrumbs %}
+              {% if loop.last or not crumb.url %}
+                <li aria-current="page">{{ crumb.label }}</li>
+              {% else %}
+                <li><a href="{{ crumb.url }}">{{ crumb.label }}</a></li>
+              {% endif %}
+            {% endfor %}
+          </ol>
+        </nav>
+      {% endif %}
+      <h1 class="page-header-title">{{ title }}</h1>
+      {% if subtitle %}
+        <p class="page-header-subtitle">{{ subtitle }}</p>
+      {% endif %}
+    </div>
+
+    {% if actions %}
+      <div class="page-header-actions">
+        {% for act in actions %}
+          {{ act|safe }}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </header>
+{% endmacro %}

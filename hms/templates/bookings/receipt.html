@@ -1,86 +1,93 @@
 {% extends 'base.html' %}
-{% block title %}Receipt #{{ invoice.bill_id }} | HMS{% endblock %}
+{% from 'components/badges.html' import status_badge %}
 
-{% block body %}
-<style>
-  body { background-color: var(--hms-surface); }
-  .receipt-wrapper { max-width: 600px; margin: 0 auto; }
-  
-  @media print {
-    body * { visibility: hidden; }
-    #printableArea, #printableArea * { visibility: visible; }
-    #printableArea { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; }
-    .no-print { display: none !important; }
-  }
+{% block title %}Receipt #{{ invoice.bill_id }} | Hedgewar Hospital Care{% endblock title %}
 
-  .receipt-card { background: white; border-radius: 16px; border: 1px solid var(--hms-border); box-shadow: 0 20px 40px rgba(0,0,0,0.08); overflow: hidden; }
-  .receipt-header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center; color: white; }
-  .stamp { display: inline-block; border: 3px solid rgba(255,255,255,0.9); padding: 5px 20px; font-weight: 900; letter-spacing: 5px; font-size: 24px; transform: rotate(-5deg); margin-top: 10px; }
-  
-  .receipt-body { padding: 30px; }
-  .r-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #cbd5e1; font-size: 14px; }
-  .r-label { font-weight: 700; color: #64748b; text-transform: uppercase; font-size: 12px; }
-  .r-val { font-weight: 800; color: var(--hms-navy); }
-  
-  .barcode { font-family: 'Courier New', monospace; letter-spacing: 2px; text-align: center; margin-top: 20px; font-weight: bold; }
-</style>
-
-<div class="container mt-5 mb-5">
-  <div class="receipt-wrapper">
-    
-    <div class="d-flex justify-content-between mb-3 no-print">
-      {% if current_user.usertype == 'Admin' %}
-        <a href="{{ url_for('admin.admin_financials') }}" class="btn btn-outline-secondary btn-sm fw-bold"><i class="fas fa-arrow-left me-1"></i> Back</a>
-      {% else %}
-        <a href="{{ url_for('patient.my_bills') }}" class="btn btn-outline-secondary btn-sm fw-bold"><i class="fas fa-arrow-left me-1"></i> Back</a>
-      {% endif %}
-      <button class="btn btn-dark btn-sm fw-bold" onclick="window.print()"><i class="fas fa-print me-1"></i> Print</button>
+{% block content %}
+<div class="row justify-content-center py-4">
+  <div class="col-lg-7">
+    {# Non-print control bar #}
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+      <a href="{{ url_for('patient.my_bills') }}" class="btn-hms btn-hms-secondary btn-hms-sm">
+        <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>
+        <span>Back to Invoices</span>
+      </a>
+      <button type="button" class="btn-hms btn-hms-primary btn-hms-sm" id="print-receipt-btn">
+        <i class="fa-solid fa-print me-1" aria-hidden="true"></i>
+        <span>Print Tax Receipt</span>
+      </button>
     </div>
 
-    <div class="receipt-card" id="printableArea">
-      <div class="receipt-header">
-        <h2 class="brand-font fw-bold mb-1">Payment Successful</h2>
-        <p class="mb-2 opacity-75">Hospital Management System</p>
-        <div class="stamp">PAID</div>
+    {# Official Printable Tax Receipt #}
+    <div class="hms-card" id="printableArea">
+      {# Printable Letterhead #}
+      <div class="p-4 p-md-5 border-bottom print-letterhead">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <i class="fa-solid fa-hospital text-primary fs-3" aria-hidden="true"></i>
+              <span class="h4 fw-bold mb-0 font-brand-heading">Hedgewar Hospital Care</span>
+            </div>
+            <p class="text-xs text-muted mb-0">Central Healthcare Operations & Clinical Billing Services</p>
+          </div>
+          <div class="text-end">
+            <span class="badge-status badge-success fs-6">PAID</span>
+            <div class="text-xs text-muted mt-1">Receipt No: <strong>#{{ invoice.bill_id }}</strong></div>
+          </div>
+        </div>
       </div>
-      
-      <div class="receipt-body">
-          <div class="r-row"><span class="r-label">Receipt No</span><span class="r-val">#{{ invoice.bill_id }}</span></div>
-          <div class="r-row"><span class="r-label">Date Settled</span><span class="r-val">{{ invoice.paid_on.strftime('%b %d, %Y - %H:%M') if invoice.paid_on else '—' }}</span></div>
-          <div class="r-row"><span class="r-label">Patient Name</span><span class="r-val">{{ invoice.patient.username if invoice.patient else (invoice.appointment.patient.username if invoice.appointment and invoice.appointment.patient else 'Patient') }}</span></div>
-          <div class="r-row"><span class="r-label">Consulting Doctor</span><span class="r-val">{% if invoice.appointment and invoice.appointment.doctor %}Dr. {{ invoice.appointment.doctor }}{% else %}Hospital Staff{% endif %}</span></div>
 
-          <!-- 🚨 NEW: FINANCIAL BREAKDOWN -->
-          <div class="r-row mt-3"><span class="r-label text-dark">Base Consultation Fee</span><span class="r-val">₹{{ invoice.subtotal }}</span></div>
+      <div class="hms-card-body p-4 p-md-5">
+        <dl class="row g-3 mb-4 text-sm">
+          <dt class="col-sm-4 text-muted">Date Settled:</dt>
+          <dd class="col-sm-8 fw-semibold">{{ invoice.paid_on.strftime('%b %d, %Y - %H:%M') if invoice.paid_on else '—' }}</dd>
 
-          {% if invoice.appointment and invoice.appointment.admission %}
-          <div class="r-row">
-              <span class="r-label text-info">Inpatient Ward Charges ({{ invoice.appointment.admission.room.ward_type }})</span>
-              <span class="r-val">₹{{ invoice.appointment.admission.room.rate_per_day }} / day</span>
-          </div>
-          {% endif %}
-        
-          <div class="r-row border-0">
-              <span class="r-label">Payment Mode</span>
-              <span class="r-val text-uppercase text-success">
-                  {% if invoice.payment_mode == 'netbanking' %}🏦 {{ invoice.bank_name or 'NetBanking' }}{% elif invoice.payment_mode == 'upi' %}📱 UPI Transfer{% elif invoice.payment_mode == 'card' %}💳 Card Payment{% else %}💵 Counter Cash{% endif %}
-              </span>
-          </div>
-        
-          <div class="bg-light p-3 rounded-3 mt-3 text-center border">
-            <div class="r-label mb-1">Total Amount Paid</div>
-            <h2 class="text-success fw-bold mb-1">₹{{ invoice.amount }}</h2>
-            {% if invoice.appointment.admission %}
-            <small class="text-muted fst-italic">Includes consultation and cumulative room stay charges.</small>
+          <dt class="col-sm-4 text-muted">Patient Name:</dt>
+          <dd class="col-sm-8 fw-bold">{{ invoice.patient.username if invoice.patient else (invoice.appointment.patient.username if invoice.appointment and invoice.appointment.patient else 'Patient') }}</dd>
+
+          <dt class="col-sm-4 text-muted">Consulting Specialist:</dt>
+          <dd class="col-sm-8">Dr. {{ invoice.appointment.doctor if invoice.appointment else 'Physician' }}</dd>
+
+          <dt class="col-sm-4 text-muted">Clinical Specialty:</dt>
+          <dd class="col-sm-8">{{ invoice.appointment.dept if invoice.appointment else 'General Medicine' }}</dd>
+
+          <dt class="col-sm-4 text-muted">Payment Mode:</dt>
+          <dd class="col-sm-8 text-uppercase fw-semibold text-success">{{ invoice.payment_mode or 'Digital' }}</dd>
+        </dl>
+
+        {# Financial Itemization #}
+        <table class="hms-table mb-4">
+          <thead>
+            <tr>
+              <th scope="col">Service Description</th>
+              <th scope="col" class="text-end">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Clinical Outpatient Consultation & Diagnostic Review</td>
+              <td class="text-end fw-semibold">₹{{ invoice.subtotal or invoice.amount }}</td>
+            </tr>
+            {% if invoice.appointment and invoice.appointment.admission %}
+              <tr>
+                <td>Inpatient Bed & Nursing Care (Ward: {{ invoice.appointment.admission.room.ward_type if invoice.appointment.admission.room else 'General' }})</td>
+                <td class="text-end fw-semibold">Daily tariff applied</td>
+              </tr>
             {% endif %}
-          </div>
-        
-          <div class="barcode">||| |||| | |||||| || | ||</div>
-          <div class="text-center small text-muted mt-2">Digital Signature Verified. No physical stamp required.</div>
+            <tr class="fw-bold border-top">
+              <td>Total Settled</td>
+              <td class="text-end text-primary fs-5">₹{{ invoice.amount }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="p-3 rounded bg-light border text-center text-xs text-muted">
+          Digital Tax Invoice & Receipt · Computer Generated · Verified via Hedgewar Hospital Core Financial Gateway
+        </div>
       </div>
-
     </div>
-
   </div>
 </div>
-{% endblock %}
+
+<script src="{{ url_for('static', filename='js/pages/receipt.js') }}"></script>
+{% endblock content %}

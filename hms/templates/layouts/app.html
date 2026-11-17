@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Hedgewar Hospital Portal{% endblock %}</title>
+
+  <!-- Self-hosted Assets & WCAG 2.2 AA Design System -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/print.css') }}" media="print">
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="app-shell">
+    <!-- Mobile Backdrop -->
+    <div class="sidebar-backdrop" aria-hidden="true"></div>
+
+    <!-- Role-Aware Collapsible Sidebar -->
+    <aside class="app-sidebar" aria-label="Main Navigation">
+      <div class="sidebar-header">
+        <a href="{{ url_for('main.index') }}" class="sidebar-brand" aria-label="Hedgewar Hospital Home">
+          <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Hedgewar Hospital" height="32">
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        {% set role = current_user.usertype if current_user.is_authenticated else 'Guest' %}
+
+        {% if role == 'Admin' %}
+          {# Admin Navigation #}
+          <div class="sidebar-section-title">Operations</div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-link-hms {% if request.endpoint == 'admin.admin_dashboard' %}active{% endif %}">
+              <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+              <span>Dashboard</span>
+            </a>
+          </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('admin.admin_appointments') }}" class="nav-link-hms {% if request.endpoint == 'admin.admin_appointments' %}active{% endif %}">
+              <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+              <span>Appointments</span>
+            </a>
+          </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('admin.admin_rooms') }}" class="nav-link-hms {% if request.endpoint == 'admin.admin_rooms' %}active{% endif %}">
+              <i class="fa-solid fa-bed-pulse" aria-hidden="true"></i>
+              <span>Inpatient & Rooms</span>
+            </a>
+          </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('admin.admin_financials') }}" class="nav-link-hms {% if request.endpoint == 'admin.admin_financials' %}active{% endif %}">
+              <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
+              <span>Billing & Finance</span>
+            </a>
+          </div>
+
+          <div class="sidebar-section-title">Directories</div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('admin.admin_doctors') }}" class="nav-link-hms {% if request.endpoint == 'admin.admin_doctors' %}active{% endif %}">
+              <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+              <span>Doctors</span>
+            </a>
+          </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('admin.admin_patients') }}" class="nav-link-hms {% if request.endpoint == 'admin.admin_patients' %}active{% endif %}">
+              <i class="fa-solid fa-hospital-user" aria-hidden="true"></i>
+              <span>Patients</span>
+            </a>
+          </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('admin.admin_staff') }}" class="nav-link-hms {% if request.endpoint == 'admin.admin_staff' %}active{% endif %}">
+              <i class="fa-solid fa-users-gear" aria-hidden="true"></i>
+              <span>Staff & Admins</span>
+            </a>
+          </div>
+
+          <div class="sidebar-section-title">Governance</div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('admin.details') }}" class="nav-link-hms {% if request.endpoint == 'admin.details' %}active{% endif %}">
+              <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+              <span>Audit Logs</span>
+            </a>
+          </div>
+
+        {% elif role == 'Doctor' %}
+          {# Doctor Navigation #}
+          <div class="sidebar-section-title">Clinical Care</div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('patient.dashboard') }}" class="nav-link-hms {% if request.endpoint == 'patient.dashboard' %}active{% endif %}">
+              <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+              <span>Patient Queue</span>
+            </a>
+          </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('doctor.my_admissions') }}" class="nav-link-hms {% if request.endpoint == 'doctor.my_admissions' %}active{% endif %}">
+              <i class="fa-solid fa-hospital-user" aria-hidden="true"></i>
+              <span>Admitted Patients</span>
+            </a>
+          </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('main.doctors') }}" class="nav-link-hms {% if request.endpoint == 'main.doctors' %}active{% endif %}">
+              <i class="fa-solid fa-address-book" aria-hidden="true"></i>
+              <span>Physician Directory</span>
+            </a>
+          </div>
+
+        {% else %}
+          {# Patient Navigation #}
+          <div class="sidebar-section-title">My Care</div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('patient.dashboard') }}" class="nav-link-hms {% if request.endpoint in ['main.dashboard', 'patient.dashboard'] %}active{% endif %}">
+              <i class="fa-solid fa-house-medical" aria-hidden="true"></i>
+              <span>Dashboard</span>
+            </a>
+          </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('patient.patient_booking') }}" class="nav-link-hms {% if request.endpoint == 'patient.patient_booking' %}active{% endif %}">
+              <i class="fa-regular fa-calendar-plus" aria-hidden="true"></i>
+              <span>Book Appointment</span>
+            </a>
+          </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('patient.my_bills') }}" class="nav-link-hms {% if request.endpoint == 'patient.my_bills' %}active{% endif %}">
+              <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+              <span>My Invoices & Bills</span>
+            </a>
+          </div>
+          <div class="nav-item-hms">
+            <a href="{{ url_for('main.doctors') }}" class="nav-link-hms {% if request.endpoint == 'main.doctors' %}active{% endif %}">
+              <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+              <span>Find Doctors</span>
+            </a>
+          </div>
+        {% endif %}
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="{{ url_for('auth.profile') }}" class="nav-link-hms">
+          <i class="fa-solid fa-gear" aria-hidden="true"></i>
+          <span>Account Settings</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Body Area -->
+    <div class="app-body">
+      <!-- Topbar Header -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" class="btn-hms btn-icon btn-hms-ghost d-lg-none" id="sidebar-toggle-btn" aria-label="Toggle navigation drawer" aria-expanded="false">
+            <i class="fa-solid fa-bars" aria-hidden="true"></i>
+          </button>
+
+          <!-- Global Typeahead Search -->
+          <form class="topbar-search d-none d-sm-block" action="{{ url_for('main.search') }}" method="GET" role="search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input type="search" name="search" placeholder="Search patients, doctors..." aria-label="Search across hospital records" required/>
+          </form>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Theme Toggle -->
+          <button type="button" class="btn-hms btn-icon btn-hms-ghost" id="theme-toggle-btn" aria-label="Switch to dark mode">
+            <i class="fa-solid fa-moon" aria-hidden="true"></i>
+          </button>
+
+          <!-- User Menu Dropdown -->
+          {% if current_user.is_authenticated %}
+            <div class="dropdown">
+              <button class="btn-hms btn-hms-secondary dropdown-toggle" type="button" id="userMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa-solid fa-user-circle" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">{{ current_user.username }}</span>
+                <span class="badge-status badge-info d-none d-sm-inline-flex">{{ current_user.usertype }}</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow-md" aria-labelledby="userMenuBtn">
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                    <i class="fa-solid fa-user-gear me-2 text-muted" aria-hidden="true"></i> Profile Settings
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <form action="{{ url_for('auth.logout') }}" method="POST" class="m-0 p-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="dropdown-item text-danger border-0 bg-transparent w-100 text-start">
+                      <i class="fa-solid fa-power-off me-2" aria-hidden="true"></i> Sign Out
+                    </button>
+                  </form>
+                </li>
+              </ul>
+            </div>
+          {% endif %}
+        </div>
+      </header>
+
+      <!-- Flashed Messages / Toasts in ARIA-live Region -->
+      {% from 'components/toast.html' import toast_container %}
+      {{ toast_container() }}
+
+      <!-- App Main Content Container -->
+      <main id="main-content" class="app-content">
+        {% block content %}
+          {% block body %}{% endblock %}
+        {% endblock %}
+      </main>
+
+      <!-- App Footer -->
+      <footer class="app-footer">
+        <div>
+          <span>Hedgewar Hospital Care</span>
+          <span class="text-muted ms-2">&copy; 2026</span>
+        </div>
+        <div>
+          <span class="text-muted">Version 1.0.0 · Clinical Operations</span>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

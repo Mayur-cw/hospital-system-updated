@@ -1,0 +1,33 @@
+{# Accessible Skeleton Loaders #}
+{% macro skeleton_table(rows=5, cols=4) %}
+  <div class="data-table-wrapper" aria-busy="true" aria-label="Loading data">
+    <table class="hms-table">
+      <thead>
+        <tr>
+          {% for c in range(cols) %}
+            <th><div class="skeleton-box skeleton-header"></div></th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in range(rows) %}
+          <tr>
+            {% for c in range(cols) %}
+              <td><div class="skeleton-box skeleton-cell"></div></td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endmacro %}
+
+{% macro skeleton_card() %}
+  <div class="hms-card" aria-busy="true" aria-label="Loading content">
+    <div class="hms-card-body">
+      <div class="skeleton-box skeleton-title mb-3"></div>
+      <div class="skeleton-box skeleton-line-lg mb-2"></div>
+      <div class="skeleton-box skeleton-line-md"></div>
+    </div>
+  </div>
+{% endmacro %}

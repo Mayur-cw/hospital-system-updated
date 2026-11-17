@@ -1,875 +1,543 @@
 {% extends 'base.html' %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/badges.html' import status_badge %}
+{% from 'components/cards.html' import card, stat_card %}
+{% from 'components/buttons.html' import btn %}
+{% from 'components/empty_state.html' import empty_state %}
 
 {% block title %}
-Home | Hospital Management System
+  {% if current_user.is_authenticated and current_user.usertype == 'Doctor' %}
+    Doctor Queue | Hedgewar Hospital Care
+  {% elif current_user.is_authenticated and current_user.usertype == 'Patient' %}
+    Patient Portal | Hedgewar Hospital Care
+  {% else %}
+    Hedgewar Hospital Care | Advanced Clinical Healthcare
+  {% endif %}
 {% endblock title %}
 
-{% block body %}
+{% block content %}
 
-<!-- ========================================== -->
-<!-- 🩺 DOCTOR DASHBOARD VIEW 🩺                -->
-<!-- ========================================== -->
+{# ========================================================================= #}
+{# 1. DOCTOR DASHBOARD VIEW                                                  #}
+{# ========================================================================= #}
 {% if current_user.is_authenticated and current_user.usertype == 'Doctor' %}
 
-<style>
-  /* ── DOCTOR HERO SECTION ── */
-  .doc-hero {
-    background: linear-gradient(160deg, var(--hms-navy) 0%, var(--hms-navy-mid) 60%, rgba(0,201,167,0.1) 100%);
-    padding: 50px 0 90px;
-    position: relative;
-    overflow: hidden;
-  }
-  .doc-hero::after {
-    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-    height: 60px; background: linear-gradient(to bottom, transparent, var(--hms-surface));
-  }
+{{ page_header(
+  title='Physician Daily Practice Queue',
+  subtitle='Welcome back, Dr. ' ~ (doctor_name or current_user.username) ~ ' · Today is ' ~ today_date,
+  breadcrumbs=[{'label': 'Daily Queue', 'url': None}],
+  actions=[
+    '<a href="' ~ url_for('patient.dashboard') ~ '" class="btn-hms btn-hms-secondary"><i class="fa-regular fa-calendar" aria-hidden="true"></i><span>My Schedule</span></a>',
+    '<a href="' ~ url_for('doctor.my_admissions') ~ '" class="btn-hms btn-hms-primary"><i class="fa-solid fa-hospital-user" aria-hidden="true"></i><span>Admissions</span></a>'
+  ]
+) }}
 
-  /* Live Badge */
-  .live-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(0, 201, 167, 0.1); border: 1px solid rgba(0, 201, 167, 0.25);
-    padding: 4px 12px; border-radius: 50px;
-    font-size: 0.7rem; font-weight: 800; color: var(--hms-teal); letter-spacing: 0.08em; text-transform: uppercase;
-  }
-  .live-dot {
-    width: 6px; height: 6px; background: var(--hms-teal); border-radius: 50%;
-    animation: livePulse 2s infinite;
-  }
-  @keyframes livePulse {
-    0% { box-shadow: 0 0 0 0 rgba(0,201,167,0.6); }
-    70% { box-shadow: 0 0 0 6px rgba(0,201,167,0); }
-    100% { box-shadow: 0 0 0 0 rgba(0,201,167,0); }
-  }
+{# Queue Stats Bar #}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card" data-queue-filter="all" role="button" tabindex="0" aria-label="Filter all today appointments">
+      <div class="stat-card-info">
+        <span class="stat-card-label">Total Today</span>
+        <span class="stat-card-val">{{ total_today }}</span>
+      </div>
+      <div class="stat-card-icon icon-teal" aria-hidden="true">
+        <i class="fa-solid fa-calendar-day"></i>
+      </div>
+    </div>
+  </div>
 
-  /* Typography */
-  .hero-name { font-family: 'Syne', sans-serif; font-size: clamp(32px, 4vw, 42px); font-weight: 800; color: #fff; line-height: 1.1; margin: 10px 0 5px; }
-  .hero-date { color: rgba(255,255,255,0.6); font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card" data-queue-filter="waiting" role="button" tabindex="0" aria-label="Filter waiting patients">
+      <div class="stat-card-info">
+        <span class="stat-card-label">Waiting</span>
+        <span class="stat-card-val">{{ waiting_count }}</span>
+      </div>
+      <div class="stat-card-icon icon-amber" aria-hidden="true">
+        <i class="fa-solid fa-user-clock"></i>
+      </div>
+    </div>
+  </div>
 
-  /* ── ACTION PANELS ── */
-  .action-panel {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 20px; padding: 24px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-  }
-  .action-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    color: var(--hms-teal); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px;
-  }
-  .patient-avatar-lg {
-    width: 46px; height: 46px; background: var(--hms-surface); color: var(--hms-navy);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700;
-  }
-  
-  /* Buttons */
-  .btn-action-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 600; transition: 0.2s; }
-  .btn-action-ghost:hover { background: rgba(255,255,255,0.1); border-color: white; }
-  .btn-action-amber { background: var(--hms-amber); border: none; color: var(--hms-navy); padding: 6px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 700; transition: 0.2s; }
-  .btn-action-amber:hover { filter: brightness(1.1); transform: translateY(-1px); }
-  .btn-action-teal { background: var(--hms-teal); border: none; color: var(--hms-navy); padding: 6px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 700; transition: 0.2s; }
-  .btn-action-teal:hover { box-shadow: 0 4px 15px rgba(0,201,167,0.3); transform: translateY(-1px); }
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card" data-queue-filter="completed" role="button" tabindex="0" aria-label="Filter completed consultations">
+      <div class="stat-card-info">
+        <span class="stat-card-label">Completed</span>
+        <span class="stat-card-val">{{ completed_count }}</span>
+      </div>
+      <div class="stat-card-icon icon-green" aria-hidden="true">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+    </div>
+  </div>
 
-  /* Up Next */
-  .up-next-panel { background: white; border-radius: 20px; padding: 20px; border-left: 4px solid var(--hms-amber); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-  .up-next-time { background: rgba(245,158,11,0.15); color: var(--hms-amber); padding: 3px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; }
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card" data-queue-filter="pending_rx" role="button" tabindex="0" aria-label="Filter pending prescription appointments">
+      <div class="stat-card-info">
+        <span class="stat-card-label">Pending Rx</span>
+        <span class="stat-card-val">{{ pending_rx_count }}</span>
+      </div>
+      <div class="stat-card-icon icon-blue" aria-hidden="true">
+        <i class="fa-solid fa-file-prescription"></i>
+      </div>
+    </div>
+  </div>
+</div>
 
-  /* ── WIDGETS & TABLE ── */
-  .stats-row { margin-top: -50px; position: relative; z-index: 10; }
-  .stat-card { background: white; border: 1px solid var(--hms-border); border-radius: 16px; padding: 20px; transition: 0.2s; cursor: pointer; height: 100%; border-bottom: 3px solid transparent; }
-  .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-  .stat-card.active { box-shadow: var(--shadow-md); }
-  .stat-card.active-all { border-bottom-color: var(--hms-navy); }
-  .stat-card.active-waiting { border-bottom-color: var(--hms-amber); }
-  .stat-card.active-completed { border-bottom-color: var(--hms-success); }
-  .stat-card.active-pending { border-bottom-color: var(--hms-danger); }
-  
-  .stat-icon-sm { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: 12px; }
-  .stat-num { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--hms-navy); line-height: 1; }
-  
-  .table-card { background: white; border: 1px solid var(--hms-border); border-radius: 16px; overflow: visible; min-height: 300px; }
-  .hms-table th { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--hms-muted); padding: 16px; border-bottom: 1px solid var(--hms-border); background: #f8fafc; }
-  .hms-table td { padding: 16px; vertical-align: middle; border-bottom: 1px solid rgba(0,0,0,0.03); }
-  
-  /* Table Buttons */
-  .btn-tbl-teal { background: var(--hms-teal); color: var(--hms-navy); font-weight: 700; font-size: 0.75rem; padding: 6px 14px; border-radius: 50px; text-decoration: none; border: none; transition: 0.2s; }
-  .btn-tbl-teal:hover { box-shadow: 0 4px 10px rgba(0,201,167,0.2); color: var(--hms-navy); transform: translateY(-1px); }
-  .badge-status { font-size: 0.75rem; font-weight: 700; padding: 5px 12px; border-radius: 50px; }
-  
-  .sidebar-card { background: white; border: 1px solid var(--hms-border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
-  .sidebar-title { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--hms-muted); margin-bottom: 20px; }
-</style>
-
-<!-- 🚨 HERO SECTION 🚨 -->
-<div class="doc-hero">
-  <div class="container" style="position: relative; z-index: 2;">
-    <div class="row align-items-center g-4">
-      
-      <!-- Left: Welcome -->
-      <div class="col-lg-4">
-        <div class="live-badge"><div class="live-dot"></div> Live Sync Active</div>
-        <h2 class="hero-name">Dr. {{ current_user.username | capitalize }}</h2>
-        <div class="hero-date"><i class="fas fa-calendar-alt"></i> {{ today_date }}</div>
+<div class="row g-4">
+  {# Main Queue Table #}
+  <div class="col-lg-8">
+    <div class="hms-card">
+      <div class="hms-card-header">
+        <h2 class="h5 mb-0" id="queue-title">Live Patient Queue</h2>
+        <span class="text-xs text-muted">Auto-refreshes every 60s</span>
       </div>
 
-      <!-- Center: Action Required -->
-      <div class="col-lg-5 text-center text-lg-start">
-        {% if current_patient %}
-          <div class="action-panel">
-             <div class="action-badge"><i class="fas fa-exclamation-circle me-1"></i> Action Required — {{ current_patient.time }}</div>
-             
-             <div class="d-flex align-items-center justify-content-center justify-content-lg-start gap-3 mb-4">
-                <div class="patient-avatar-lg shadow-sm">{{ current_patient.patient.username[0] | upper }}</div>
-                <div class="text-start">
-                   <h5 class="fw-bold text-white mb-0" style="font-family: 'DM Sans', sans-serif;">{{ current_patient.patient.username }}</h5>
-                   <small class="text-white opacity-75">{{ current_patient.disease | truncate(35) }}</small>
+      <div class="p-0">
+        <div class="table-responsive">
+          <table class="hms-table table-responsive-stack" aria-label="Today patient appointment queue">
+            <thead>
+              <tr>
+                <th scope="col">Patient</th>
+                <th scope="col">Scheduled Slot</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="text-end">Clinical Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for apt in todays_appointments %}
+                <tr class="queue-row" data-category="{{ apt.category }}">
+                  <td data-label="Patient">
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="hms-avatar hms-avatar-sm" aria-hidden="true">
+                        <span>{{ apt.patient_name[0]|upper }}</span>
+                      </div>
+                      <div>
+                        <div class="fw-bold">{{ apt.patient_name }}</div>
+                        <div class="text-xs text-muted">{{ apt.gender or 'Unspecified' }}</div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td data-label="Scheduled Slot">
+                    <div class="fw-medium">{{ apt.time }}</div>
+                    <div class="text-xs text-muted">{{ apt.dept }}</div>
+                  </td>
+
+                  <td data-label="Status">
+                    {% if apt.category == 'completed' %}
+                      {{ status_badge('Completed') }}
+                    {% elif apt.category == 'cancelled' %}
+                      {{ status_badge('Cancelled') }}
+                    {% elif apt.category == 'missed' %}
+                      {{ status_badge('Missed') }}
+                    {% elif apt.category == 'pending_rx' %}
+                      <span class="badge-status badge-warning">
+                        <i class="fa-solid fa-clipboard-question" aria-hidden="true"></i>
+                        <span>Pending Rx</span>
+                      </span>
+                    {% else %}
+                      <div class="dropdown d-inline-block">
+                        <button class="btn-hms btn-hms-secondary btn-hms-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          <i class="fa-regular fa-clock text-warning" aria-hidden="true"></i>
+                          <span>Waiting</span>
+                        </button>
+                        <ul class="dropdown-menu shadow-sm">
+                          <li>
+                            <form action="{{ url_for('doctor.mark_attended', apt_id=apt.apt_id) }}" method="POST" class="m-0">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                              <button type="submit" class="dropdown-item text-success fw-medium">
+                                <i class="fa-solid fa-circle-check me-2" aria-hidden="true"></i>Mark Attended
+                              </button>
+                            </form>
+                          </li>
+                          <li><hr class="dropdown-divider"></li>
+                          <li>
+                            <form action="{{ url_for('doctor.mark_missed', apt_id=apt.apt_id) }}" method="POST" class="m-0">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                              <button type="submit" class="dropdown-item text-danger fw-medium">
+                                <i class="fa-solid fa-circle-xmark me-2" aria-hidden="true"></i>Mark Missed
+                              </button>
+                            </form>
+                          </li>
+                        </ul>
+                      </div>
+                    {% endif %}
+                  </td>
+
+                  <td data-label="Clinical Action" class="text-end">
+                    {% if apt.category == 'completed' %}
+                      <div class="d-inline-flex gap-2">
+                        <a href="{{ url_for('doctor.view_record', apt_id=apt.apt_id) }}" class="btn-hms btn-hms-secondary btn-hms-sm">
+                          <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                          <span>View</span>
+                        </a>
+                        <a href="{{ url_for('doctor.edit_record', apt_id=apt.apt_id) }}" class="btn-hms btn-hms-ghost btn-hms-sm">
+                          <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                          <span>Amend</span>
+                        </a>
+                      </div>
+                    {% elif apt.category in ['missed', 'cancelled'] %}
+                      <span class="text-muted text-xs">—</span>
+                    {% else %}
+                      <a href="{{ url_for('doctor.add_record', apt_id=apt.apt_id) }}" class="btn-hms btn-hms-primary btn-hms-sm">
+                        <i class="fa-solid fa-prescription" aria-hidden="true"></i>
+                        <span>Write Rx</span>
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% else %}
+                <tr id="empty-queue-msg">
+                  <td colspan="4" class="text-center py-5 text-muted">
+                    <div class="mb-2"><i class="fa-solid fa-calendar-check fs-2 text-muted" aria-hidden="true"></i></div>
+                    <div class="fw-bold">No Consultations Scheduled Today</div>
+                    <p class="text-xs text-muted mb-0">Your queue for today is completely cleared.</p>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Doctor Sidebar Summary #}
+  <div class="col-lg-4">
+    <div class="hms-card">
+      <div class="hms-card-header">
+        <h3 class="h6 mb-0">Queue Progress</h3>
+      </div>
+      <div class="hms-card-body p-4">
+        {% set progress = (completed_count / total_today * 100)|int if total_today > 0 else 0 %}
+        <div class="d-flex justify-content-between align-items-baseline mb-2">
+          <span class="text-xs text-muted fw-bold text-uppercase">Completion Rate</span>
+          <span class="fw-bold text-primary">{{ completed_count }} / {{ total_today }}</span>
+        </div>
+        <div class="progress progress-h-sm mb-2">
+          <div class="progress-bar bg-success" role="progressbar" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <p class="text-xs text-muted mb-0">{{ progress }}% of today's scheduled consultations finished.</p>
+      </div>
+    </div>
+
+    <div class="hms-card">
+      <div class="hms-card-header">
+        <h3 class="h6 mb-0">Quick Clinical Links</h3>
+      </div>
+      <div class="hms-card-body p-3">
+        <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+          <li>
+            <a href="{{ url_for('patient.dashboard', filter='Pending') }}" class="btn-hms btn-hms-secondary w-100 justify-content-between">
+              <span><i class="fa-regular fa-calendar-check me-2" aria-hidden="true"></i> Upcoming Days</span>
+              <i class="fa-solid fa-chevron-right text-muted" aria-hidden="true"></i>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('doctor.my_admissions') }}" class="btn-hms btn-hms-secondary w-100 justify-content-between">
+              <span><i class="fa-solid fa-bed me-2" aria-hidden="true"></i> Inpatient Bed Rounds</span>
+              <i class="fa-solid fa-chevron-right text-muted" aria-hidden="true"></i>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('main.doctors') }}" class="btn-hms btn-hms-secondary w-100 justify-content-between">
+              <span><i class="fa-solid fa-address-book me-2" aria-hidden="true"></i> Colleague Directory</span>
+              <i class="fa-solid fa-chevron-right text-muted" aria-hidden="true"></i>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/pages/doctor_queue.js') }}"></script>
+
+
+{# ========================================================================= #}
+{# 2. PATIENT DASHBOARD VIEW                                                 #}
+{# ========================================================================= #}
+{% elif current_user.is_authenticated and current_user.usertype == 'Patient' %}
+
+{{ page_header(
+  title='Patient Care Hub',
+  subtitle='Welcome back, ' ~ current_user.username ~ ' · Healthcare Portal',
+  breadcrumbs=[{'label': 'My Dashboard', 'url': None}],
+  actions=[
+    '<a href="' ~ url_for('patient.patient_booking') ~ '" class="btn-hms btn-hms-primary"><i class="fa-regular fa-calendar-plus" aria-hidden="true"></i><span>Book Appointment</span></a>'
+  ]
+) }}
+
+{# Active Inpatient Admission Alert (if patient is currently admitted) #}
+{% if active_admission %}
+  <div class="hms-card border-warning mb-4">
+    <div class="hms-card-body p-4 bg-warning bg-opacity-10">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="hms-avatar icon-amber">
+            <i class="fa-solid fa-bed-pulse fs-4" aria-hidden="true"></i>
+          </div>
+          <div>
+            <h2 class="h5 mb-1 text-dark">You are currently admitted in Room {{ active_admission.room.room_number if active_admission.room else '—' }}</h2>
+            <p class="text-sm text-muted mb-0">
+              Ward: <strong>{{ active_admission.room.ward_type if active_admission.room else 'General' }}</strong> · Attending Physician: <strong>Dr. {{ active_admission.doctor.username if active_admission.doctor else 'Assigned' }}</strong>
+            </p>
+          </div>
+        </div>
+        <div>
+          {{ status_badge(active_admission.status) }}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{# Outstanding Bills Alert (User Request 7: Show unpaid bills prominently) #}
+{% if has_unpaid_invoices %}
+  <div class="hms-card border-danger mb-4">
+    <div class="hms-card-body p-4 bg-danger bg-opacity-10 d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="hms-avatar icon-amber text-danger">
+          <i class="fa-solid fa-file-invoice-dollar fs-4" aria-hidden="true"></i>
+        </div>
+        <div>
+          <h2 class="h5 mb-1 text-dark">Pending Invoices Outstanding</h2>
+          <p class="text-sm text-muted mb-0">
+            You have unpaid hospital bills totaling <strong class="text-danger">₹{{ unpaid_total }}</strong>.
+          </p>
+        </div>
+      </div>
+      <a href="{{ url_for('patient.my_bills') }}" class="btn-hms btn-hms-danger">
+        <i class="fa-solid fa-credit-card" aria-hidden="true"></i>
+        <span>Review & Pay Invoices</span>
+      </a>
+    </div>
+  </div>
+{% endif %}
+
+<div class="row g-4 mb-4">
+  {# Quick Patient Actions #}
+  <div class="col-lg-7">
+    <div class="hms-card h-100">
+      <div class="hms-card-header">
+        <h2 class="h5 mb-0">Quick Patient Services</h2>
+      </div>
+      <div class="hms-card-body p-4">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <a href="{{ url_for('patient.patient_booking') }}" class="hms-card stat-card mb-0 h-100 text-decoration-none">
+              <div class="stat-card-info">
+                <span class="stat-card-label">Schedule Visit</span>
+                <span class="h6 mb-0 fw-bold">Book Appointment</span>
+                <span class="text-xs text-muted mt-1">Select doctor & slot</span>
+              </div>
+              <div class="stat-card-icon icon-teal" aria-hidden="true">
+                <i class="fa-regular fa-calendar-plus"></i>
+              </div>
+            </a>
+          </div>
+
+          <div class="col-sm-6">
+            <a href="{{ url_for('patient.my_bills') }}" class="hms-card stat-card mb-0 h-100 text-decoration-none">
+              <div class="stat-card-info">
+                <span class="stat-card-label">Financials</span>
+                <span class="h6 mb-0 fw-bold">Invoices & Receipts</span>
+                <span class="text-xs text-muted mt-1">View transaction history</span>
+              </div>
+              <div class="stat-card-icon icon-blue" aria-hidden="true">
+                <i class="fa-solid fa-receipt"></i>
+              </div>
+            </a>
+          </div>
+
+          <div class="col-12">
+            <a href="{{ url_for('patient.dashboard', filter='Completed') }}" class="hms-card stat-card mb-0 h-100 text-decoration-none">
+              <div class="stat-card-info">
+                <span class="stat-card-label">Health Records</span>
+                <span class="h6 mb-0 fw-bold">Prescriptions & Visit History</span>
+                <span class="text-xs text-muted mt-1">Access verified doctor diagnoses, medicine advice, and clinical records</span>
+              </div>
+              <div class="stat-card-icon icon-green" aria-hidden="true">
+                <i class="fa-solid fa-file-medical"></i>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Upcoming Appointments Card #}
+  <div class="col-lg-5">
+    <div class="hms-card h-100 d-flex flex-column">
+      <div class="hms-card-header">
+        <h2 class="h5 mb-0">Upcoming Schedule</h2>
+        <a href="{{ url_for('patient.dashboard') }}" class="text-xs fw-bold">View All</a>
+      </div>
+
+      <div class="hms-card-body p-0 flex-grow-1">
+        {% if upcoming_appointments %}
+          <ul class="list-group list-group-flush">
+            {% for apt in upcoming_appointments %}
+              <li class="list-group-item p-3 d-flex align-items-center justify-content-between">
+                <div>
+                  <div class="fw-bold">Dr. {{ apt.doctor }}</div>
+                  <div class="text-xs text-muted">
+                    <i class="fa-regular fa-clock me-1" aria-hidden="true"></i>
+                    <span>{{ apt.date }} at {{ apt.time }}</span> · <span>{{ apt.dept }}</span>
+                  </div>
                 </div>
-             </div>
-             
-             <div class="d-flex justify-content-center justify-content-lg-start gap-2">
-                <form action="/mark_missed/{{ current_patient.apt_id }}" method="POST" onsubmit="return confirm('Mark as No-Show?');">
-                    {{ csrf_field() }}
-                    <button class="btn-action-ghost">Mark Missed</button>
-                </form>
-                {% if current_patient.slot != 'Attended' %}
-                <form action="/mark_attended/{{ current_patient.apt_id }}" method="POST">
-                    {{ csrf_field() }}
-                    <button class="btn-action-amber">Mark Attended</button>
-                </form>
-                {% endif %}
-                <a href="/add_record/{{ current_patient.apt_id }}" class="btn-action-teal"><i class="fas fa-pen me-1"></i> Write Rx</a>
-             </div>
+                {{ status_badge(apt.status if apt.status is defined else 'Scheduled') }}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="p-4 text-center text-muted">
+            <i class="fa-regular fa-calendar-check fs-2 mb-2 text-muted" aria-hidden="true"></i>
+            <div class="fw-medium text-sm">No Pending Visits</div>
+            <p class="text-xs text-muted mb-3">You have no upcoming consultations scheduled.</p>
+            <a href="{{ url_for('patient.patient_booking') }}" class="btn-hms btn-hms-primary btn-hms-sm">Book Consultation</a>
           </div>
         {% endif %}
       </div>
-
-      <!-- Right: Up Next -->
-      <div class="col-lg-3">
-        {% if next_patient %}
-        <div class="up-next-panel">
-            <div class="text-muted small fw-bold text-uppercase tracking-wide mb-2">Up Next</div>
-            <h5 class="fw-bold text-dark mb-2">{{ next_patient.patient.username }}</h5>
-            <span class="up-next-time">{{ next_patient.time }}</span>
-            <div class="text-muted small mt-2">{{ next_patient.disease | truncate(25) }}</div>
-        </div>
-        {% elif not current_patient %}
-        <div class="up-next-panel" style="border-left-color: var(--hms-teal);">
-            <div class="text-muted small fw-bold text-uppercase tracking-wide mb-2">Queue Status</div>
-            <h5 class="fw-bold text-success mb-1"><i class="fas fa-check-circle me-1"></i> All Caught Up</h5>
-            <div class="text-muted small mt-1">No pending patients.</div>
-        </div>
-        {% endif %}
-      </div>
-
-    </div>
-  </div>
-  
-  <!-- Sweeping SVG Curve -->
-  <div class="hms-curve" style="position: absolute; bottom: -1px; left: 0; width: 100%;">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none" style="width: 100%; height: 60px; display: block; fill: var(--hms-surface);">
-          <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25"></path>
-          <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5"></path>
-          <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z"></path>
-      </svg>
-  </div>
-</div>
-
-<div class="container stats-row mb-5">
-  
-  <!-- 🚨 STATS GRID 🚨 -->
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-lg-3">
-      <div class="stat-card active active-all filter-btn" id="filter-all" onclick="filterQueue('all')">
-        <div class="stat-icon-sm" style="background:#e0e7ff;color:#4338ca;"><i class="fas fa-users"></i></div>
-        <div class="stat-num">{{ total_today }}</div>
-        <div class="text-muted small fw-bold text-uppercase mt-1">Total Today</div>
-      </div>
-    </div>
-    <div class="col-6 col-lg-3">
-      <div class="stat-card filter-btn" id="filter-waiting" onclick="filterQueue('waiting')">
-        <div class="stat-icon-sm" style="background:#fef9c3;color:#854d0e;"><i class="fas fa-hourglass-half"></i></div>
-        <div class="stat-num">{{ waiting_count }}</div>
-        <div class="text-muted small fw-bold text-uppercase mt-1">Waiting</div>
-      </div>
-    </div>
-    <div class="col-6 col-lg-3">
-      <div class="stat-card filter-btn" id="filter-completed" onclick="filterQueue('completed')">
-        <div class="stat-icon-sm" style="background:#dcfce7;color:#15803d;"><i class="fas fa-check"></i></div>
-        <div class="stat-num">{{ completed_count }}</div>
-        <div class="text-muted small fw-bold text-uppercase mt-1">Completed</div>
-      </div>
-    </div>
-    <div class="col-6 col-lg-3">
-      <div class="stat-card filter-btn" id="filter-pending_rx" onclick="filterQueue('pending_rx')">
-        <div class="stat-icon-sm" style="background:#fee2e2;color:#b91c1c;"><i class="fas fa-notes-medical"></i></div>
-        <div class="stat-num">{{ pending_rx_count }}</div>
-        <div class="text-muted small fw-bold text-uppercase mt-1">Pending Rx</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-4 align-items-start">
-    <!-- 🚨 LIVE QUEUE TABLE 🚨 -->
-    <div class="col-lg-8">
-        <div class="table-card">
-            <div class="d-flex justify-content-between align-items-center p-4 border-bottom">
-                <h6 class="fw-bold mb-0 text-dark brand-font" id="queue-title">
-                   <i class="fas fa-list-ul text-primary me-2"></i> Live Queue — Total Today
-                </h6>
-                <a href="/upcoming_bookings" class="btn btn-sm btn-light border fw-bold text-muted rounded-pill px-3 shadow-sm" style="font-size: 0.75rem;">Full Schedule <i class="fas fa-arrow-right ms-1"></i></a>
-            </div>
-            
-            <div class="table-responsive" style="overflow: visible;">
-                <table class="table hms-table mb-0">
-                    <thead>
-                        <tr>
-                            <th class="ps-4">Time</th>
-                            <th>Patient Info</th>
-                            <th>Status</th>
-                            <th class="text-end pe-4">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for apt in all_queue %}
-                        <tr class="queue-row" data-category="{{ apt.category }}">
-                            <td class="ps-4 fw-bold text-dark" style="font-family: 'Syne', sans-serif;">{{ apt.time }}</td>
-                            <td>
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                        {{ apt.patient.username[0] | upper }}
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold text-dark" style="font-size: 0.9rem;">{{ apt.patient.username }}</div>
-                                        <div class="text-muted" style="font-size: 0.75rem;">{{ apt.disease | truncate(25) }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            
-                            <td>
-                                {% if apt.category == 'completed' %}
-                                    <span class="badge-status bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="fas fa-check-circle me-1"></i>Completed</span>
-                                {% elif apt.category == 'cancelled' %}
-                                    <span class="badge-status bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25"><i class="fas fa-ban me-1"></i>Cancelled</span>
-                                {% elif apt.category == 'missed' %}
-                                    <span class="badge-status bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25"><i class="fas fa-user-times me-1"></i>Missed</span>
-                                {% elif apt.category == 'pending_rx' %}
-                                    <span class="badge-status bg-warning bg-opacity-10 text-warning border border-warning border-opacity-50"><i class="fas fa-clipboard-check me-1"></i>Pending Rx</span>
-                                {% elif apt.category == 'waiting' %}
-                                    
-                                    {% if apt.is_active %}
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm dropdown-toggle badge-status" type="button" data-bs-toggle="dropdown" style="background:#fee2e2; color:#b91c1c; border:1px solid #fecaca;">
-                                                <i class="fas fa-exclamation-circle me-1"></i> Verify Status
-                                            </button>
-                                            <ul class="dropdown-menu shadow border-0 mt-1" style="font-size: 0.8rem;">
-                                                <li>
-                                                    <form action="/mark_attended/{{ apt.apt_id }}" method="POST">
-                                                        {{ csrf_field() }}
-                                                        <button class="dropdown-item fw-bold text-success py-2"><i class="fas fa-check-circle me-2"></i>Mark Attended</button>
-                                                    </form>
-                                                </li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <form action="/mark_missed/{{ apt.apt_id }}" method="POST" onsubmit="return confirm('Mark as No-Show?');">
-                                                        {{ csrf_field() }}
-                                                        <button class="dropdown-item fw-bold text-danger py-2"><i class="fas fa-times-circle me-2"></i>Mark Missed</button>
-                                                    </form>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    {% else %}
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm dropdown-toggle badge-status bg-light border text-muted" type="button" data-bs-toggle="dropdown">
-                                                <i class="fas fa-clock me-1 text-warning"></i> Waiting
-                                            </button>
-                                            <ul class="dropdown-menu shadow border-0 mt-1" style="font-size: 0.8rem;">
-                                                <li>
-                                                    <form action="/mark_attended/{{ apt.apt_id }}" method="POST">
-                                                        {{ csrf_field() }}
-                                                        <button class="dropdown-item fw-bold text-success py-2"><i class="fas fa-check-circle me-2"></i>Mark Attended Early</button>
-                                                    </form>
-                                                </li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <form action="/cancel_apt/{{ apt.apt_id }}" method="POST" onsubmit="return confirm('Cancel this appointment?');">
-                                                        {{ csrf_field() }}
-                                                        <button class="dropdown-item fw-bold text-danger py-2"><i class="fas fa-ban me-2"></i>Cancel Appointment</button>
-                                                    </form>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    {% endif %}
-                                {% endif %}
-                            </td>
-
-                            <td class="text-end pe-4">
-                                {% if apt.category == 'completed' %}
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <a href="/view_record/{{ apt.apt_id }}" class="btn btn-sm rounded-pill fw-bold" style="background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; font-size: 0.75rem;"><i class="fas fa-eye"></i> View</a>
-                                        <a href="/edit_record/{{ apt.apt_id }}" class="btn btn-sm btn-light border rounded-pill fw-bold text-muted" style="font-size: 0.75rem;"><i class="fas fa-pen"></i> Edit</a>
-                                    </div>
-                                {% elif apt.category == 'missed' or apt.category == 'cancelled' %}
-                                    <span class="text-muted" style="font-size: 0.8rem;">—</span>
-                                {% else %}
-                                    <a href="/add_record/{{ apt.apt_id }}" class="btn-tbl-teal"><i class="fas fa-pen me-1"></i> Write Rx</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        
-                        <tr id="empty-queue-msg" style="display: none;">
-                            <td colspan="4" class="text-center py-5 text-muted">
-                                <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
-                                <h6 class="fw-bold text-dark">Queue Empty</h6>
-                                <p class="small mb-0">No patients match this current filter.</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🚨 SIDE BAR 🚨 -->
-    <div class="col-lg-4">
-        <!-- Quick Nav -->
-        <div class="sidebar-card shadow-sm">
-            <div class="sidebar-title"><i class="fas fa-bolt text-warning me-2"></i> Quick Navigation</div>
-            <div class="d-grid gap-3">
-                
-                <!-- 1. My Schedule -->
-                <a href="/dashboard?filter=Pending" class="d-flex align-items-center justify-content-between p-3 border rounded-3 text-decoration-none bg-light" style="transition: 0.2s;" onmouseover="this.style.borderColor='var(--hms-teal)'" onmouseout="this.style.borderColor='var(--hms-border)'">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width:36px; height:36px;"><i class="fas fa-calendar-alt"></i></div>
-                        <div>
-                            <div class="fw-bold text-dark" style="font-size:0.85rem;">My Schedule</div>
-                            <div class="text-muted" style="font-size:0.7rem;">Manage upcoming days</div>
-                        </div>
-                    </div>
-                    <i class="fas fa-arrow-right text-muted" style="font-size:0.8rem;"></i>
-                </a>
-                
-                <!-- 2. Patient History -->
-                <a href="/dashboard?filter=Completed" class="d-flex align-items-center justify-content-between p-3 border rounded-3 text-decoration-none bg-light" style="transition: 0.2s;" onmouseover="this.style.borderColor='var(--hms-teal)'" onmouseout="this.style.borderColor='var(--hms-border)'">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width:36px; height:36px;"><i class="fas fa-folder-open"></i></div>
-                        <div>
-                            <div class="fw-bold text-dark" style="font-size:0.85rem;">Patient History</div>
-                            <div class="text-muted" style="font-size:0.7rem;">Access past records</div>
-                        </div>
-                    </div>
-                    <i class="fas fa-arrow-right text-muted" style="font-size:0.8rem;"></i>
-                </a>
-
-                <!-- 🏥 3. NEW: Active Admissions -->
-                <a href="/my_admissions" class="d-flex align-items-center justify-content-between p-3 border rounded-3 text-decoration-none bg-light" style="transition: 0.2s;" onmouseover="this.style.borderColor='var(--hms-teal)'" onmouseout="this.style.borderColor='var(--hms-border)'">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width:36px; height:36px;"><i class="fas fa-procedures"></i></div>
-                        <div>
-                            <div class="fw-bold text-dark" style="font-size:0.85rem;">Active Admissions</div>
-                            <div class="text-muted" style="font-size:0.7rem;">Manage admitted patients</div>
-                        </div>
-                    </div>
-                    <i class="fas fa-arrow-right text-muted" style="font-size:0.8rem;"></i>
-                </a>
-
-            </div>
-        </div>
-
-        <!-- Progress Bar (Preserved from your original file) -->
-        <div class="sidebar-card shadow-sm">
-            <div class="sidebar-title"><i class="fas fa-chart-line text-teal me-2"></i> Today's Progress</div>
-            {% if total_today > 0 %}
-            <div class="d-flex justify-content-between align-items-end mb-2">
-                <span class="text-muted fw-bold" style="font-size:0.75rem;">Patients Completed</span>
-                <span class="fw-bold text-dark fs-4 brand-font">{{ completed_count }} <span class="text-muted fs-6">/ {{ total_today }}</span></span>
-            </div>
-            {% set progress = (completed_count / total_today * 100) if total_today > 0 else 0 %}
-            <div class="progress" style="height: 8px; border-radius: 50px;">
-                <div class="progress-bar bg-teal" role="progressbar"style="width: {{ progress | int }}%; background-color: var(--hms-teal);">
-                </div>
-            </div>
-            <div class="text-muted mt-2 fw-bold" style="font-size: 0.7rem;">{{ progress | int }}% of queue cleared</div>
-            {% else %}
-            <div class="text-center py-2 text-muted">
-                <i class="fas fa-mug-hot fa-2x mb-2 opacity-50"></i>
-                <div class="small fw-bold">No appointments scheduled today.</div>
-            </div>
-            {% endif %}
-        </div>
     </div>
   </div>
 </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        let savedFilter = sessionStorage.getItem('activeQueueFilter') || 'all';
-        filterQueue(savedFilter);
-    });
 
-    function filterQueue(category) {
-        sessionStorage.setItem('activeQueueFilter', category);
+{# ========================================================================= #}
+{# 3. PUBLIC VISITOR LANDING PAGE                                            #}
+{# ========================================================================= #}
+{% else %}
 
-        // Update cards visually
-        document.querySelectorAll('.filter-btn').forEach(card => {
-            card.classList.remove('active', 'active-all', 'active-waiting', 'active-completed', 'active-pending');
-        });
-        
-        let activeCard = document.getElementById('filter-' + category);
-        if(activeCard) {
-            activeCard.classList.add('active');
-            if (category === 'all') activeCard.classList.add('active-all');
-            if (category === 'waiting') activeCard.classList.add('active-waiting');
-            if (category === 'completed') activeCard.classList.add('active-completed');
-            if (category === 'pending_rx') activeCard.classList.add('active-pending');
-        }
-
-        // Update title
-        let titleMap = {
-            'all': 'Live Queue — Total Today',
-            'waiting': 'Queue — Waiting & Unverified',
-            'completed': 'Queue — Completed',
-            'pending_rx': 'Queue — Pending Rx'
-        };
-        document.getElementById('queue-title').innerHTML = '<i class="fas fa-list-ul text-primary me-2"></i>' + titleMap[category];
-
-        // Filter rows
-        const rows = document.querySelectorAll('.queue-row');
-        let visibleCount = 0;
-        rows.forEach(row => {
-            if (category === 'all' || row.getAttribute('data-category') === category) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        document.getElementById('empty-queue-msg').style.display = visibleCount === 0 ? '' : 'none';
-    }
-
-    setTimeout(function() { window.location.reload(); }, 60000);
-</script>
-
-
-<!-- ========================================== -->
-<!-- 👑 ADMIN QUICK VIEW 👑                     -->
-<!-- ========================================== -->
-{% elif current_user.is_authenticated and current_user.usertype == 'Admin' %}
-
-<section class="hero-section text-center mb-5 relative" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
-  <div class="container py-5">
+{# Hero Banner #}
+<section class="py-5 text-center bg-surface border-bottom">
+  <div class="container py-4">
     <div class="row justify-content-center">
       <div class="col-lg-8">
-        <span class="badge bg-warning text-dark rounded-pill px-3 py-2 mb-3 fw-bold tracking-wide">System Administrator</span>
-        <h1 class="display-4 fw-bold mb-3 text-white">HMS Control Center</h1>
-        <p class="lead mb-5 text-light opacity-75">You are logged in as the master administrator. Please proceed to the control panel to manage staff and system settings.</p>
-        
-        <div class="d-flex justify-content-center gap-3">
-          <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-warning btn-lg text-dark fw-bold px-5 rounded-pill shadow"><i class="fas fa-cogs me-2"></i>Enter Admin Panel</a>
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-light border mb-3">
+          <i class="fa-solid fa-hospital text-primary" aria-hidden="true"></i>
+          <span class="text-xs fw-bold text-muted text-uppercase">Hedgewar Hospital Care</span>
+        </div>
+
+        <h1 class="display-4 fw-bold mb-3 font-brand-heading">
+          Advanced Clinical Care & Healthcare Precision
+        </h1>
+
+        <p class="lead text-muted mb-4">
+          Committed to world-class medical excellence, multi-specialty inpatient care, and patient-first outpatient operations.
+        </p>
+
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+          <a href="{{ url_for('auth.signup') }}" class="btn-hms btn-hms-primary btn-hms-lg">
+            <i class="fa-regular fa-calendar-plus" aria-hidden="true"></i>
+            <span>Book Appointment</span>
+          </a>
+          <a href="{{ url_for('main.doctors') }}" class="btn-hms btn-hms-secondary btn-hms-lg">
+            <i class="fa-solid fa-user-doctor" aria-hidden="true"></i>
+            <span>Browse Specialists</span>
+          </a>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- =========================================================== -->
-<!-- 🧑‍🤝‍🧑 PATIENT PORTAL (LOGGED IN)                           -->
-<!-- =========================================================== -->
-{% elif current_user.is_authenticated and current_user.usertype == 'Patient' %}
+{# Clinical Highlights / Core Pillars #}
+<section class="py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="h3 fw-bold mb-2">Hospital Services & Specializations</h2>
+      <p class="text-muted text-sm">Comprehensive medical disciplines staffed by board-certified physicians</p>
+    </div>
 
-<style>
-  .patient-banner {
-    position: relative; border-radius: 24px; overflow: hidden;
-    min-height: 280px; display: flex; align-items: center; padding: 40px 50px;
-    box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.1);
-    margin-top: 20px; margin-bottom: 40px;
-  }
-  .patient-banner-img {
-    position: absolute; inset: 0; background: url('static/images/bg1.jpg') center/cover no-repeat; z-index: 1;
-  }
-  .patient-banner-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(90deg, var(--hms-navy) 20%, rgba(11, 29, 53, 0.8) 50%, rgba(11, 29, 53, 0.2) 100%);
-    z-index: 2;
-  }
-  .patient-banner-content { position: relative; z-index: 3; max-width: 600px; color: white; }
-  
-  .hms-card-action {
-    background: #ffffff; border: 1px solid var(--hms-border); border-radius: 20px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    text-decoration: none !important; display: block; overflow: hidden;
-  }
-  .hms-card-action:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.08); }
-  
-  .appt-hover-row { transition: background 0.2s ease; border-bottom: 1px solid var(--hms-border); }
-  .appt-hover-row:hover { background: #f8fafc; }
-  .appt-hover-row:last-child { border-bottom: none; }
-</style>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="hms-card h-100 p-4 text-center">
+          <div class="hms-avatar icon-teal mx-auto mb-3">
+            <i class="fa-solid fa-heart-pulse fs-3" aria-hidden="true"></i>
+          </div>
+          <h3 class="h5 mb-2">Cardiology</h3>
+          <p class="text-sm text-muted mb-0">Comprehensive cardiovascular diagnostics, non-invasive therapies, and critical inpatient management.</p>
+        </div>
+      </div>
 
-<div class="container mb-5" style="position: relative; z-index: 10;">
-  
-  <!-- 🚨 PREMIUM WELCOME BANNER -->
-  <div class="patient-banner anim-1">
-    <div class="patient-banner-img"></div>
-    <div class="patient-banner-overlay"></div>
-    <div class="patient-banner-content">
-      <div class="hms-badge mb-3 bg-white bg-opacity-10 text-white border border-white border-opacity-25" style="padding: 6px 14px; border-radius: 50px; font-size: 11px; letter-spacing: 1px;">PATIENT DASHBOARD</div>
-      <h1 class="brand-font fw-bold mb-2" style="font-size: clamp(32px, 4vw, 45px);">Hello, {{ current_user.username | capitalize }} 👋</h1>
-      <p class="mb-4 opacity-75 fs-5">Manage your health journey, view prescriptions, and book specialist consultations seamlessly.</p>
-      <p class="mb-0 fw-bold text-info"><i class="fas fa-calendar-day me-2"></i>{{ today_date }}</p>
+      <div class="col-md-4">
+        <div class="hms-card h-100 p-4 text-center">
+          <div class="hms-avatar icon-blue mx-auto mb-3">
+            <i class="fa-solid fa-bone fs-3" aria-hidden="true"></i>
+          </div>
+          <h3 class="h5 mb-2">Orthopedics</h3>
+          <p class="text-sm text-muted mb-0">Joint restoration, arthroscopy, fracture trauma management, and post-operative rehabilitative care.</p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="hms-card h-100 p-4 text-center">
+          <div class="hms-avatar icon-green mx-auto mb-3">
+            <i class="fa-solid fa-baby fs-3" aria-hidden="true"></i>
+          </div>
+          <h3 class="h5 mb-2">Pediatrics</h3>
+          <p class="text-sm text-muted mb-0">Neonatal intensive supervision, adolescent wellness, childhood preventative immunization, and primary care.</p>
+        </div>
+      </div>
     </div>
   </div>
+</section>
 
-  <div class="row g-4 mb-5">
-    
-    <!-- LEFT COLUMN: Quick Actions -->
-    <div class="col-lg-7 anim-2">
-      <h6 class="brand-font fw-bold mb-3 text-uppercase" style="color:var(--hms-navy); letter-spacing: 1px;">
-        <i class="fas fa-bolt text-warning me-2"></i> Quick Actions
-      </h6>
-      
-      <div class="row g-3">
-        <!-- Book Appt -->
-        <div class="col-sm-6">
-          <a href="/patients" class="hms-card-action p-4 h-100 text-center" style="border-bottom: 4px solid var(--hms-teal);">
-            <div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle" style="background:var(--hms-teal-soft);color:#0f766e; width: 60px; height: 60px; font-size: 24px;"><i class="fas fa-calendar-plus"></i></div>
-            <h6 class="fw-bold text-dark mb-1">Book Appointment</h6>
-            <p class="small text-muted mb-0">Schedule a new visit</p>
-          </a>
-        </div>
-        
-        <!-- Directory -->
-        <div class="col-sm-6">
-          <a href="/doctors" class="hms-card-action p-4 h-100 text-center" style="border-bottom: 4px solid #3b82f6;">
-            <div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle" style="background:#eff6ff;color:#1d4ed8; width: 60px; height: 60px; font-size: 24px;"><i class="fas fa-user-md"></i></div>
-            <h6 class="fw-bold text-dark mb-1">Specialist Directory</h6>
-            <p class="small text-muted mb-0">Browse our verified doctors</p>
-          </a>
-        </div>
-        
-        <!-- Pre-filtered History -->
-        <div class="col-sm-12">
-          <!-- 🚨 Magic Link: Notice the ?filter=Completed -->
-          <a href="/dashboard?filter=Completed" class="hms-card-action p-4 d-flex align-items-center gap-4" style="border-left: 4px solid #10b981;">
-            <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="background:#dcfce7;color:#15803d; width: 60px; height: 60px; font-size: 24px;"><i class="fas fa-file-medical"></i></div>
+{# Trust & Engineering Architecture #}
+<section class="py-5 bg-surface border-top">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-6">
+        <h2 class="h3 fw-bold mb-3">Engineered for Clinical Reliability</h2>
+        <p class="text-muted mb-4">
+          Hedgewar Hospital Care runs on high-concurrency relational architecture ensuring conflict-free slot booking, immutable medical auditing, and strict role-based data protection.
+        </p>
+        <ul class="list-unstyled d-flex flex-column gap-3 text-sm">
+          <li class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-circle-check text-success" aria-hidden="true"></i>
+            <span><strong>Double-Booking Prevention:</strong> Schema-enforced slot key concurrency locks.</span>
+          </li>
+          <li class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-circle-check text-success" aria-hidden="true"></i>
+            <span><strong>Clinical Record Auditing:</strong> Versioned medical records with complete amendment tracking.</span>
+          </li>
+          <li class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-circle-check text-success" aria-hidden="true"></i>
+            <span><strong>Role-Based Access Control:</strong> Central policy gates protecting patient health information.</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="hms-card p-4">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <i class="fa-solid fa-hospital-user text-primary fs-3" aria-hidden="true"></i>
             <div>
-              <h5 class="fw-bold text-dark mb-1">My Appointment History</h5>
-              <p class="small text-muted mb-0">Access your past diagnoses, verified prescriptions, and completed appointment history.</p>
+              <h3 class="h6 mb-0">Emergency Inquiries & Admission Desk</h3>
+              <span class="text-xs text-muted">24/7 Clinical Services Hotline</span>
             </div>
-            <i class="fas fa-chevron-right ms-auto text-muted opacity-50 fs-5"></i>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT COLUMN: Upcoming Schedule List -->
-    <div class="col-lg-5 anim-3">
-      <h6 class="brand-font fw-bold mb-3 text-uppercase" style="color:var(--hms-navy); letter-spacing: 1px;">
-        <i class="fas fa-clock text-info me-2"></i> Upcoming Schedule
-      </h6>
-      
-      <div class="hms-card-action h-100 d-flex flex-column bg-white">
-        <div class="p-0 flex-grow-1">
-          {% if upcoming_appointments %}
-            {% for apt in upcoming_appointments %}
-              <div class="d-flex align-items-center p-4 appt-hover-row">
-                <!-- Date Cube -->
-                <div class="bg-light border rounded-3 text-center p-2 me-3 flex-shrink-0" style="min-width: 65px;">
-                  <!-- Extracts just the Day (e.g., "03") -->
-                  <div class="fw-bold fs-5 text-dark" style="line-height: 1;">{{ apt.date.strftime('%d') }}</div>
-                  
-                  <!-- Extracts Month and Year (e.g., "05/2026") -->
-                  <div class="small text-muted fw-bold text-uppercase" style="font-size: 10px;">{{ apt.date.strftime('%m/%Y') }}</div>
-                </div>
-
-                
-                <!-- Info -->
-                <div class="flex-grow-1">
-                  <h6 class="fw-bold text-dark mb-1">Dr. {{ apt.doctor | capitalize }}</h6>
-                  <div class="small text-muted"><i class="far fa-clock me-1"></i>{{ apt.time }} &bull; {{ apt.dept }}</div>
-                </div>
-                <!-- Status -->
-                <div class="ms-2">
-                  <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-3 py-2"><i class="fas fa-hourglass-half me-1"></i> Pending</span>
-                </div>
-              </div>
-            {% endfor %}
-          {% else %}
-            <!-- Empty State -->
-            <div class="text-center py-5">
-              <div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle" style="background:#f1f5f9;color:#94a3b8; width: 80px; height: 80px; font-size: 32px;"><i class="fas fa-calendar-check"></i></div>
-              <h6 class="fw-bold text-dark mb-1">No Upcoming Visits</h6>
-              <p class="small text-muted mb-0">You are completely caught up.</p>
-            </div>
-          {% endif %}
-        </div>
-        
-        <!-- 🚨 Magic Link: Notice the ?filter=Pending -->
-        <div class="p-3 bg-light border-top mt-auto">
-          <a href="/dashboard?filter=Pending" class="btn btn-outline-primary w-100 rounded-pill fw-bold">View Full Schedule <i class="fas fa-arrow-right ms-2"></i></a>
-        </div>
-      </div>
-      
-    </div>
-
-  </div>
-</div>
-
-<style>
-  .border-dashed { border-style: dashed !important; }
-  .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-  .hover-lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-md) !important; }
-</style>
-
-<!-- =========================================================== -->
-<!-- 🏥 PUBLIC / LOGGED OUT VIEW                                -->
-<!-- =========================================================== -->
-{% else %}
-
-<style>
-  /* Premium Centered Hero with Background Image */
-  .public-hero-centered {
-    position: relative;
-    /* 🚨 TIGHTENED PADDING: Reduces the massive gap at the bottom */
-    padding: 70px 0px 0px; 
-    background: url('static/images/bg1.jpg') center/cover no-repeat;
-    background-attachment: fixed;
-    text-align: center;
-    overflow: hidden;
-  }
-
-  .hero-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(11, 29, 53, 0.75) 0%, rgba(0, 201, 167, 0.45) 100%);
-    z-index: 1;
-  }
-
-  .public-hero-content {
-    position: relative;
-    z-index: 2;
-  }
-
-  /* Upgraded Overlapping Cards */
-  .hms-card-overlap {
-    background: #ffffff;
-    border: none;
-    border-radius: 20px;
-    padding: 40px 30px;
-    text-align: center;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-  }
-
-  .hms-card-overlap:hover {
-    transform: translateY(-12px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-  }
-
-  .card-icon-wrapper {
-    width: 75px;
-    height: 75px;
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 30px;
-    margin: 0 auto 24px;
-    transition: transform 0.3s ease;
-  }
-
-  .hms-card-overlap:hover .card-icon-wrapper {
-    transform: scale(1.1);
-  }
-
-  /* 🚨 UPGRADED HERO BUTTONS FOR MAXIMUM VISIBILITY 🚨 */
-  .hero-btn-primary {
-    background: #ffffff;
-    color: var(--hms-navy);
-    border: none;
-    padding: 14px 36px;
-    border-radius: 50px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    /* Stronger shadow so it pops off the background */
-    box-shadow: 0 8px 25px rgba(0,0,0,0.25); 
-  }
-  
-  .hero-btn-primary:hover {
-    background: #f8f9fa;
-    transform: translateY(-3px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.3);
-    color: var(--hms-teal);
-  }
-
-  .hero-btn-outline {
-    /* Added a frosted glass dark tint so it never gets lost in the white SVG curve */
-    background: rgba(11, 29, 53, 0.4); 
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: #ffffff;
-    border: 2px solid #ffffff;
-    padding: 12px 36px;
-    border-radius: 50px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  }
-
-  .hero-btn-outline:hover {
-    border-color: #ffffff;
-    background: rgba(255,255,255,0.15);
-    transform: translateY(-3px);
-    color: #ffffff;
-  }
-</style>
-
-<!-- 🚨 CENTERED HERO SECTION 🚨 -->
-<div class="public-hero-centered">
-  <div class="hero-overlay"></div>
-  
-  <div class="container public-hero-content">
-    
-    <!-- Top Pill -->
-    <div class="anim-1 mb-4">
-      <span class="d-inline-block px-4 py-2 rounded-pill text-white fw-bold shadow-sm" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(8px); font-size: 12px; letter-spacing: 0.5px;">
-        Mini-Project 2026
-      </span>
-    </div>
-    
-    <!-- Main Title -->
-    <h1 class="public-hero-title anim-2 mb-4 text-white brand-font" style="font-size: clamp(40px, 6vw, 65px); letter-spacing: -1px; line-height: 1.2;">
-      HOSPITAL MANAGEMENT<br>
-      <span style="color: var(--hms-teal); text-shadow: 0 0 20px rgba(0,201,167,0.4);">SYSTEM</span>
-    </h1>
-    
-    <!-- Description -->
-    <p class="anim-3 mx-auto mb-5 text-white opacity-75" style="max-width: 650px; font-size: 20px; line-height: 0.3;">
-    <i><b>Smart, Secure, and Seamless Hospital Management.</b></i>
-    </p>
-    
-    <!-- Action Buttons -->
-    <div class="d-flex justify-content-center gap-4 flex-wrap anim-4 mt-3 pb-3">
-      <a href="/signup" class="hero-btn-primary">
-        Create Account
-      </a>
-      <a href="/login" class="hero-btn-outline">
-        Login
-      </a>
-    </div>
-  </div>
-  
-  <!-- Sweeping White Curve Transition -->
-  <div class="hms-curve" style="z-index: 2;">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" class="shape-fill"></path>
-          <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" class="shape-fill"></path>
-          <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" class="shape-fill"></path>
-      </svg>
-  </div>
-</div>
-
-<!-- 🚨 LIFTED FEATURE CARDS 🚨 -->
-<!-- Margin-top adjusted to tuck them neatly under the buttons -->
-<div class="container" style="margin-top: -85px; position: relative; z-index: 10; margin-bottom: 80px;">
-  <div class="row g-4 justify-content-center anim-4">
-    
-    <!-- Smart Appointments -->
-    <div class="col-md-4">
-      <div class="hms-card-overlap" style="border-top: 5px solid var(--hms-teal);">
-        <div class="card-icon-wrapper" style="background:var(--hms-teal-soft);color:#0f766e;">
-          <i class="fas fa-calendar-check"></i>
-        </div>
-        <h4 class="brand-font fw-bold text-dark mb-3">Smart Appointments</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">Conflict-free slot booking seamlessly integrated with our MySQL backend.</p>
-        <a href="/login" class="hms-btn hms-btn-ghost w-100 py-2 rounded-pill mt-auto" style="background: var(--hms-teal); color: white; border: none; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">Login to Book</a>
-      </div>
-    </div>
-
-    <!-- Specialist Directory -->
-    <div class="col-md-4">
-      <div class="hms-card-overlap" style="border-top: 5px solid #3b82f6;">
-        <div class="card-icon-wrapper" style="background:#eff6ff;color:#1d4ed8;">
-          <i class="fas fa-user-md"></i>
-        </div>
-        <h4 class="brand-font fw-bold text-dark mb-3">Specialist Directory</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">Browse our verified roster of medical professionals across all departments.</p>
-        <a href="/doctors" class="hms-btn w-100 py-2 rounded-pill mt-auto" style="background: #3b82f6; color: white; border: none; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">View Doctors</a>
-      </div>
-    </div>
-
-    <!-- Past Records -->
-    <div class="col-md-4">
-      <div class="hms-card-overlap" style="border-top: 5px solid #8b5cf6;">
-        <div class="card-icon-wrapper" style="background:#f5f3ff;color:#6d28d9;">
-          <i class="fas fa-notes-medical"></i>
-        </div>
-        <h4 class="brand-font fw-bold text-dark mb-3">Past Records</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">View your previous completed bookings and secure doctor prescriptions.</p>
-        <a href="/login" class="hms-btn hms-btn-ghost w-100 py-2 rounded-pill mt-auto" style="background: #8b5cf6; color: white; border: none; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">Login to View</a>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- 🚨 DATABASE CAPABILITIES 🚨 -->
-<div class="container mb-5 pb-4 anim-3">
-  <div class="hms-card p-5" style="background: var(--hms-navy); border: none; overflow: hidden; position: relative; border-radius: 24px;">
-    
-    <!-- Decorative subtle grid background inside the card -->
-    <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size: 30px 30px; pointer-events: none;"></div>
-    
-    <div class="row align-items-center mb-5 position-relative z-index-2">
-      <div class="col text-center">
-        <h2 class="brand-font text-white mb-2">Database Core Capabilities</h2>
-        <p class="text-white opacity-50 mb-0" style="font-size: 16px;">Built with Flask, SQLAlchemy & pure MySQL logic</p>
-      </div>
-    </div>
-    
-    <div class="row g-4 position-relative z-index-2">
-      <div class="col-md-4">
-        <div class="text-center px-2">
-          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(245,158,11,0.1); color:var(--hms-amber); width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(245,158,11,0.2);"><i class="fas fa-bolt"></i></div>
-          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Automated Triggers</div>
-          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
-            Real-time audit logging using MySQL <code style="color:var(--hms-amber); background:transparent; border-color:rgba(245,158,11,0.3);">AFTER INSERT</code>, <code style="color:var(--hms-amber); background:transparent; border-color:rgba(245,158,11,0.3);">UPDATE</code>, and <code style="color:var(--hms-amber); background:transparent; border-color:rgba(245,158,11,0.3);">DELETE</code>.
           </div>
-        </div>
-      </div>
-      
-      <div class="col-md-4">
-        <div class="text-center px-2">
-          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(16,185,129,0.1); color:var(--hms-success); width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(16,185,129,0.2);"><i class="fas fa-shield-alt"></i></div>
-          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Role-Based Security</div>
-          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
-            Strict routing protocols separating Doctor and Patient privileges using Flask-Login session management.
-          </div>
-        </div>
-      </div>
-      
-      <div class="col-md-4">
-        <div class="text-center px-2">
-          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(96,165,250,0.1); color:#60a5fa; width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(96,165,250,0.2);"><i class="fas fa-network-wired"></i></div>
-          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Relational Integrity</div>
-          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
-            Optimized table schemas with strict foreign key constraints ensuring zero data redundancy.
+          <p class="text-sm text-muted mb-4">
+            For urgent inpatient bed allocation or clinical support, contact our central admissions coordination desk.
+          </p>
+          <div class="d-flex gap-2">
+            <a href="tel:+912212345678" class="btn-hms btn-hms-secondary w-100">
+              <i class="fa-solid fa-phone" aria-hidden="true"></i>
+              <span>+91 22 1234 5678</span>
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="btn-hms btn-hms-primary w-100">
+              <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
+              <span>Staff Login</span>
+            </a>
           </div>
         </div>
       </div>
     </div>
-    
   </div>
-</div>
+</section>
 
 {% endif %}
 
-{% endblock body %}
+{% endblock content %}

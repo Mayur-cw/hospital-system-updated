@@ -1,0 +1,39 @@
+{# Reusable Accessible Buttons & Icon Buttons #}
+{% macro btn(text, href=None, variant='primary', icon=None, type='button', id=None, data_attrs={}, disabled=False, size='md', aria_label=None, class_name='') %}
+  {% set size_cls = 'btn-hms-sm' if size == 'sm' else ('btn-hms-lg' if size == 'lg' else '') %}
+  {% set cls = 'btn-hms btn-hms-' ~ variant ~ ' ' ~ size_cls ~ ' ' ~ class_name %}
+  {% set data_str = '' %}
+  {% for k, v in data_attrs.items() %}
+    {% set data_str = data_str ~ ' data-' ~ k ~ '="' ~ v|string|e ~ '"' %}
+  {% endfor %}
+
+  {% if href %}
+    <a href="{{ href }}" class="{{ cls|trim }}" {% if id %}id="{{ id }}"{% endif %} {% if aria_label %}aria-label="{{ aria_label }}"{% endif %} {{ data_str|safe }}>
+      {% if icon %}<i class="{{ icon }}" aria-hidden="true"></i>{% endif %}
+      <span>{{ text }}</span>
+    </a>
+  {% else %}
+    <button type="{{ type }}" class="{{ cls|trim }}" {% if id %}id="{{ id }}"{% endif %} {% if disabled %}disabled{% endif %} {% if aria_label %}aria-label="{{ aria_label }}"{% endif %} {{ data_str|safe }}>
+      {% if icon %}<i class="{{ icon }}" aria-hidden="true"></i>{% endif %}
+      <span>{{ text }}</span>
+    </button>
+  {% endif %}
+{% endmacro %}
+
+{% macro icon_button(icon, aria_label, href=None, variant='ghost', type='button', id=None, data_attrs={}, disabled=False, class_name='') %}
+  {% set cls = 'btn-hms btn-icon btn-hms-' ~ variant ~ ' ' ~ class_name %}
+  {% set data_str = '' %}
+  {% for k, v in data_attrs.items() %}
+    {% set data_str = data_str ~ ' data-' ~ k ~ '="' ~ v|string|e ~ '"' %}
+  {% endfor %}
+
+  {% if href %}
+    <a href="{{ href }}" class="{{ cls|trim }}" {% if id %}id="{{ id }}"{% endif %} aria-label="{{ aria_label }}" title="{{ aria_label }}" {{ data_str|safe }}>
+      <i class="{{ icon }}" aria-hidden="true"></i>
+    </a>
+  {% else %}
+    <button type="{{ type }}" class="{{ cls|trim }}" {% if id %}id="{{ id }}"{% endif %} {% if disabled %}disabled{% endif %} aria-label="{{ aria_label }}" title="{{ aria_label }}" {{ data_str|safe }}>
+      <i class="{{ icon }}" aria-hidden="true"></i>
+    </button>
+  {% endif %}
+{% endmacro %}
