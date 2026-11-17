@@ -1,0 +1,21 @@
+{# 4-Step Accessible Stepper for Booking / Workflows #}
+{% macro stepper(steps, active_step) %}
+  <nav aria-label="Progress Stepper" class="hms-stepper">
+    {% for step in steps %}
+      {% set step_idx = loop.index %}
+      {% set is_active = (step_idx == active_step) %}
+      {% set is_completed = (step_idx < active_step) %}
+      
+      <div class="hms-step {% if is_active %}active{% elif is_completed %}completed{% endif %}" {% if is_active %}aria-current="step"{% endif %}>
+        <div class="hms-step-number">
+          {% if is_completed %}
+            <i class="fa-solid fa-check" aria-hidden="true"></i>
+          {% else %}
+            <span>{{ step_idx }}</span>
+          {% endif %}
+        </div>
+        <span class="hms-step-label">{{ step }}</span>
+      </div>
+    {% endfor %}
+  </nav>
+{% endmacro %}

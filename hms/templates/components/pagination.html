@@ -1,0 +1,61 @@
+{# Accessible Server-Side Pagination Macro #}
+{% macro pagination(page_obj, endpoint) %}
+  {% if page_obj and page_obj.pages > 1 %}
+    <nav aria-label="Page navigation" class="d-flex justify-content-center mt-4">
+      <ul class="pagination mb-0 gap-1">
+        {# Previous page #}
+        {% if page_obj.has_prev %}
+          <li class="page-item">
+            <a class="page-link btn-hms btn-hms-secondary btn-hms-sm" href="{{ url_for(endpoint, page=page_obj.prev_num, **kwargs) }}" aria-label="Previous page">
+              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+              <span>Prev</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled" aria-disabled="true">
+            <span class="page-link btn-hms btn-hms-secondary btn-hms-sm disabled">
+              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+              <span>Prev</span>
+            </span>
+          </li>
+        {% endif %}
+
+        {# Page numbers #}
+        {% for p in page_obj.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+          {% if p %}
+            {% if p == page_obj.page %}
+              <li class="page-item active" aria-current="page">
+                <span class="page-link btn-hms btn-hms-primary btn-hms-sm">{{ p }}</span>
+              </li>
+            {% else %}
+              <li class="page-item">
+                <a class="page-link btn-hms btn-hms-secondary btn-hms-sm" href="{{ url_for(endpoint, page=p, **kwargs) }}">{{ p }}</a>
+              </li>
+            {% endif %}
+          {% else %}
+            <li class="page-item disabled" aria-hidden="true">
+              <span class="page-link btn-hms btn-hms-ghost btn-hms-sm">…</span>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        {# Next page #}
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link btn-hms btn-hms-secondary btn-hms-sm" href="{{ url_for(endpoint, page=page_obj.next_num, **kwargs) }}" aria-label="Next page">
+              <span>Next</span>
+              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled" aria-disabled="true">
+            <span class="page-link btn-hms btn-hms-secondary btn-hms-sm disabled">
+              <span>Next</span>
+              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </span>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% endmacro %}

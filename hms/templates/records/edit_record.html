@@ -1,109 +1,81 @@
 {% extends 'base.html' %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/badges.html' import status_badge %}
 
-{% block title %}
-Edit Prescription | Hospital Management System
-{% endblock title %}
+{% block title %}Amend Medical Record | Hedgewar Hospital Care{% endblock title %}
 
-{% block body %}
-<style>
-  body { background-color: var(--hms-surface); }
-  .hms-panel { background: #ffffff; border: 1px solid var(--hms-border); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; }
-  .form-control-modern { border: 2px solid var(--hms-border); border-radius: 16px; padding: 16px 20px; font-size: 15px; transition: all 0.2s ease; background: #f8fafc; }
-  .form-control-modern:focus { border-color: var(--hms-teal); background: #ffffff; box-shadow: 0 0 0 4px rgba(0,201,167,0.1); outline: none; }
-  .fc-icon { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
-  .detail-row { border-bottom: 1px dashed var(--hms-border); padding: 12px 0; }
-  .detail-row:last-child { border-bottom: none; }
-</style>
+{% block content %}
+{{ page_header(
+  title='Amend Clinical Record',
+  subtitle='Update diagnosis and prescription information (amendment tracked in audit history)',
+  breadcrumbs=[{'label': 'Appointments', 'url': url_for('patient.dashboard')}, {'label': 'Amend Record', 'url': None}],
+  actions=[
+    '<a href="' ~ url_for('doctor.view_record', apt_id=appointment.apt_id) ~ '" class="btn-hms btn-hms-secondary"><i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i><span>View Original</span></a>'
+  ]
+) }}
 
-<div class="container mt-5 mb-5">
-  
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h3 class="brand-font fw-bold text-dark mb-1"><i class="fas fa-user-edit me-2" style="color: var(--hms-amber);"></i>Edit Clinical Chart</h3>
-      <p class="text-muted small mb-0">Update the official medical record and prescription details.</p>
-    </div>
-    <a href="/dashboard?filter=Completed" class="btn btn-outline-secondary rounded-pill fw-bold px-4 shadow-sm"><i class="fas fa-arrow-left me-2"></i>Back to History</a>
-  </div>
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="hms-card">
+      <div class="hms-card-header">
+        <h2 class="h6 mb-0">Patient Details</h2>
+      </div>
+      <div class="hms-card-body p-4 text-center">
+        <div class="hms-avatar hms-avatar-lg mx-auto mb-3">
+          <i class="fa-solid fa-user-injured fs-3" aria-hidden="true"></i>
+        </div>
+        <h3 class="h5 mb-1">{{ appointment.name or (appointment.patient.username if appointment.patient else 'Patient') }}</h3>
+        <span class="badge-status badge-info mb-3">APT-ID: #{{ appointment.apt_id }}</span>
 
-  <div class="row g-4">
-    
-    <!-- LEFT COLUMN: Patient Info Summary -->
-    <div class="col-lg-4">
-      <div class="hms-panel h-100 position-relative">
-        <div style="height: 100px; background: linear-gradient(135deg, var(--hms-navy) 0%, #1e293b 100%);"></div>
-        
-        <div class="px-4 pb-4" style="margin-top: -35px;">
-          <div class="text-center mb-4">
-            <div class="fc-icon mx-auto shadow-sm border border-white border-4" style="background: #ffffff; color: var(--hms-navy);">
-                <i class="fas fa-user-injured"></i>
-            </div>
-            <!-- NOTE: Keeping appointment.name as in your original source file -->
-            <h4 class="brand-font fw-bold mt-3 mb-0">{{ appointment.name }}</h4>
-            <span class="badge bg-light text-muted border rounded-pill mt-2 fw-bold" style="letter-spacing: 1px;">APT ID: #{{ appointment.apt_id }}</span>
+        <div class="p-3 rounded border bg-light text-start text-sm">
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">Consultation Date:</span>
+            <span class="fw-semibold">{{ appointment.date }}</span>
           </div>
-
-          <div class="bg-light rounded-4 p-4 mb-4">
-            <div class="detail-row d-flex justify-content-between align-items-center">
-              <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;"><i class="fas fa-calendar-day me-2 opacity-50"></i>Date</span>
-              <span class="fw-bold text-dark">{{ appointment.date }}</span>
-            </div>
-            <div class="detail-row d-flex justify-content-between align-items-center">
-              <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;"><i class="fas fa-clock me-2 opacity-50"></i>Time</span>
-              <span class="fw-bold text-primary">{{ appointment.time }}</span>
-            </div>
-          </div>
-
-          <div class="p-4 bg-danger bg-opacity-10 rounded-4 border border-danger border-opacity-25">
-            <span class="text-danger small fw-bold text-uppercase d-block mb-1" style="letter-spacing: 0.5px;"><i class="fas fa-exclamation-circle me-1"></i> Reported Reason:</span>
-            <p class="mb-0 fw-bold text-dark">{{ appointment.disease }}</p>
+          <div class="d-flex justify-content-between py-1">
+            <span class="text-muted">Consultation Time:</span>
+            <span class="fw-semibold text-primary">{{ appointment.time }}</span>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- RIGHT COLUMN: The Medical Form -->
-    <div class="col-lg-8">
-      <div class="hms-panel p-5 h-100">
-        
-        <form action="/edit_record/{{ appointment.apt_id }}" method="POST">
-          {{ csrf_field() }}
-          
-          <div class="mb-4">
-            <label for="diagnosis" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
-              <i class="fas fa-stethoscope text-primary me-2"></i>Official Diagnosis <span class="text-danger">*</span>
-            </label>
-            <textarea class="form-control-modern w-100" id="diagnosis" name="diagnosis" rows="3" required>{{ record.diagnosis }}</textarea>
+  <div class="col-lg-8">
+    <div class="hms-card">
+      <div class="hms-card-header">
+        <h2 class="h6 mb-0">Record Amendment Form</h2>
+      </div>
+
+      <div class="hms-card-body p-4 p-md-5">
+        <form action="{{ url_for('doctor.edit_record', apt_id=appointment.apt_id) }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+          <div class="hms-form-group mb-4">
+            <label for="diagnosis" class="hms-label">Clinical Diagnosis <span class="text-danger">*</span></label>
+            <textarea class="hms-textarea" id="diagnosis" name="diagnosis" rows="3" required>{{ record.diagnosis }}</textarea>
           </div>
 
-          <div class="mb-4">
-            <label for="prescription" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
-              <i class="fas fa-pills text-success me-2"></i>Prescription & Medications <span class="text-danger">*</span>
-            </label>
-            <textarea class="form-control-modern w-100" id="prescription" name="prescription" rows="4" required>{{ record.prescription }}</textarea>
+          <div class="hms-form-group mb-4">
+            <label for="prescription" class="hms-label">Prescription & Medication Plan <span class="text-danger">*</span></label>
+            <textarea class="hms-textarea" id="prescription" name="prescription" rows="4" required>{{ record.prescription }}</textarea>
           </div>
 
-          <div class="mb-5">
-            <label for="notes" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
-              <i class="fas fa-clipboard text-warning me-2"></i>Additional Notes / Advice
-            </label>
-            <textarea class="form-control-modern w-100" id="notes" name="notes" rows="2">{{ record.notes }}</textarea>
+          <div class="hms-form-group mb-4">
+            <label for="notes" class="hms-label">Additional Instructions / Advice</label>
+            <textarea class="hms-textarea" id="notes" name="notes" rows="2">{{ record.notes or '' }}</textarea>
           </div>
 
-          <hr class="text-muted mb-4 opacity-25">
-
-          <div class="d-flex justify-content-end gap-3">
-              <a href="/dashboard?filter=Completed" class="btn btn-light rounded-pill px-4 fw-bold border">Cancel</a>
-              <button type="submit" class="btn btn-warning rounded-pill px-5 shadow-sm fw-bold text-dark">
-                  <i class="fas fa-save me-2"></i> Save Changes
-              </button>
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{{ url_for('patient.dashboard') }}" class="btn-hms btn-hms-secondary">Cancel</a>
+            <button type="submit" class="btn-hms btn-hms-primary btn-hms-lg">
+              <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+              <span>Save Record Amendment</span>
+            </button>
           </div>
-
         </form>
-
       </div>
     </div>
-
   </div>
 </div>
-{% endblock body %}
+{% endblock content %}

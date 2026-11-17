@@ -1,0 +1,16 @@
+{# Accessible Empty State Component with Call-to-Action #}
+{% macro empty_state(title, message, icon='folder-open', action_label=None, action_url=None, action_icon=None) %}
+  <div class="hms-empty-state" role="status">
+    <div class="hms-empty-icon" aria-hidden="true">
+      <i class="fa-solid fa-{{ icon }}"></i>
+    </div>
+    <h3 class="hms-empty-title">{{ title }}</h3>
+    <p class="hms-empty-desc">{{ message }}</p>
+    {% if action_label and action_url %}
+      <a href="{{ action_url }}" class="btn-hms btn-hms-primary">
+        {% if action_icon %}<i class="{{ action_icon }}" aria-hidden="true"></i>{% endif %}
+        <span>{{ action_label }}</span>
+      </a>
+    {% endif %}
+  </div>
+{% endmacro %}

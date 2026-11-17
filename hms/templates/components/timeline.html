@@ -1,0 +1,22 @@
+{# Clinical History / Audit Timeline Component #}
+{% macro timeline(events) %}
+  <div class="hms-timeline" role="feed" aria-label="Clinical timeline">
+    {% for ev in events %}
+      <article class="hms-timeline-item" aria-labelledby="event-title-{{ loop.index }}">
+        <div class="hms-timeline-marker" aria-hidden="true"></div>
+        <div class="hms-timeline-content">
+          <div class="d-flex justify-content-between align-items-baseline mb-1">
+            <h4 class="h6 mb-0 fw-bold" id="event-title-{{ loop.index }}">{{ ev.title }}</h4>
+            <time class="text-xs text-muted" datetime="{{ ev.datetime }}">{{ ev.date_display }}</time>
+          </div>
+          {% if ev.subtitle %}
+            <p class="text-xs text-muted mb-2">{{ ev.subtitle }}</p>
+          {% endif %}
+          <div class="text-sm text-secondary">
+            {{ ev.content|safe }}
+          </div>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% endmacro %}

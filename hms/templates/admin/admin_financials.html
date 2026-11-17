@@ -1,137 +1,158 @@
 {% extends 'base.html' %}
-{% block title %}Hospital Financials | Admin{% endblock %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/badges.html' import status_badge %}
+{% from 'components/empty_state.html' import empty_state %}
+
+{% block title %}Hospital Financials | Hedgewar Hospital Care{% endblock title %}
 
 {% block body %}
-<style>
-  .stat-filter-card {
-    border: none; border-radius: 20px; cursor: pointer;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-    position: relative; overflow: hidden;
-  }
-  .stat-filter-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-  .stat-filter-card.inactive-filter { filter: grayscale(80%) opacity(0.4); transform: scale(0.96); }
+<div class="container-xl py-4">
+  {{ page_header(
+    title="Revenue & Billing",
+    subtitle="Hospital revenue ledger, settled collections, and outstanding patient invoices.",
+    breadcrumbs=[
+      {"label": "Admin Dashboard", "url": url_for('admin.admin_dashboard')},
+      {"label": "Revenue & Billing"}
+    ],
+    actions=[
+      {"label": (bills | length | string) ~ " Invoices", "icon": "fas fa-file-invoice", "class": "btn-outline-primary", "disabled": true}
+    ]
+  ) }}
 
-  .grad-all { background: linear-gradient(135deg, #0b1d35 0%, #1e293b 100%); }
-
-  .status-badge { font-size: 11px; font-weight: 800; text-transform: uppercase; padding: 6px 12px; border-radius: 50px; }
-  .status-paid { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-  .status-unpaid { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-</style>
-
-<div class="container mt-5 mb-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="brand-font fw-bold text-dark mb-0"><i class="fas fa-file-invoice-dollar text-primary me-2"></i>Revenue & Billing</h2>
-    <span class="badge bg-secondary rounded-pill px-3" id="rowCountLabel">{{ bills | length }} Records</span>
-  </div>
-  
-  <!-- Rearranged 3-Column Layout: Gross -> Paid -> Unpaid -->
-  <div class="row mb-5 g-4">
-    <!-- Card 1: Gross (All Transactions) -->
-    <div class="col-lg-4">
-      <div class="stat-filter-card grad-all text-white p-4 h-100" id="filter-All" onclick="filterBills('All')">
-        <h6 class="text-uppercase fw-bold opacity-75 small">Gross Revenue</h6>
-        <h2 class="mb-0 fw-bold">₹{{ total_collected + pending_revenue }}</h2>
-        <div class="mt-2 small opacity-75"><i class="fas fa-list me-1"></i> All Transactions</div>
+  <!-- 3-Column Summary Cards -->
+  <div class="row g-4 mb-4">
+    <!-- Card 1: Gross -->
+    <div class="col-md-4">
+      <div class="card border border-2 border-primary shadow-sm h-100 cursor-pointer" 
+           role="button"
+           tabindex="0"
+           data-action="filter-bills" 
+           data-filter="All"
+           aria-label="Filter by All Invoices">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-xs fw-bold text-uppercase text-muted">Gross Revenue</span>
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-1"><i class="fas fa-list me-1"></i>All</span>
+          </div>
+          <h2 class="h3 fw-bold text-dark mb-1">₹{{ total_collected + pending_revenue }}</h2>
+          <span class="text-xs text-muted">Total billing ledger across all encounters</span>
+        </div>
       </div>
     </div>
 
     <!-- Card 2: Paid -->
-    <div class="col-lg-4">
-      <div class="stat-filter-card bg-success text-white p-4 h-100" id="filter-Paid" onclick="filterBills('Paid')">
-        <h6 class="text-uppercase fw-bold opacity-75 small">Total Collected</h6>
-        <h2 class="mb-0 fw-bold">₹{{ total_collected }}</h2>
-        <div class="mt-2 small opacity-75"><i class="fas fa-check-circle me-1"></i> Paid Invoices</div>
+    <div class="col-md-4">
+      <div class="card border shadow-sm h-100 cursor-pointer" 
+           role="button"
+           tabindex="0"
+           data-action="filter-bills" 
+           data-filter="Paid"
+           aria-label="Filter by Paid Invoices">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-xs fw-bold text-uppercase text-success">Total Collected</span>
+            <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1"><i class="fas fa-check-circle me-1"></i>Settled</span>
+          </div>
+          <h2 class="h3 fw-bold text-success mb-1">₹{{ total_collected }}</h2>
+          <span class="text-xs text-muted">Receipts settled via online gateway & counter</span>
+        </div>
       </div>
     </div>
 
-    <!-- Card 3: Unpaid -->
-    <div class="col-lg-4">
-      <div class="stat-filter-card bg-warning text-dark p-4 h-100" id="filter-Unpaid" onclick="filterBills('Unpaid')">
-        <h6 class="text-uppercase fw-bold opacity-75 small">Pending Revenue</h6>
-        <h2 class="mb-0 fw-bold">₹{{ pending_revenue }}</h2>
-        <div class="mt-2 small opacity-75"><i class="fas fa-clock me-1"></i> Unpaid Invoices</div>
+    <!-- Card 3: Pending -->
+    <div class="col-md-4">
+      <div class="card border shadow-sm h-100 cursor-pointer" 
+           role="button"
+           tabindex="0"
+           data-action="filter-bills" 
+           data-filter="Unpaid"
+           aria-label="Filter by Pending Invoices">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-xs fw-bold text-uppercase text-warning">Pending Revenue</span>
+            <span class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1"><i class="fas fa-clock me-1"></i>Awaiting</span>
+          </div>
+          <h2 class="h3 fw-bold text-warning mb-1">₹{{ pending_revenue }}</h2>
+          <span class="text-xs text-muted">Invoices pending patient settlement</span>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Global Billing Table -->
-  <div class="card shadow-sm border-0 rounded-4">
-    <div class="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
-        <span class="fw-bold text-muted small text-uppercase"><i class="fas fa-history me-1"></i>Financial Record Log</span>
-        <button class="btn btn-sm btn-outline-secondary rounded-pill fw-bold" onclick="filterBills('All')">Reset View</button>
+  <div class="card border-0 shadow-sm overflow-hidden">
+    <div class="card-header bg-surface py-3 d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <i class="fas fa-history text-primary"></i>
+        <h5 class="mb-0 fw-bold">Financial Record Log</h5>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-surface-subtle text-secondary border" id="rowCountLabel">{{ bills | length }} Records</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="filter-bills" data-filter="All">
+          <i class="fas fa-undo me-1"></i>Reset View
+        </button>
+      </div>
     </div>
-    <div class="table-responsive p-0">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="bg-white">
-          <tr class="text-muted small text-uppercase" style="font-size: 11px; letter-spacing: 1px;">
-            <th class="ps-4">Bill ID</th>
-            <th>Patient</th>
-            <th>Consultation</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th class="pe-4 text-end">Generated On</th>
-          </tr>
-        </thead>
-        <tbody id="billingTableBody">
-          {% for bill in bills %}
-          <tr class="bill-row" data-status="{{ bill.status }}">
-            <td class="ps-4 fw-bold text-muted">#{{ bill.bill_id }}</td>
-            <td class="fw-bold text-dark">{{ bill.appointment.patient.username }}</td>
-            <td>
-                <div class="fw-bold" style="font-size: 13px;">Dr. {{ bill.appointment.doctor }}</div>
-                <div class="text-muted small">{{ bill.appointment.dept }}</div>
-            </td>
-            <td class="fw-bold text-dark">₹{{ bill.amount }}</td>
-            <td>
-              {% if bill.status == 'Paid' %}
-                <span class="status-badge status-paid"><i class="fas fa-check-circle me-1"></i>Paid</span>
-              {% else %}
-                <span class="status-badge status-unpaid"><i class="fas fa-exclamation-circle me-1"></i>Unpaid</span>
-              {% endif %}
-            </td>
-            <td class="pe-4 text-end small text-muted">{{ bill.issued_on.strftime('%Y-%m-%d') }}</td>
-          </tr>
-          {% endfor %}
-          <tr id="emptyMsg" style="display: none;">
-            <td colspan="6" class="text-center py-5 text-muted">
-                <i class="fas fa-filter fa-3x mb-3 opacity-25"></i>
-                <h5 class="fw-bold">No records match this status</h5>
-                <button class="btn btn-link text-decoration-none" onclick="filterBills('All')">Show all results</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="ps-4">Bill ID</th>
+              <th scope="col">Patient</th>
+              <th scope="col">Consultation</th>
+              <th scope="col">Amount</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="pe-4 text-end">Generated On</th>
+            </tr>
+          </thead>
+          <tbody id="billingTableBody">
+            {% for bill in bills %}
+            <tr class="bill-row" data-status="{{ bill.status }}">
+              <td class="ps-4 fw-bold text-muted">
+                <a href="{{ url_for('admin.admin_view_invoice', bill_id=bill.bill_id) }}" class="text-decoration-none text-primary">
+                  #{{ bill.bill_id }}
+                </a>
+              </td>
+              <td class="fw-bold text-dark">{{ bill.appointment.patient.username }}</td>
+              <td>
+                <div class="fw-semibold text-dark">Dr. {{ bill.appointment.doctor }}</div>
+                <div class="text-xs text-muted">{{ bill.appointment.dept }}</div>
+              </td>
+              <td class="fw-bold text-dark">₹{{ bill.amount }}</td>
+              <td>
+                {{ status_badge(bill.status, size='sm') }}
+              </td>
+              <td class="pe-4 text-end text-sm text-muted">
+                {{ bill.issued_on.strftime('%Y-%m-%d') if bill.issued_on else 'N/A' }}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6" class="py-5 text-center">
+                {{ empty_state(
+                  title="No financial records found",
+                  message="No billing records or invoices exist in the system yet.",
+                  icon="fas fa-file-invoice-dollar"
+                ) }}
+              </td>
+            </tr>
+            {% endfor %}
+            <tr id="emptyMsg" class="d-none">
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="fas fa-filter fa-2x mb-3 text-secondary opacity-50"></i>
+                <h6 class="fw-bold">No records match this status</h6>
+                <button type="button" class="btn btn-link text-decoration-none" data-action="filter-bills" data-filter="All">Show all results</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
+{% endblock body %}
 
-<script>
-  function filterBills(targetStatus) {
-    const cards = ['Paid', 'Unpaid', 'All'];
-    cards.forEach(status => {
-      const card = document.getElementById('filter-' + status);
-      if (targetStatus === status) {
-        card.classList.remove('inactive-filter');
-      } else {
-        card.classList.add('inactive-filter');
-      }
-    });
-
-    const rows = document.querySelectorAll('.bill-row');
-    let visibleCount = 0;
-
-    rows.forEach(row => {
-      const rowStatus = row.getAttribute('data-status');
-      if (targetStatus === 'All' || rowStatus === targetStatus) {
-        row.style.display = '';
-        visibleCount++;
-      } else {
-        row.style.display = 'none';
-      }
-    });
-
-    document.getElementById('rowCountLabel').innerText = visibleCount + ' Records';
-    document.getElementById('emptyMsg').style.display = (visibleCount === 0) ? '' : 'none';
-  }
-</script>
-{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pages/admin_financials.js') }}"></script>
+{% endblock scripts %}

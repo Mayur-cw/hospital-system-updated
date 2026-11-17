@@ -1,206 +1,122 @@
 {% extends 'base.html' %}
-{% block title %}Official Medical Record | HMS{% endblock title %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/badges.html' import status_badge %}
 
-{% block body %}
-<style>
-  body { background-color: var(--hms-surface); }
-  
-  /* The Main Document Paper */
-  .hms-document { 
-    background: #ffffff; 
-    border: 1px solid var(--hms-border); 
-    border-radius: 24px; 
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); 
-    overflow: hidden; 
-    position: relative;
-  }
-  
-  /* Deep Gradient Header */
-  .doc-header {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: white;
-    position: relative;
-    overflow: hidden;
-  }
-  .doc-header::before {
-    content: ''; position: absolute; inset: 0;
-    background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 20px 20px; pointer-events: none;
-  }
+{% block title %}Medical Record #{{ record.record_id }} | Hedgewar Hospital Care{% endblock title %}
 
-  .record-section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--hms-muted); margin-bottom: 8px; }
-  
-  /* The Data Boxes */
-  .record-data-box { 
-    background: #f8fafc; 
-    border: 1px solid var(--hms-border); 
-    border-radius: 16px; 
-    padding: 24px; 
-    font-size: 16px; 
-    color: #1e293b; 
-    white-space: pre-wrap; 
-    line-height: 1.7; 
-    position: relative;
-    z-index: 2;
-  }
+{% block content %}
+<div class="row justify-content-center py-4">
+  <div class="col-lg-8">
+    {# Control Bar #}
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+      <a href="{{ url_for('patient.dashboard') if current_user.usertype == 'Patient' else url_for('main.index') }}" class="btn-hms btn-hms-secondary btn-hms-sm">
+        <i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i>
+        <span>Back</span>
+      </a>
+      <button type="button" class="btn-hms btn-hms-primary btn-hms-sm" id="print-record-btn">
+        <i class="fa-solid fa-print me-1" aria-hidden="true"></i>
+        <span>Print Prescription</span>
+      </button>
+    </div>
 
-  /* The Rx Watermark */
-  .rx-box { position: relative; overflow: hidden; }
-  .rx-box::after {
-    content: 'Rx';
-    position: absolute;
-    top: 50%; right: 20px;
-    transform: translateY(-50%);
-    font-size: 120px;
-    font-family: 'Times New Roman', serif;
-    font-style: italic;
-    color: rgba(16, 185, 129, 0.04); 
-    z-index: 1;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  /* Fancy Print Button */
-  .btn-print-pro {
-    background: linear-gradient(135deg, var(--hms-navy) 0%, #3b82f6 100%);
-    color: white; border: none;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-  .btn-print-pro:hover {
-    transform: translateY(-3px); color: white;
-    box-shadow: 0 15px 30px rgba(59, 130, 246, 0.3);
-  }
-
-  /* 🚨 MAGIC PDF / PRINT SETTINGS 🚨 */
-  @media print {
-    @page { margin: 10mm; } /* Reduced physical page margins */
-    body { background-color: white !important; margin: 0; padding: 0; }
-    
-    /* Hide everything that isn't the document */
-    .navbar, .print-hide, .btn, footer { display: none !important; }
-    
-    /* Flatten the document for clean printing */
-    .hms-document { box-shadow: none !important; border: none !important; border-radius: 0 !important; margin: 0 !important; }
-    .record-data-box { border: 1px solid #e2e8f0 !important; background: #f8fafc !important; }
-    
-    /* Force colors to print */
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .doc-header { background: #0f172a !important; color: white !important; }
-
-    /* 🚨 1-PAGE FORCE: Shrink vertical spacing for the printer 🚨 */
-    .p-5 { padding: 1.5rem !important; }        /* Shrinks massive inner padding */
-    .mb-5 { margin-bottom: 1.5rem !important; } /* Shrinks space between sections */
-    .mb-4 { margin-bottom: 1rem !important; }
-    .mt-5 { margin-top: 1.5rem !important; }
-    .pt-4 { padding-top: 1rem !important; }
-    .record-data-box { padding: 12px 16px !important; font-size: 14px !important; } /* Tighten text boxes */
-  }
-</style>
-
-<div class="container mt-5 mb-5">
-  
-  <!-- Back Button (Hidden during print) -->
-  <div class="mb-4 print-hide">
-    <a href="/dashboard?filter=Completed" class="btn btn-outline-secondary rounded-pill fw-bold px-4 shadow-sm hover-lift">
-      <i class="fas fa-arrow-left me-2"></i>Back to Records
-    </a>
-  </div>
-
-  <div class="row justify-content-center">
-    <div class="col-lg-9 col-xl-8">
-      
-      <!-- THE OFFICIAL DOCUMENT -->
-      <div class="hms-document" id="printableRecord">
-        
-        <!-- Official Hospital Header (Upgraded to Deep Navy) -->
-        <div class="doc-header p-5 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-3 position-relative" style="z-index: 2;">
-                <div class="bg-white text-primary rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 55px; height: 55px; font-size: 28px;">
-                    <i class="fas fa-hospital-symbol"></i>
-                </div>
-                <div>
-                    <h2 class="brand-font fw-bold mb-0 text-white" style="letter-spacing: 0.5px;">H.M.S Clinic</h2>
-                    <p class="text-white text-opacity-75 small mb-0 fw-bold text-uppercase" style="letter-spacing: 2px;">Official Medical Record</p>
-                </div>
+    {# Document Card #}
+    <div class="hms-card" id="printableRecord">
+      {# Letterhead #}
+      <div class="p-4 p-md-5 border-bottom print-letterhead">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <i class="fa-solid fa-hospital text-primary fs-3" aria-hidden="true"></i>
+              <span class="h4 fw-bold mb-0 font-brand-heading">Hedgewar Hospital Care</span>
             </div>
-            <div class="text-end position-relative" style="z-index: 2;">
-                <h5 class="fw-bold text-white mb-1">Dr. {{ appointment.doctor | capitalize }}</h5>
-                <p class="text-white text-opacity-75 small mb-0">{{ appointment.dept }}</p>
-                <p class="text-info small mb-0 fw-bold mt-1"><i class="fas fa-calendar-check me-1"></i> {{ record.created_at.strftime('%B %d, %Y') }}</p>
-            </div>
+            <p class="text-xs text-muted mb-0">Department of Clinical Medicine · Outpatient Consultation Record</p>
+          </div>
+          <div class="text-end">
+            <span class="badge-status badge-success">COMPLETED</span>
+            <div class="text-xs text-muted mt-1">Record Ref: <strong>#{{ record.record_id }}</strong></div>
+          </div>
         </div>
-        
-        <div class="p-5 bg-white">
-            <!-- Patient Demographics Grid -->
-            <div class="row bg-light rounded-4 p-4 border mb-5 shadow-sm">
-                <div class="col-sm-5 mb-3 mb-sm-0">
-                    <div class="record-section-title"><i class="fas fa-user-injured me-1 opacity-50"></i> Patient Name</div>
-                    <h5 class="fw-bold text-dark mb-0">{{ appointment.patient.username }}</h5>
-                </div>
-                <div class="col-sm-3 mb-3 mb-sm-0">
-                    <div class="record-section-title"><i class="fas fa-venus-mars me-1 opacity-50"></i> Gender</div>
-                    <h5 class="fw-bold text-dark mb-0">{{ appointment.patient.gender }}</h5>
-                </div>
-                <div class="col-sm-4 text-sm-end">
-                    <div class="record-section-title"><i class="fas fa-clock me-1 opacity-50"></i> Visit Timestamp</div>
-                    <h5 class="fw-bold text-primary mb-0">{{ appointment.date }}</h5>
-                    <small class="text-muted fw-bold">{{ appointment.time }}</small>
-                </div>
-            </div>
-
-            <!-- Medical Data: Diagnosis -->
-            <div class="mb-4">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;"><i class="fas fa-stethoscope fs-6"></i></div>
-                  <div class="record-section-title mb-0" style="color: var(--hms-primary);">Clinical Diagnosis</div>
-                </div>
-                <div class="record-data-box border-start border-4 border-primary shadow-sm">{{ record.diagnosis }}</div>
-            </div>
-
-            <!-- Medical Data: Prescription (With Rx Watermark) -->
-            <div class="mb-4">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;"><i class="fas fa-pills fs-6"></i></div>
-                  <div class="record-section-title mb-0" style="color: #10b981;">Prescription / Treatment</div>
-                </div>
-                <div class="record-data-box rx-box border-start border-4 border-success fw-bold shadow-sm text-dark">{{ record.prescription }}</div>
-            </div>
-
-            <!-- Medical Data: Notes (If any) -->
-            {% if record.notes %}
-            <div class="mb-5">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;"><i class="fas fa-clipboard fs-6"></i></div>
-                  <div class="record-section-title mb-0" style="color: #d97706;">Physician's Notes</div>
-                </div>
-                <div class="record-data-box border-start border-4 border-warning shadow-sm">{{ record.notes }}</div>
-            </div>
-            {% endif %}
-
-            <!-- Document Footer & Signature Line -->
-            <div class="mt-5 pt-4 border-top d-flex justify-content-between align-items-end">
-                <div class="small text-muted opacity-75">
-                    <i class="fas fa-shield-alt me-1 text-success"></i> Securely generated & digitally verified by H.M.S
-                </div>
-                <div class="text-center" style="width: 220px;">
-                    <!-- Elegant Signature Line -->
-                    <div style="border-bottom: 2px solid #1e293b; height: 50px; margin-bottom: 8px;"></div>
-                    <div class="small text-dark fw-bold text-uppercase" style="letter-spacing: 1px;">Attending Physician</div>
-                </div>
-            </div>
-        </div>
-
       </div>
 
-      <!-- Action Buttons (Hidden during print) -->
-      <div class="text-center mt-5 mb-5 print-hide">
-          <button onclick="window.print()" class="btn btn-print-pro btn-lg px-5 rounded-pill fw-bold shadow-lg">
-              <i class="fas fa-print me-2"></i> Print Document / Save PDF
-          </button>
-          <p class="text-muted small mt-3"><i class="fas fa-info-circle me-1"></i> Tip: Select "Save as PDF" in your print dialog to download this record.</p>
-      </div>
+      <div class="hms-card-body p-4 p-md-5">
+        {# Patient / Doctor Meta Table #}
+        <div class="p-3 rounded border bg-light mb-4">
+          <dl class="row mb-0 text-sm">
+            <dt class="col-sm-3 text-muted">Patient Name:</dt>
+            <dd class="col-sm-9 fw-bold">{{ appointment.patient.username if appointment.patient else 'Patient' }}</dd>
 
+            <dt class="col-sm-3 text-muted">Attending Doctor:</dt>
+            <dd class="col-sm-9 fw-semibold">Dr. {{ appointment.doctor }}</dd>
+
+            <dt class="col-sm-3 text-muted">Clinical Department:</dt>
+            <dd class="col-sm-9">{{ appointment.dept }}</dd>
+
+            <dt class="col-sm-3 text-muted">Consultation Date:</dt>
+            <dd class="col-sm-9 mb-0">{{ appointment.date }} at {{ appointment.time }}</dd>
+          </dl>
+        </div>
+
+        {# If Admitted, Show Inpatient Notice #}
+        {% if appointment.admission %}
+          <div class="p-3 rounded border border-warning bg-warning bg-opacity-10 mb-4 text-sm">
+            <div class="d-flex align-items-center gap-2 fw-bold text-dark mb-1">
+              <i class="fa-solid fa-bed-pulse text-warning" aria-hidden="true"></i>
+              <span>Inpatient Ward Admission Recorded</span>
+            </div>
+            <div class="text-muted">
+              Admitted to Room {{ appointment.admission.room.room_number if appointment.admission.room else '—' }} ({{ appointment.admission.room.ward_type if appointment.admission.room else 'General' }} Ward).
+            </div>
+          </div>
+        {% endif %}
+
+        {# Official Diagnosis #}
+        <div class="mb-4">
+          <h2 class="h6 fw-bold text-uppercase text-muted mb-2">Clinical Diagnosis</h2>
+          <div class="p-3 rounded border bg-surface-subtle text-sm">
+            {{ record.diagnosis }}
+          </div>
+        </div>
+
+        {# Prescription & Medication #}
+        <div class="mb-4">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="fs-4 fw-bold text-primary rx-symbol">℞</span>
+            <h2 class="h6 fw-bold text-uppercase text-muted mb-0">Prescription & Medication Plan</h2>
+          </div>
+          <div class="p-4 rounded border bg-surface-subtle text-sm pre-wrap-relaxed">
+{{ record.prescription }}
+          </div>
+        </div>
+
+        {% if record.notes %}
+          <div class="mb-4">
+            <h2 class="h6 fw-bold text-uppercase text-muted mb-2">Clinical Advice & Notes</h2>
+            <div class="p-3 rounded border bg-surface-subtle text-sm">
+              {{ record.notes }}
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="mt-5 pt-4 border-top d-flex justify-content-between align-items-center text-xs text-muted">
+          <div>Verified Digital Prescription · Hedgewar Hospital Core HIS</div>
+          <div class="text-end">
+            <div class="fw-bold">Dr. {{ appointment.doctor }}</div>
+            <div>Consulting Physician Signature</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-{% endblock body %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const pBtn = document.getElementById('print-record-btn');
+    if (pBtn) {
+      pBtn.addEventListener('click', function() {
+        window.print();
+      });
+    }
+  });
+</script>
+{% endblock content %}

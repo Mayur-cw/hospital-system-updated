@@ -1,0 +1,41 @@
+{# Accessible Form Field Macro (WCAG AA with Labels, Hints, Errors, ARIA) #}
+{% macro form_field(field, hint=None, icon=None, placeholder=None, class_name='') %}
+  <div class="hms-form-group {{ class_name }}">
+    {% if field.type not in ['HiddenField', 'CSRFInput'] %}
+      <label for="{{ field.id }}" class="hms-label">
+        {{ field.label.text }}
+        {% if field.flags.required %}<span class="text-danger" aria-hidden="true">*</span>{% endif %}
+      </label>
+    {% endif %}
+
+    {% set field_args = {'class': 'hms-input' ~ (' is-invalid' if field.errors else '')} %}
+    {% if placeholder %}
+      {% set _ = field_args.update({'placeholder': placeholder}) %}
+    {% endif %}
+    {% if hint %}
+      {% set _ = field_args.update({'aria-describedby': field.id ~ '-hint'}) %}
+    {% endif %}
+    {% if field.errors %}
+      {% set _ = field_args.update({'aria-invalid': 'true', 'aria-describedby': field.id ~ '-error'}) %}
+    {% endif %}
+
+    {{ field(**field_args) }}
+
+    {% if hint %}
+      <div id="{{ field.id }}-hint" class="hms-hint">{{ hint }}</div>
+    {% endif %}
+
+    {% if field.errors %}
+      {% for error in field.errors %}
+        <div id="{{ field.id }}-error" class="hms-feedback-invalid" role="alert">
+          <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+          <span>{{ error }}</span>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% macro csrf_field() %}
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+{% endmacro %}

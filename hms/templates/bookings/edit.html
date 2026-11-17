@@ -1,293 +1,94 @@
 {% extends 'base.html' %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/cards.html' import card %}
+{% from 'components/badges.html' import status_badge %}
 
-{% block title %}
-Edit Booking | Hospital Management System
-{% endblock title %}
+{% block title %}Reschedule Appointment | Hedgewar Hospital Care{% endblock title %}
 
-{% block body %}
-<div class="container mt-5 mb-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+{% block content %}
+{{ page_header(
+  title='Update Booking Details',
+  subtitle='Reschedule appointment date and consultation slot for APT-#' ~ posts.apt_id,
+  breadcrumbs=[{'label': 'My Appointments', 'url': url_for('patient.dashboard')}, {'label': 'Reschedule', 'url': None}]
+) }}
 
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
-
-      <div class="card shadow border-0">
-        <div class="card-header bg-warning text-dark py-3 text-center">
-          <h4 class="mb-0 fw-bold"><i class="fas fa-edit me-2"></i>Update Booking Details</h4>
-        </div>
-        
-        <div class="card-body p-4 bg-light">
-          <!-- 🔄 UPDATED: posts.apt_id -->
-          <form action="/edit/{{ posts.apt_id }}" method="POST">
-            {{ csrf_field() }}
-            
-            <input type="hidden" name="slot" value="{{ posts.slot }}">
-
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="name" class="form-label fw-bold text-dark">Full Name</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-user text-muted"></i></span>
-                  <input type="text" class="form-control" id="name" name="name" value="{{ posts.name }}" required>
-                </div>
-              </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label for="email" class="form-label fw-bold text-dark">Email Address</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-envelope text-muted"></i></span>
-                  <input type="email" class="form-control bg-light" id="email" name="email" value="{{ posts.email }}" readonly required>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="number" class="form-label fw-bold text-dark">Phone Number</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-phone text-muted"></i></span>
-                  <input type="text" class="form-control" id="number" name="number" value="{{ posts.number }}" pattern="\d{10}" title="Please enter exactly 10 digits" required>
-                </div>
-              </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label for="gender" class="form-label fw-bold text-dark">Gender</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-venus-mars text-muted"></i></span>
-                  <select class="form-select" id="gender" name="gender" required>
-                    <option value="{{ posts.gender }}" selected hidden>{{ posts.gender }}</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Others">Others</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="dept" class="form-label fw-bold text-dark">Department</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-stethoscope text-muted"></i></span>
-                  <select class="form-select" id="dept" name="dept" required onchange="filterDoctors(true)">
-                    <option value="" disabled hidden>Select Department</option>
-                    {% for d in doct %}
-                      <option value="{{ d.dept }}" {% if posts.dept == d.dept %}selected{% endif %}>{{ d.dept | capitalize }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label for="doctor" class="form-label fw-bold text-dark">Select Doctor</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-user-md text-muted"></i></span>
-                  <select class="form-select" id="doctor" name="doctor" required onchange="checkAvailableSlots()">
-                    <option value="" disabled hidden>Choose a Specialist</option>
-                    {% for d in doct %}
-                      <option value="{{ d.doctorname }}" data-dept="{{ d.dept }}" {% if posts.doctor == d.doctorname %}selected{% endif %}>Dr. {{ d.doctorname | capitalize }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="date" class="form-label fw-bold text-dark">Appointment Date</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-calendar-alt text-muted"></i></span>
-                  <input type="date" class="form-control" id="date" name="date" value="{{ posts.date }}" required onchange="checkAvailableSlots()">
-                </div>
-              </div>
-              <div class="col-md-6 mt-3 mt-md-0">
-                <label class="form-label fw-bold text-dark">Appointment Time</label>
-                <input type="hidden" id="selected_time" name="time" value="{{ posts.time }}" required>
-                <div id="slot-container" class="d-flex flex-wrap gap-2 pt-1">
-                  <span class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i>Loading your slot...</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mb-4">
-              <div class="col-md-12">
-                <label for="disease" class="form-label fw-bold text-dark">Disease name / Symptoms overview</label>
-                <div class="input-group">
-                  <span class="input-group-text bg-white"><i class="fas fa-notes-medical text-muted"></i></span>
-                  <input type="text" class="form-control" id="disease" name="disease" value="{{ posts.disease }}" required>
-                </div>
-              </div>
-            </div>
-
-            <div class="d-grid mt-2">
-              <button type="submit" class="btn btn-warning btn-lg shadow-sm fw-bold text-dark">
-                <i class="fas fa-save me-2"></i> Update Appointment
-              </button>
-            </div>
-
-          </form>
-        </div>
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="hms-card">
+      <div class="hms-card-header">
+        <h2 class="h5 mb-0">Select New Schedule</h2>
       </div>
 
+      <div class="hms-card-body p-4 p-md-5">
+        {# Current Details Summary #}
+        <div class="p-3 rounded border bg-light mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-xs text-muted text-uppercase fw-bold">Current Booking</span>
+            {{ status_badge(posts.slot) }}
+          </div>
+          <div class="text-sm">
+            <div>Attending Physician: <strong>Dr. {{ posts.doctor }}</strong> ({{ posts.dept }})</div>
+            <div class="text-muted mt-1">Currently Booked: <strong>{{ posts.date }} at {{ posts.time }}</strong></div>
+          </div>
+        </div>
+
+        <form action="{{ url_for('patient.reschedule_appointment', apt_id=posts.apt_id) }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+          <div class="hms-form-group mb-4">
+            <label for="reschedule-date" class="hms-label">New Appointment Date</label>
+            <input type="date" class="hms-input" id="reschedule-date" name="date" required/>
+            <div class="hms-hint">Appointments must be scheduled at least 2 hours in advance.</div>
+          </div>
+
+          <div class="hms-form-group mb-4">
+            <label for="reschedule-time" class="hms-label">New Time Slot</label>
+            <select class="hms-select" id="reschedule-time" name="time" required>
+              <option value="" disabled selected>Select an available time slot</option>
+              <option value="09:00 AM">09:00 AM</option>
+              <option value="09:30 AM">09:30 AM</option>
+              <option value="10:00 AM">10:00 AM</option>
+              <option value="10:30 AM">10:30 AM</option>
+              <option value="11:00 AM">11:00 AM</option>
+              <option value="11:30 AM">11:30 AM</option>
+              <option value="12:00 PM">12:00 PM</option>
+              <option value="12:30 PM">12:30 PM</option>
+              <option value="02:00 PM">02:00 PM</option>
+              <option value="02:30 PM">02:30 PM</option>
+              <option value="03:00 PM">03:00 PM</option>
+              <option value="03:30 PM">03:30 PM</option>
+              <option value="04:00 PM">04:00 PM</option>
+              <option value="04:30 PM">04:30 PM</option>
+            </select>
+          </div>
+
+          <div class="hms-form-group mb-4">
+            <label for="disease" class="hms-label">Updated Symptoms / Reschedule Reason</label>
+            <textarea class="hms-textarea" id="disease" name="disease" placeholder="Reason for rescheduling or updated health symptoms">{{ posts.disease }}</textarea>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{{ url_for('patient.dashboard') }}" class="btn-hms btn-hms-secondary">
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+              <span>Back</span>
+            </a>
+            <button type="submit" class="btn-hms btn-hms-primary btn-hms-lg">
+              <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+              <span>Confirm Reschedule</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-  function filterDoctors(isManualChange = false) {
-    const selectedDept = document.getElementById("dept").value;
-    const doctorDropdown = document.getElementById("doctor");
-    const doctorOptions = doctorDropdown.querySelectorAll("option");
-    
-    if (isManualChange) {
-      doctorDropdown.disabled = false;
-      doctorDropdown.value = "";
-      document.getElementById('slot-container').innerHTML = '<span class="text-muted small"><i class="fas fa-info-circle me-1"></i>Please select a Doctor and Date first.</span>';
-      document.getElementById('selected_time').value = "";
+  document.addEventListener('DOMContentLoaded', function() {
+    const dInput = document.getElementById('reschedule-date');
+    if (dInput) {
+      dInput.min = new Date().toISOString().split('T')[0];
     }
-    
-    doctorOptions.forEach(option => {
-      if (option.value === "") {
-        option.style.display = "block";
-        return;
-      }
-      if (option.getAttribute("data-dept") === selectedDept) {
-        option.style.display = "block";
-      } else {
-        option.style.display = "none";
-      }
-    });
-  }
-
-  const allSlots = [
-    "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM",
-    "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM"
-  ];
-
-  function checkAvailableSlots() {
-    const dateStr = document.getElementById('date').value;
-    const doctorStr = document.getElementById('doctor').value;
-    const slotContainer = document.getElementById('slot-container');
-    const existingTime = "{{ posts.time }}"; // Get the original time from the backend
-
-    if (!dateStr || !doctorStr || doctorStr === "") {
-        return;
-    }
-
-    slotContainer.innerHTML = '<span class="text-primary small"><i class="fas fa-spinner fa-spin me-1"></i> Loading availability...</span>';
-
-    fetch('/get_booked_slots', {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        },
-        body: JSON.stringify({ 
-            date: dateStr, 
-            doctor: doctorStr,
-            current_pid: "{{ posts.apt_id }}" 
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        const bookedTimes = data.booked_times;
-        slotContainer.innerHTML = ''; 
-
-        // Get current time for comparison
-        const now = new Date();
-        const selectedDateStr = document.getElementById('date').value; 
-        
-        // Check if the user selected TODAY safely
-        const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-        const isToday = (selectedDateStr === todayStr);
-
-        allSlots.forEach(slot => {
-            const btn = document.createElement('button');
-            btn.type = 'button'; 
-            btn.className = 'btn btn-sm shadow-sm border ';
-            btn.innerText = slot;
-
-            // --- TIME COMPARISON LOGIC ---
-            let isPastTime = false;
-            if (isToday) {
-                let [timePart, modifier] = slot.split(' ');
-                let [hours, minutes] = timePart.split(':');
-                hours = parseInt(hours, 10);
-                
-                if (hours === 12 && modifier === 'AM') hours = 0;
-                if (modifier === 'PM' && hours < 12) hours += 12;
-                
-                const slotDateTime = new Date();
-                slotDateTime.setHours(hours, parseInt(minutes, 10), 0, 0);
-                
-                if (slotDateTime < now) {
-                    isPastTime = true;
-                }
-            }
-
-            // SMART EDIT CHECK: Don't disable the slot if it is THEIR exact original slot on their original date
-            const isExistingSlot = (slot === existingTime && selectedDateStr === "{{ posts.date }}");
-
-            // Disable if booked OR (past time today AND it's not their existing slot)
-            if (bookedTimes.includes(slot) || (isPastTime && !isExistingSlot)) {
-                btn.classList.add('btn-light', 'text-muted');
-                btn.disabled = true;
-                btn.style.textDecoration = 'line-through';
-                
-                if (isPastTime && !bookedTimes.includes(slot) && !isExistingSlot) {
-                    btn.title = "This time has already passed";
-                }
-            } else {
-                btn.classList.add('btn-outline-primary', 'fw-bold');
-                
-                // If this slot matches their currently saved time, highlight it automatically!
-                if (slot === document.getElementById('selected_time').value) {
-                    btn.classList.remove('btn-outline-primary');
-                    btn.classList.add('btn-primary', 'text-white');
-                }
-                
-                btn.onclick = function() {
-                    selectSlot(btn, slot);
-                };
-            }
-            slotContainer.appendChild(btn);
-        });
-    })
-    .catch(error => {
-        slotContainer.innerHTML = '<span class="text-danger small">Error loading slots.</span>';
-    });
-  }
-
-  function selectSlot(clickedBtn, timeValue) {
-    document.getElementById('selected_time').value = timeValue;
-
-    const allBtns = document.getElementById('slot-container').querySelectorAll('button');
-    allBtns.forEach(b => {
-        if (!b.disabled) {
-            b.classList.remove('btn-primary', 'text-white');
-            b.classList.add('btn-outline-primary');
-        }
-    });
-
-    clickedBtn.classList.remove('btn-outline-primary');
-    clickedBtn.classList.add('btn-primary', 'text-white');
-  }
-
-  // Trigger everything immediately when the edit page loads!
-  document.addEventListener("DOMContentLoaded", function() {
-    filterDoctors(false);
-    checkAvailableSlots();
-    
-    // Automatically restrict the date picker to Today and future dates
-    let today = new Date().toISOString().split('T')[0];
-    document.getElementById("date").setAttribute("min", today);
   });
 </script>
-
-{% endblock body %}
+{% endblock content %}

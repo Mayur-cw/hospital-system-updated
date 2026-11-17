@@ -1,182 +1,126 @@
 {% extends 'base.html' %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/badges.html' import status_badge %}
 
-{% block title %}
-Write Prescription | Hospital Management System
-{% endblock title %}
+{% block title %}Clinical Charting | Hedgewar Hospital Care{% endblock title %}
 
-{% block body %}
-<style>
-  body { background-color: var(--hms-surface); }
-  .hms-panel { background: #ffffff; border: 1px solid var(--hms-border); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; }
-  .form-control-modern { border: 2px solid var(--hms-border); border-radius: 16px; padding: 16px 20px; font-size: 15px; transition: all 0.2s ease; background: #f8fafc; }
-  .form-control-modern:focus { border-color: var(--hms-teal); background: #ffffff; box-shadow: 0 0 0 4px rgba(0,201,167,0.1); outline: none; }
-  .fc-icon { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
-  .detail-row { border-bottom: 1px dashed var(--hms-border); padding: 12px 0; }
-  .detail-row:last-child { border-bottom: none; }
-  
-  /* Toggle Switch Customization */
-  .form-check-input:checked { background-color: var(--hms-teal); border-color: var(--hms-teal); }
-</style>
+{% block content %}
+{{ page_header(
+  title='Clinical Charting & Prescription',
+  subtitle='Record official medical diagnoses, prescribed pharmaceuticals, and inpatient room admission',
+  breadcrumbs=[{'label': 'Queue', 'url': url_for('main.index')}, {'label': 'Write Rx', 'url': None}],
+  actions=[
+    '<a href="' ~ url_for('main.index') ~ '" class="btn-hms btn-hms-secondary"><i class="fa-solid fa-arrow-left me-1" aria-hidden="true"></i><span>Back to Queue</span></a>'
+  ]
+) }}
 
-<div class="container mt-5 mb-5">
-  
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h3 class="brand-font fw-bold text-dark mb-1"><i class="fas fa-file-signature me-2" style="color: var(--hms-teal);"></i>Clinical Charting</h3>
-      <p class="text-muted small mb-0">Fill out the official medical record to mark this appointment as completed.</p>
-    </div>
-    <a href="/dashboard?filter=Pending" class="btn btn-outline-secondary rounded-pill fw-bold px-4 shadow-sm"><i class="fas fa-arrow-left me-2"></i>Back to Queue</a>
-  </div>
+<div class="row g-4">
+  {# Left Column: Patient Case Information #}
+  <div class="col-lg-4">
+    <div class="hms-card">
+      <div class="hms-card-header">
+        <h2 class="h6 mb-0">Patient Case Summary</h2>
+      </div>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm rounded-4 border-0 mb-4" role="alert">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      <div class="hms-card-body p-4 text-center">
+        <div class="hms-avatar hms-avatar-lg mx-auto mb-3">
+          <i class="fa-solid fa-hospital-user fs-3" aria-hidden="true"></i>
         </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+        <h3 class="h5 mb-1">{{ appointment.patient.username }}</h3>
+        <span class="badge-status badge-info mb-3">APT-ID: #{{ appointment.apt_id }}</span>
 
-  <div class="row g-4">
-    
-    <!-- LEFT COLUMN: Patient Info Summary -->
-    <div class="col-lg-4">
-      <div class="hms-panel h-100 position-relative">
-        <div style="height: 100px; background: linear-gradient(135deg, var(--hms-navy) 0%, #1e293b 100%);"></div>
-        
-        <div class="px-4 pb-4" style="margin-top: -35px;">
-          <div class="text-center mb-4">
-            <div class="fc-icon mx-auto shadow-sm border border-white border-4" style="background: #ffffff; color: var(--hms-navy);">
-                <i class="fas fa-user-injured"></i>
-            </div>
-            <h4 class="brand-font fw-bold mt-3 mb-0">{{ appointment.patient.username }}</h4>
-            <span class="badge bg-light text-muted border rounded-pill mt-2 fw-bold" style="letter-spacing: 1px;">APT ID: #{{ appointment.apt_id }}</span>
+        <div class="p-3 rounded border bg-light text-start text-sm mb-3">
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">Gender:</span>
+            <span class="fw-semibold">{{ appointment.patient.gender or 'Unspecified' }}</span>
           </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">Appointment Date:</span>
+            <span class="fw-semibold">{{ appointment.date }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span class="text-muted">Scheduled Time:</span>
+            <span class="fw-semibold text-primary">{{ appointment.time }}</span>
+          </div>
+        </div>
 
-          <div class="bg-light rounded-4 p-4 mb-4">
-            <div class="detail-row d-flex justify-content-between align-items-center">
-              <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;"><i class="fas fa-venus-mars me-2 opacity-50"></i>Gender</span>
-              <span class="fw-bold text-dark">{{ appointment.patient.gender }}</span>
-            </div>
-            <div class="detail-row d-flex justify-content-between align-items-center">
-              <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;"><i class="fas fa-calendar-day me-2 opacity-50"></i>Date</span>
-              <span class="fw-bold text-dark">{{ appointment.date }}</span>
-            </div>
-            <div class="detail-row d-flex justify-content-between align-items-center">
-              <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;"><i class="fas fa-clock me-2 opacity-50"></i>Time</span>
-              <span class="fw-bold text-primary">{{ appointment.time }}</span>
-            </div>
-          </div>
-
-          <div class="p-4 bg-danger bg-opacity-10 rounded-4 border border-danger border-opacity-25">
-            <span class="text-danger small fw-bold text-uppercase d-block mb-1" style="letter-spacing: 0.5px;"><i class="fas fa-exclamation-circle me-1"></i> Reported Reason:</span>
-            <p class="mb-0 fw-bold text-dark">{{ appointment.disease }}</p>
-          </div>
+        <div class="p-3 rounded border border-danger bg-danger bg-opacity-10 text-start">
+          <span class="text-xs fw-bold text-danger text-uppercase d-block mb-1">Chief Complaint:</span>
+          <p class="mb-0 text-sm fw-medium text-dark">{{ appointment.disease }}</p>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- RIGHT COLUMN: The Medical Form -->
-    <div class="col-lg-8">
-      <div class="hms-panel p-5 h-100">
-        
-        <form action="/add_record/{{ appointment.apt_id }}" method="POST">
-          {{ csrf_field() }}
-          
-          <div class="mb-4">
-            <label for="diagnosis" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
-              <i class="fas fa-stethoscope text-primary me-2"></i>Official Diagnosis <span class="text-danger">*</span>
-            </label>
-            <textarea class="form-control-modern w-100" id="diagnosis" name="diagnosis" rows="3" placeholder="Enter the final diagnosis (e.g., Acute Viral Pharyngitis)" required></textarea>
+  {# Right Column: Medical Record Charting Form #}
+  <div class="col-lg-8">
+    <div class="hms-card">
+      <div class="hms-card-header">
+        <h2 class="h6 mb-0">Consultation Findings & Treatment Plan</h2>
+      </div>
+
+      <div class="hms-card-body p-4 p-md-5">
+        <form action="{{ url_for('doctor.add_record', apt_id=appointment.apt_id) }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+          <div class="hms-form-group mb-4">
+            <label for="diagnosis" class="hms-label">Official Clinical Diagnosis <span class="text-danger">*</span></label>
+            <textarea class="hms-textarea" id="diagnosis" name="diagnosis" rows="3" placeholder="Enter primary clinical diagnosis (e.g. Acute Pharyngitis with secondary bronchospasm)" required></textarea>
           </div>
 
-          <div class="mb-4">
-            <label for="prescription" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
-              <i class="fas fa-pills text-success me-2"></i>Prescription & Medications <span class="text-danger">*</span>
-            </label>
-            <textarea class="form-control-modern w-100" id="prescription" name="prescription" rows="4" placeholder="List medications, dosage, and frequency (e.g., Amoxicillin 500mg, 1 tablet twice daily for 7 days)" required></textarea>
+          <div class="hms-form-group mb-4">
+            <label for="prescription" class="hms-label">Prescription & Medication Plan <span class="text-danger">*</span></label>
+            <textarea class="hms-textarea" id="prescription" name="prescription" rows="4" placeholder="Detail prescribed pharmaceutical names, dosages, intervals, and duration" required></textarea>
           </div>
 
-          <div class="mb-4">
-            <label for="notes" class="form-label fw-bold text-dark mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 13px;">
-              <i class="fas fa-clipboard text-warning me-2"></i>Additional Notes / Advice <span class="text-muted fw-normal text-lowercase">(Optional)</span>
-            </label>
-            <textarea class="form-control-modern w-100" id="notes" name="notes" rows="2" placeholder="e.g., Drink plenty of fluids, rest, avoid cold beverages."></textarea>
+          <div class="hms-form-group mb-4">
+            <label for="notes" class="hms-label">Additional Instructions / Lifestyle Advice</label>
+            <textarea class="hms-textarea" id="notes" name="notes" rows="2" placeholder="e.g. Adequate hydration, avoidance of allergens, follow-up after 5 days"></textarea>
           </div>
 
-          <!-- 🏥 NEW: INPATIENT ADMISSION TOGGLE -->
-          <div class="mb-5 bg-light p-4 rounded-4 border">
-            <div class="form-check form-switch d-flex align-items-center gap-3 ps-0 mb-0">
-              <input class="form-check-input ms-0 mt-0" type="checkbox" role="switch" id="admitToggle" onchange="toggleAdmission()" style="width: 45px; height: 24px; cursor: pointer;">
-              <label class="form-check-label fw-bold text-dark" for="admitToggle" style="cursor: pointer; font-size: 15px;">
-                <i class="fas fa-procedures text-info me-2"></i>Require Inpatient Ward Admission?
+          {# Inpatient Admission Toggle #}
+          <div class="p-4 rounded border bg-light mb-4">
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" id="admitToggle" role="switch"/>
+              <label class="form-check-label fw-bold ms-2 cursor-pointer" for="admitToggle">
+                Require Inpatient Hospital Ward Admission?
               </label>
             </div>
-            
-            <div id="admissionSection" style="display: none;" class="mt-4 pt-4 border-top">
-              <label for="room_id" class="form-label fw-bold text-info mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 12px;">
-                <i class="fas fa-bed me-2"></i>Select Available Bed / Room
-              </label>
-              
-              {% if available_rooms %}
-              <select class="form-control-modern w-100" id="room_id" name="room_id" style="border-color: #0dcaf0;">
-                  <option value="" selected disabled>Choose a ward...</option>
-                  {% for room in available_rooms %}
+
+            <div id="admissionSection" class="mt-3 pt-3 border-top d-none">
+              <div class="hms-form-group mb-0">
+                <label for="room_id" class="hms-label">Select Available Inpatient Room / Bed</label>
+                {% if available_rooms %}
+                  <select class="hms-select" id="room_id" name="room_id">
+                    <option value="" disabled selected>Choose available room...</option>
+                    {% for room in available_rooms %}
                       <option value="{{ room.room_id }}">
                         {{ room.ward_type }} Ward — Room {{ room.room_number }} (₹{{ room.rate_per_day }}/day)
                       </option>
-                  {% endfor %}
-              </select>
-              <div class="small text-muted mt-2">
-                <i class="fas fa-info-circle me-1 text-info"></i> Reserving a room will admit the patient and automatically add a 1-day deposit to their invoice.
+                    {% endfor %}
+                  </select>
+                  <div class="hms-hint">Room allocation will initiate inpatient tracking and ward management.</div>
+                {% else %}
+                  <div class="p-2 rounded bg-danger bg-opacity-10 text-danger text-sm">
+                    No inpatient rooms are currently vacant across hospital wards.
+                  </div>
+                {% endif %}
               </div>
-              {% else %}
-              <div class="alert alert-danger mb-0 border-0 shadow-sm py-2">
-                <i class="fas fa-exclamation-triangle me-2"></i>No rooms are currently available across all wards.
-              </div>
-              {% endif %}
             </div>
           </div>
 
-          <hr class="text-muted mb-4 opacity-25">
-
-          <div class="d-flex justify-content-end gap-3">
-              <a href="/dashboard?filter=Pending" class="btn btn-light rounded-pill px-4 fw-bold border">Cancel</a>
-              <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm fw-bold">
-                  <i class="fas fa-check-circle me-2"></i> Finalize & Mark Completed
-              </button>
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <a href="{{ url_for('main.index') }}" class="btn-hms btn-hms-secondary">Cancel</a>
+            <button type="submit" class="btn-hms btn-hms-primary btn-hms-lg">
+              <i class="fa-solid fa-check" aria-hidden="true"></i>
+              <span>Finalize & Mark Completed</span>
+            </button>
           </div>
-
         </form>
-
       </div>
     </div>
-
   </div>
 </div>
 
-<script>
-  function toggleAdmission() {
-      const section = document.getElementById('admissionSection');
-      const select = document.getElementById('room_id');
-      
-      if (document.getElementById('admitToggle').checked) {
-          // Add a smooth fade-in
-          section.style.opacity = 0;
-          section.style.display = 'block';
-          setTimeout(() => section.style.opacity = 1, 50);
-          
-          if(select) select.required = true;
-      } else {
-          section.style.display = 'none';
-          if(select) {
-            select.required = false;
-            select.value = '';
-          }
-      }
-  }
-</script>
-{% endblock body %}
+<script src="{{ url_for('static', filename='js/pages/add_record.js') }}"></script>
+{% endblock content %}

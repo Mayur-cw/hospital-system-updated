@@ -1,171 +1,147 @@
 {% extends 'base.html' %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/badges.html' import status_badge %}
+{% from 'components/csrf_field.html' import csrf_field %}
+{% from 'components/empty_state.html' import empty_state %}
 
-{% block title %}
-Manage System Staff | Hospital Management System
-{% endblock title %}
+{% block title %}Manage System Staff | Hedgewar Hospital Care{% endblock title %}
 
 {% block body %}
-<div class="container mt-5 mb-5">
-
-  <!-- Header -->
-  <div class="row mb-4 align-items-center">
-    <div class="col-md-8">
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-1">
-          <li class="breadcrumb-item"><a href="{{ url_for('admin.admin_dashboard') }}" class="text-decoration-none text-primary">Admin Dashboard</a></li>
-          <li class="breadcrumb-item active text-muted">Manage System Staff</li>
-        </ol>
-      </nav>
-      <h2 class="fw-bold text-dark mb-0"><i class="fas fa-user-shield me-2" style="color: #8b5cf6;"></i>System Administrators</h2>
-      <p class="text-muted mt-1">View, edit, or remove root-level hospital administration accounts.</p>
-    </div>
-    <div class="col-md-4 text-md-end d-flex flex-column align-items-md-end gap-2 mt-3 mt-md-0">
-      <span class="badge fs-6 rounded-pill px-4 py-2 shadow-sm text-white" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
-        <i class="fas fa-shield-alt me-2"></i>{{ admins | length }} Admin(s)
-      </span>
-      <!-- 🚨 NEW: Add Admin Button -->
-      <button class="btn rounded-pill fw-bold shadow-sm text-white" style="background: #2c3e50;" data-bs-toggle="modal" data-bs-target="#addStaffModal">
-        <i class="fas fa-user-plus me-2"></i>Add New Admin
-      </button>
-    </div>
-  </div>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+<div class="container-xl py-4">
+  {{ page_header(
+    title="System Administrators",
+    subtitle="View, edit, or provision hospital administration accounts.",
+    breadcrumbs=[
+      {"label": "Admin Dashboard", "url": url_for('admin.admin_dashboard')},
+      {"label": "Manage System Staff"}
+    ],
+    actions=[
+      {"label": (admins | length | string) ~ " Admin(s)", "icon": "fas fa-shield-alt", "class": "btn-outline-primary", "disabled": true},
+      {"label": "Add New Admin", "icon": "fas fa-user-plus", "class": "btn-primary", "attrs": 'data-bs-toggle="modal" data-bs-target="#addStaffModal"'}
+    ]
+  ) }}
 
   <!-- Search Bar -->
-  <div class="card shadow-sm border-0 rounded-4 mb-4">
+  <div class="card mb-4 border-0 shadow-sm">
     <div class="card-body p-3">
       <div class="input-group">
-        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-        <input type="text" id="staffSearch" class="form-control border-start-0 ps-0" placeholder="Search staff by name or email..." onkeyup="searchStaff()">
-        <button class="btn btn-outline-secondary" onclick="clearSearch()"><i class="fas fa-times"></i></button>
+        <span class="input-group-text bg-surface border-end-0"><i class="fas fa-search text-muted"></i></span>
+        <input type="search" id="staffSearch" class="form-control border-start-0" 
+               placeholder="Search staff by name or email..." 
+               data-directory-search="#staffGrid .staff-card-wrap">
+        <button class="btn btn-outline-secondary search-clear-btn" type="button" aria-label="Clear search">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
     </div>
   </div>
 
   <!-- Staff Grid -->
-  <div class="row" id="staffGrid">
+  <div class="row g-4" id="staffGrid">
     {% for admin in admins %}
-    <div class="col-md-4 mb-4 staff-card-wrap" 
+    <div class="col-md-6 col-lg-4 staff-card-wrap" 
+         data-search-text="{{ admin.username }} {{ admin.email }}"
          data-name="{{ admin.username | lower }}" 
          data-email="{{ admin.email | lower }}">
-      <div class="card shadow-sm border-0 rounded-4 h-100 staff-card">
-        
-        <!-- Card Header with Avatar -->
-        <div class="card-header text-white rounded-top-4 p-4 d-flex align-items-center gap-3" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
-          <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" 
-               style="width:56px;height:56px;">
-            <span class="fw-bold fs-4" style="color: #2c3e50;">{{ admin.username[0] | upper }}</span>
-          </div>
+      <div class="card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header bg-surface border-bottom p-4 d-flex align-items-center gap-3">
+          <span class="avatar avatar-lg bg-primary-subtle text-primary">
+            {{ admin.username[0] | upper }}
+          </span>
           <div class="overflow-hidden">
             <h6 class="mb-0 fw-bold text-truncate">{{ admin.username }}</h6>
-            <small class="opacity-75 text-truncate d-block">{{ admin.email }}</small>
+            <small class="text-muted text-truncate d-block">{{ admin.email }}</small>
           </div>
         </div>
 
-        <!-- Card Body -->
         <div class="card-body p-4">
-          <div class="mb-3">
-            <span class="badge border rounded-pill px-3 py-2" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-color: rgba(139, 92, 246, 0.3) !important;">
-              <i class="fas fa-server me-1"></i>
-              Root Access
+          <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">
+              <i class="fas fa-server me-1"></i>Root Access
             </span>
             {% if admin.id == current_user.id %}
-            <span class="badge bg-success rounded-pill px-3 py-2 ms-1">You</span>
+            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+              <i class="fas fa-user-check me-1"></i>You
+            </span>
             {% endif %}
           </div>
           <div class="d-flex align-items-center gap-2 text-muted small mb-2">
-            <i class="fas fa-id-badge"></i>
+            <i class="fas fa-id-badge text-secondary"></i>
             <span>Staff ID: <strong class="text-dark">{{ admin.id }}</strong></span>
           </div>
           <div class="d-flex align-items-center gap-2 text-muted small">
-            <i class="fas fa-shield-alt" style="color: #8b5cf6;"></i>
-            <span class="badge rounded-pill" style="background: #8b5cf6;">Administrator</span>
+            <i class="fas fa-shield-alt text-primary"></i>
+            <span class="badge bg-surface-subtle text-secondary border rounded-pill">Administrator</span>
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="card-footer bg-light border-0 rounded-bottom-4 p-3">
+        <div class="card-footer bg-surface border-top p-3">
           <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary btn-sm rounded-pill flex-fill fw-bold"
-                    onclick="openEditModal('{{ admin.id }}', '{{ admin.username }}', '{{ admin.email }}')">
+            <button type="button" class="btn btn-outline-primary btn-sm flex-fill"
+                    data-action="edit-staff"
+                    data-id="{{ admin.id }}"
+                    data-name="{{ admin.username }}"
+                    data-email="{{ admin.email }}">
               <i class="fas fa-edit me-1"></i>Edit
             </button>
-            <button class="btn btn-outline-warning btn-sm rounded-pill flex-fill fw-bold"
-                    onclick="openPasswordModal('{{ admin.id }}', '{{ admin.username }}')">
+            <button type="button" class="btn btn-outline-warning btn-sm flex-fill"
+                    data-action="change-password"
+                    data-id="{{ admin.id }}"
+                    data-name="{{ admin.username }}">
               <i class="fas fa-key me-1"></i>Password
             </button>
-            
             {% if admin.id != current_user.id %}
-            <button class="btn btn-outline-danger btn-sm rounded-pill flex-fill fw-bold"
-                    onclick="openDeleteModal('{{ admin.id }}', '{{ admin.username }}')">
+            <button type="button" class="btn btn-outline-danger btn-sm flex-fill"
+                    data-action="delete-staff"
+                    data-id="{{ admin.id }}"
+                    data-name="{{ admin.username }}">
               <i class="fas fa-trash me-1"></i>Remove
             </button>
             {% else %}
-            <button class="btn btn-outline-secondary btn-sm rounded-pill flex-fill fw-bold" disabled title="You cannot delete yourself">
+            <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" disabled title="You cannot delete yourself">
               <i class="fas fa-ban me-1"></i>Locked
             </button>
             {% endif %}
           </div>
         </div>
-
       </div>
     </div>
     {% else %}
     <div class="col-12">
-      <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-body text-center py-5 text-muted">
-          <i class="fas fa-users-cog fa-4x mb-3 text-secondary opacity-50"></i>
-          <h5>No Other Admins Found</h5>
-          <p class="mb-0">Use the provisioning tool on the dashboard to add more staff.</p>
-        </div>
-      </div>
+      {{ empty_state(
+        title="No Other Admins Found",
+        message="Use the provisioning button above to add more staff.",
+        icon="fas fa-users-cog"
+      ) }}
     </div>
     {% endfor %}
   </div>
-
-  <!-- No search results message -->
-  <div id="noResults" class="text-center py-5 d-none">
-    <i class="fas fa-search fa-3x text-muted mb-3 opacity-50"></i>
-    <h5 class="text-muted">No staff found</h5>
-    <p class="text-muted">Try a different search term.</p>
-  </div>
-
 </div>
 
-<!-- ===== EDIT STAFF MODAL ===== -->
-<div class="modal fade" id="editStaffModal" tabindex="-1">
+<!-- Edit Staff Modal -->
+<div class="modal fade" id="editStaffModal" tabindex="-1" aria-labelledby="editStaffTitle" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow rounded-4">
-      <div class="modal-header text-white rounded-top-4" style="background: #2c3e50;">
-        <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Staff Details</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-surface border-bottom">
+        <h5 class="modal-title fw-bold" id="editStaffTitle"><i class="fas fa-edit me-2 text-primary"></i>Edit Staff Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form action="/admin/edit_staff" method="POST">
+      <form action="{{ url_for('admin.admin_edit_staff') }}" method="POST">
         {{ csrf_field() }}
         <div class="modal-body p-4">
           <input type="hidden" name="staff_id" id="editStaffId">
           <div class="mb-3">
-            <label class="form-label fw-bold">Full Name</label>
+            <label for="editStaffName" class="form-label fw-semibold">Full Name</label>
             <input type="text" class="form-control" name="username" id="editStaffName" required>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-bold">Email Address</label>
+            <label for="editStaffEmail" class="form-label fw-semibold">Email Address</label>
             <input type="email" class="form-control" name="email" id="editStaffEmail" required>
           </div>
         </div>
-        <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn rounded-pill fw-bold px-4 text-white" style="background: #2c3e50;">
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary px-4">
             <i class="fas fa-save me-1"></i>Save Changes
           </button>
         </div>
@@ -174,44 +150,44 @@ Manage System Staff | Hospital Management System
   </div>
 </div>
 
-<!-- ===== CHANGE PASSWORD MODAL ===== -->
-<div class="modal fade" id="changePasswordModal" tabindex="-1">
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePwTitle" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow rounded-4">
-      <div class="modal-header bg-warning text-dark rounded-top-4">
-        <h5 class="modal-title fw-bold"><i class="fas fa-key me-2"></i>Change Admin Password</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-surface border-bottom">
+        <h5 class="modal-title fw-bold" id="changePwTitle"><i class="fas fa-key me-2 text-warning"></i>Change Admin Password</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form action="/admin/change_staff_password" method="POST">
+      <form action="{{ url_for('admin.admin_change_staff_password') }}" method="POST">
         {{ csrf_field() }}
         <div class="modal-body p-4">
           <input type="hidden" name="staff_id" id="pwStaffId">
-          <div class="alert alert-warning border-0 rounded-3 small">
+          <div class="alert alert-warning border-0 rounded-3 small mb-3">
             <i class="fas fa-exclamation-triangle me-2"></i>
             Changing password for: <strong id="pwStaffName"></strong>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-bold">New Password</label>
+            <label for="newPwField" class="form-label fw-semibold">New Password</label>
             <div class="input-group">
               <input type="password" class="form-control" name="new_password" id="newPwField" placeholder="Enter new password" required minlength="6">
-              <button class="btn btn-outline-secondary" type="button" onclick="togglePw('newPwField', this)">
+              <button class="btn btn-outline-secondary" type="button" data-action="toggle-pw" data-target="newPwField" aria-label="Toggle password visibility">
                 <i class="fas fa-eye"></i>
               </button>
             </div>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-bold">Confirm Password</label>
+            <label for="confirmPwField" class="form-label fw-semibold">Confirm Password</label>
             <div class="input-group">
               <input type="password" class="form-control" name="confirm_password" id="confirmPwField" placeholder="Re-enter new password" required minlength="6">
-              <button class="btn btn-outline-secondary" type="button" onclick="togglePw('confirmPwField', this)">
+              <button class="btn btn-outline-secondary" type="button" data-action="toggle-pw" data-target="confirmPwField" aria-label="Toggle password visibility">
                 <i class="fas fa-eye"></i>
               </button>
             </div>
           </div>
         </div>
-        <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-warning fw-bold rounded-pill px-4">
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning px-4">
             <i class="fas fa-lock me-1"></i>Update Password
           </button>
         </div>
@@ -220,28 +196,30 @@ Manage System Staff | Hospital Management System
   </div>
 </div>
 
-<!-- ===== DELETE CONFIRM MODAL ===== -->
-<div class="modal fade" id="deleteStaffModal" tabindex="-1">
+<!-- Delete Confirm Modal -->
+<div class="modal fade" id="deleteStaffModal" tabindex="-1" aria-labelledby="delModalTitle" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow rounded-4">
-      <div class="modal-header bg-danger text-white rounded-top-4">
-        <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Removal</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-danger-subtle border-bottom">
+        <h5 class="modal-title fw-bold text-danger" id="delModalTitle"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Removal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form action="/admin/delete_staff" method="POST">
+      <form action="{{ url_for('admin.admin_delete_staff') }}" method="POST">
         {{ csrf_field() }}
         <div class="modal-body p-4 text-center">
           <input type="hidden" name="staff_id" id="deleteStaffId">
-          <i class="fas fa-user-minus fa-4x text-danger mb-3 opacity-75"></i>
-          <h5>Remove Admin Account?</h5>
+          <div class="avatar avatar-xl bg-danger-subtle text-danger mx-auto mb-3">
+            <i class="fas fa-user-minus fa-2x"></i>
+          </div>
+          <h5 class="fw-bold">Remove Admin Account?</h5>
           <p class="text-muted mb-0">
             You are about to permanently remove <strong id="deleteStaffName" class="text-danger"></strong>'s access to the system.
             This action cannot be undone.
           </p>
         </div>
-        <div class="modal-footer border-0 justify-content-center gap-3">
-          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-danger rounded-pill fw-bold px-4">
+        <div class="modal-footer border-top justify-content-center gap-2">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger px-4">
             <i class="fas fa-trash me-1"></i>Yes, Remove
           </button>
         </div>
@@ -250,40 +228,39 @@ Manage System Staff | Hospital Management System
   </div>
 </div>
 
-<!-- ===== ADD NEW STAFF MODAL ===== -->
-<div class="modal fade" id="addStaffModal" tabindex="-1">
+<!-- Add New Staff Modal -->
+<div class="modal fade" id="addStaffModal" tabindex="-1" aria-labelledby="addStaffTitle" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg rounded-4">
-      <div class="modal-header text-white rounded-top-4" style="background: #2c3e50;">
-        <h5 class="modal-title fw-bold"><i class="fas fa-user-shield me-2"></i>Provision System Administrator</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-surface border-bottom">
+        <h5 class="modal-title fw-bold" id="addStaffTitle"><i class="fas fa-user-shield me-2 text-primary"></i>Provision System Administrator</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form action="{{ url_for('admin.add_staff') }}" method="POST">
         {{ csrf_field() }}
-        <div class="modal-body p-4 bg-light">
-          <!-- Hidden input forces the role to Admin -->
+        <div class="modal-body p-4">
           <input type="hidden" name="usertype" value="Admin">
-          <input type="hidden" name="dept" value="IT/Administration"> <!-- Admins don't need depts, pass dummy data -->
+          <input type="hidden" name="dept" value="IT/Administration">
           
           <div class="mb-3">
-            <label class="form-label fw-bold text-dark small text-uppercase">Admin Full Name</label>
-            <input type="text" class="form-control border-0 shadow-sm px-3 py-2" name="username" placeholder="e.g., John Smith" required>
+            <label for="adminName" class="form-label fw-semibold">Admin Full Name</label>
+            <input type="text" class="form-control" name="username" id="adminName" placeholder="e.g. Rajesh Sharma" required>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-bold text-dark small text-uppercase">Admin Email</label>
-            <input type="email" class="form-control border-0 shadow-sm px-3 py-2" name="email" placeholder="admin@hospital.com" required>
+            <label for="adminEmail" class="form-label fw-semibold">Admin Email</label>
+            <input type="email" class="form-control" name="email" id="adminEmail" placeholder="admin@hedgewar.org" required>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-bold text-dark small text-uppercase">Temporary Password</label>
-            <input type="password" class="form-control border-0 shadow-sm px-3 py-2" name="password" placeholder="••••••••" required minlength="6">
+            <label for="adminPassword" class="form-label fw-semibold">Temporary Password</label>
+            <input type="password" class="form-control" name="password" id="adminPassword" placeholder="••••••••" required minlength="6">
           </div>
-          <div class="alert alert-warning border-0 rounded-3 small mt-3">
-            <i class="fas fa-exclamation-triangle me-2"></i><strong>Warning:</strong> This user will have root access to modify databases and personnel.
+          <div class="alert alert-warning border-0 rounded-3 small mt-3 mb-0">
+            <i class="fas fa-exclamation-triangle me-2"></i><strong>Warning:</strong> This user will have root access to modify records and system configuration.
           </div>
         </div>
-        <div class="modal-footer border-0 bg-light rounded-bottom-4">
-          <button type="button" class="btn btn-outline-secondary rounded-pill fw-bold" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn rounded-pill fw-bold px-4 shadow-sm text-white" style="background: #2c3e50;">
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary px-4">
             <i class="fas fa-check-circle me-1"></i>Authorize Admin
           </button>
         </div>
@@ -291,66 +268,9 @@ Manage System Staff | Hospital Management System
     </div>
   </div>
 </div>
-
-<script>
-  function openEditModal(id, name, email) {
-    document.getElementById('editStaffId').value = id;
-    document.getElementById('editStaffName').value = name;
-    document.getElementById('editStaffEmail').value = email;
-    new bootstrap.Modal(document.getElementById('editStaffModal')).show();
-  }
-
-  function openPasswordModal(id, name) {
-    document.getElementById('pwStaffId').value = id;
-    document.getElementById('pwStaffName').textContent = name;
-    document.getElementById('newPwField').value = '';
-    document.getElementById('confirmPwField').value = '';
-    new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
-  }
-
-  function openDeleteModal(id, name) {
-    document.getElementById('deleteStaffId').value = id;
-    document.getElementById('deleteStaffName').textContent = name;
-    new bootstrap.Modal(document.getElementById('deleteStaffModal')).show();
-  }
-
-  function togglePw(fieldId, btn) {
-    const field = document.getElementById(fieldId);
-    const isText = field.type === 'text';
-    field.type = isText ? 'password' : 'text';
-    btn.innerHTML = isText ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-  }
-
-  function searchStaff() {
-    const query = document.getElementById('staffSearch').value.toLowerCase().trim();
-    const cards = document.querySelectorAll('.staff-card-wrap');
-    let visible = 0;
-    cards.forEach(card => {
-      const name = card.dataset.name || '';
-      const email = card.dataset.email || '';
-      if (name.includes(query) || email.includes(query)) {
-        card.style.display = '';
-        visible++;
-      } else {
-        card.style.display = 'none';
-      }
-    });
-    document.getElementById('noResults').classList.toggle('d-none', visible > 0);
-  }
-
-  function clearSearch() {
-    document.getElementById('staffSearch').value = '';
-    searchStaff();
-  }
-</script>
-
-<style>
-  .staff-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .staff-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 0.75rem 2rem rgba(0,0,0,.12) !important;
-  }
-</style>
 {% endblock body %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pages/directory_search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/admin_staff.js') }}"></script>
+{% endblock scripts %}

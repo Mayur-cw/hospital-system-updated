@@ -1,0 +1,42 @@
+{# Reusable Cards & Stat Cards #}
+{% macro card(title=None, actions=None, footer=None, class_name='') %}
+  <div class="hms-card {{ class_name }}">
+    {% if title or actions %}
+      <div class="hms-card-header">
+        <div>
+          {% if title %}<h3>{{ title }}</h3>{% endif %}
+        </div>
+        {% if actions %}
+          <div class="card-header-actions">{{ actions|safe }}</div>
+        {% endif %}
+      </div>
+    {% endif %}
+    <div class="hms-card-body">
+      {{ caller() }}
+    </div>
+    {% if footer %}
+      <div class="hms-card-footer">
+        {{ footer|safe }}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% macro stat_card(title, value, icon, link=None, delta=None, delta_direction='up', color_theme='teal') %}
+  {% set tag = 'a' if link else 'div' %}
+  <{{ tag }} {% if link %}href="{{ link }}"{% endif %} class="stat-card">
+    <div class="stat-card-info">
+      <span class="stat-card-label">{{ title }}</span>
+      <span class="stat-card-val">{{ value }}</span>
+      {% if delta %}
+        <span class="stat-card-delta delta-{{ delta_direction }}">
+          <i class="fa-solid fa-arrow-trend-{{ 'up' if delta_direction == 'up' else 'down' }}" aria-hidden="true"></i>
+          <span>{{ delta }}</span>
+        </span>
+      {% endif %}
+    </div>
+    <div class="stat-card-icon icon-{{ color_theme }}" aria-hidden="true">
+      <i class="{{ icon }}"></i>
+    </div>
+  </{{ tag }}>
+{% endmacro %}

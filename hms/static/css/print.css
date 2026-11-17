@@ -1,0 +1,106 @@
+/* ==========================================================================
+   Hedgewar Hospital Management System - Print Stylesheet
+   For Clinical & Billing Documents (A4 Format)
+   ========================================================================== */
+
+@media print {
+  /* Hide application chrome, sidebars, topbars, buttons */
+  .app-sidebar,
+  .app-topbar,
+  .app-footer,
+  .btn-hms,
+  .page-header-actions,
+  .sidebar-backdrop,
+  .toast-container-hms,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .app-shell, .app-body, .app-content {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .hms-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin-bottom: 20pt !important;
+  }
+
+  .hms-card-header, .hms-card-body, .hms-card-footer {
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  /* Printable Document Header / Letterhead */
+  .print-letterhead {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2pt solid #0f766e;
+    padding-bottom: 12pt;
+    margin-bottom: 16pt;
+  }
+
+  .print-letterhead-title {
+    font-size: 18pt !important;
+    font-weight: bold !important;
+    color: #0f766e !important;
+  }
+
+  .print-letterhead-sub {
+    font-size: 9pt !important;
+    color: #555555 !important;
+  }
+
+  /* Tables in print */
+  table.hms-table {
+    border: 1pt solid #dddddd !important;
+    width: 100% !important;
+    margin-top: 10pt !important;
+    page-break-inside: auto;
+  }
+
+  table.hms-table th {
+    background-color: #f1f5f9 !important;
+    color: #000000 !important;
+    border-bottom: 1pt solid #000000 !important;
+    padding: 6pt !important;
+  }
+
+  table.hms-table td {
+    padding: 6pt !important;
+    border-bottom: 1pt solid #eeeeee !important;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Badges in print */
+  .badge-status {
+    border: 1pt solid #666666 !important;
+    background: transparent !important;
+    color: #000000 !important;
+    padding: 2pt 4pt !important;
+  }
+
+  /* Page margins */
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+}

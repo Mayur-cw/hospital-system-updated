@@ -1,0 +1,29 @@
+{# Accessible Toasts / Flashed Messages in an ARIA-Live Region #}
+{% macro toast_container() %}
+  <div class="toast-container toast-container-hms" aria-live="polite" aria-atomic="true">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          {% set cat_map = {
+            'error': {'class': 'danger', 'icon': 'circle-exclamation'},
+            'danger': {'class': 'danger', 'icon': 'circle-exclamation'},
+            'success': {'class': 'success', 'icon': 'circle-check'},
+            'warning': {'class': 'warning', 'icon': 'triangle-exclamation'},
+            'info': {'class': 'info', 'icon': 'circle-info'}
+          } %}
+          {% set conf = cat_map.get(category, {'class': 'info', 'icon': 'circle-info'}) %}
+
+          <div class="toast-alert alert hms-toast border-{{ conf.class }}" role="alert" data-auto-dismiss="5000">
+            <div class="text-{{ conf.class }}" aria-hidden="true">
+              <i class="fa-solid fa-{{ conf.icon }}"></i>
+            </div>
+            <div class="flex-1">
+              <p class="mb-0 text-sm fw-medium">{{ message }}</p>
+            </div>
+            <button type="button" class="btn-close ms-auto toast-close-btn" data-bs-dismiss="alert" aria-label="Close message"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+{% endmacro %}

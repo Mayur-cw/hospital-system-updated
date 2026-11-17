@@ -1,356 +1,226 @@
 {% extends 'base.html' %}
+{% from 'components/page_header.html' import page_header %}
+{% from 'components/badges.html' import status_badge %}
+{% from 'components/empty_state.html' import empty_state %}
 
-{% block title %}
-Manage Doctors | Hospital Management System
-{% endblock title %}
+{% block title %}Manage Doctors | Hedgewar Hospital Care{% endblock title %}
 
-{% block body %}
-<div class="container mt-5 mb-5">
+{% block content %}
+{{ page_header(
+  title='Physicians & Specialists Directory',
+  subtitle='Manage clinical doctor accounts, consultation fees, and department assignments',
+  breadcrumbs=[{'label': 'Admin Dashboard', 'url': url_for('admin.admin_dashboard')}, {'label': 'Doctors', 'url': None}],
+  actions=[
+    '<button type="button" class="btn-hms btn-hms-primary" data-bs-toggle="modal" data-bs-target="#addDoctorModal"><i class="fa-solid fa-user-plus me-1" aria-hidden="true"></i><span>Add New Doctor</span></button>'
+  ]
+) }}
 
-  <!-- Header -->
-  <div class="row mb-4 align-items-center">
-    <div class="col-md-8">
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-1">
-          <li class="breadcrumb-item"><a href="{{ url_for('admin.admin_dashboard') }}" class="text-decoration-none text-primary">Admin Dashboard</a></li>
-          <li class="breadcrumb-item active text-muted">Manage Doctors</li>
-        </ol>
-      </nav>
-      <h2 class="fw-bold text-dark mb-0"><i class="fas fa-user-md text-success me-2"></i>Registered Doctors</h2>
-      <p class="text-muted mt-1">View, edit, or remove hospital doctor accounts.</p>
-    </div>
-    <div class="col-md-4 text-md-end d-flex flex-column align-items-md-end gap-2 mt-3 mt-md-0">
-      <span class="badge bg-success fs-6 rounded-pill px-4 py-2 shadow-sm">
-        <i class="fas fa-stethoscope me-2"></i>{{ doctors | length }} Doctor(s)
-      </span>
-      <!-- 🚨 NEW: Add Doctor Button -->
-      <button class="btn btn-primary rounded-pill fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addDoctorModal">
-        <i class="fas fa-user-plus me-2"></i>Add New Doctor
-      </button>
+{# Search Bar #}
+<div class="hms-card mb-4">
+  <div class="hms-card-body p-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="topbar-search w-100 max-w-md">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input type="search" class="w-100" data-directory-search=".doctor-card-wrap" data-count-target="doctor-count-badge" placeholder="Search by physician name, email, or department..."/>
+      </div>
+      <span class="badge-status badge-info" id="doctor-count-badge">{{ doctors|length }} Doctor(s)</span>
     </div>
   </div>
+</div>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="row g-4" id="doctorsGrid">
+  {% for doctor in doctors %}
+    <div class="col-md-6 col-lg-4 doctor-card-wrap" data-search-text="{{ doctor.username }} {{ doctor.email }} {{ doctor.dept }}">
+      <div class="hms-card h-100 d-flex flex-column mb-0">
+        <div class="hms-card-header">
+          <div class="d-flex align-items-center gap-2">
+            <div class="hms-avatar hms-avatar-sm" aria-hidden="true">
+              <i class="fa-solid fa-user-doctor"></i>
+            </div>
+            <div>
+              <h3 class="h6 mb-0">Dr. {{ doctor.username }}</h3>
+              <span class="text-xs text-muted">{{ doctor.email }}</span>
+            </div>
+          </div>
+          <span class="badge-status badge-info">{{ doctor.dept }}</span>
         </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
 
-  <!-- Search Bar -->
-  <div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body p-3">
-      <div class="input-group">
-        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-        <input type="text" id="doctorSearch" class="form-control border-start-0 ps-0" placeholder="Search doctors by name, email or department..." onkeyup="searchDoctors()">
-        <button class="btn btn-outline-secondary" onclick="clearSearch()"><i class="fas fa-times"></i></button>
+        <div class="hms-card-body p-4 flex-grow-1">
+          <div class="d-flex justify-content-between text-sm mb-2">
+            <span class="text-muted">Consultation Fee:</span>
+            <span class="fw-bold text-primary">₹{{ doctor.fee or '500.00' }}</span>
+          </div>
+
+          <div class="text-xs text-muted">
+            <i class="fa-solid fa-graduation-cap me-1" aria-hidden="true"></i>
+            <span>{{ doctor.qualifications or 'MBBS, MD' }}</span>
+          </div>
+        </div>
+
+        <div class="hms-card-footer d-flex justify-content-end gap-2">
+          <button type="button" class="btn-hms btn-hms-secondary btn-hms-sm" data-bs-toggle="modal" data-bs-target="#editDoctorModal{{ doctor.id }}">
+            <i class="fa-solid fa-pen me-1" aria-hidden="true"></i>
+            <span>Edit</span>
+          </button>
+          <button type="button" class="btn-hms btn-hms-ghost btn-hms-sm" data-bs-toggle="modal" data-bs-target="#passDoctorModal{{ doctor.id }}" aria-label="Change Password">
+            <i class="fa-solid fa-key" aria-hidden="true"></i>
+          </button>
+          <form action="{{ url_for('admin.admin_delete_doctor') }}" method="POST" class="m-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="id" value="{{ doctor.id }}"/>
+            <button type="submit" class="btn-hms btn-hms-ghost btn-hms-sm text-danger" aria-label="Deactivate Dr. {{ doctor.username }}">
+              <i class="fa-solid fa-user-xmark" aria-hidden="true"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {# Edit Doctor Modal #}
+      <div class="modal fade" id="editDoctorModal{{ doctor.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-hms">
+          <div class="modal-content modal-content-hms">
+            <form action="{{ url_for('admin.admin_edit_doctor') }}" method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <input type="hidden" name="id" value="{{ doctor.id }}"/>
+
+              <div class="modal-header modal-header-hms">
+                <h3 class="h5 mb-0">Edit Dr. {{ doctor.username }}</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+
+              <div class="modal-body modal-body-hms">
+                <div class="hms-form-group mb-3">
+                  <label for="doc_name_{{ doctor.id }}" class="hms-label">Full Name</label>
+                  <input type="text" class="hms-input" id="doc_name_{{ doctor.id }}" name="username" value="{{ doctor.username }}" required/>
+                </div>
+
+                <div class="hms-form-group mb-3">
+                  <label for="doc_email_{{ doctor.id }}" class="hms-label">Email Address</label>
+                  <input type="email" class="hms-input" id="doc_email_{{ doctor.id }}" name="email" value="{{ doctor.email }}" required/>
+                </div>
+
+                <div class="hms-form-group mb-3">
+                  <label for="doc_dept_{{ doctor.id }}" class="hms-label">Department</label>
+                  <input type="text" class="hms-input" id="doc_dept_{{ doctor.id }}" name="dept" value="{{ doctor.dept }}" required/>
+                </div>
+
+                <div class="hms-form-group mb-3">
+                  <label for="doc_fee_{{ doctor.id }}" class="hms-label">Consultation Fee (₹)</label>
+                  <input type="number" step="0.01" min="0" class="hms-input" id="doc_fee_{{ doctor.id }}" name="fee" value="{{ doctor.fee or '500.00' }}" required/>
+                </div>
+
+                <div class="hms-form-group">
+                  <label for="doc_qual_{{ doctor.id }}" class="hms-label">Qualifications</label>
+                  <input type="text" class="hms-input" id="doc_qual_{{ doctor.id }}" name="qualifications" value="{{ doctor.qualifications or '' }}"/>
+                </div>
+              </div>
+
+              <div class="modal-footer modal-footer-hms">
+                <button type="button" class="btn-hms btn-hms-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn-hms btn-hms-primary">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {# Change Doctor Password Modal #}
+      <div class="modal fade" id="passDoctorModal{{ doctor.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-hms">
+          <div class="modal-content modal-content-hms">
+            <form action="{{ url_for('admin.admin_change_doctor_password') }}" method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <input type="hidden" name="id" value="{{ doctor.id }}"/>
+
+              <div class="modal-header modal-header-hms">
+                <h3 class="h5 mb-0">Reset Password: Dr. {{ doctor.username }}</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+
+              <div class="modal-body modal-body-hms">
+                <div class="hms-form-group">
+                  <label for="doc_pass_{{ doctor.id }}" class="hms-label">New Password</label>
+                  <input type="password" class="hms-input" id="doc_pass_{{ doctor.id }}" name="password" minlength="10" placeholder="Minimum 10 characters" required/>
+                </div>
+              </div>
+
+              <div class="modal-footer modal-footer-hms">
+                <button type="button" class="btn-hms btn-hms-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn-hms btn-hms-primary">Update Password</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-
-  <!-- Doctors Grid -->
-  <div class="row" id="doctorGrid">
-    {% for doctor in doctors %}
-    <div class="col-md-4 mb-4 doctor-card-wrap" 
-         data-name="{{ doctor.username | lower }}" 
-         data-email="{{ doctor.email | lower }}"
-         data-dept="{{ doctor.dept | lower if doctor.dept else '' }}">
-      <div class="card shadow-sm border-0 rounded-4 h-100 doctor-card">
-        
-        <!-- Card Header with Avatar -->
-        <div class="card-header bg-success text-white rounded-top-4 p-4 d-flex align-items-center gap-3">
-          <div class="doctor-avatar bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" 
-               style="width:56px;height:56px;">
-            <span class="fw-bold fs-4 text-success">{{ doctor.username[0] | upper }}</span>
-          </div>
-          <div class="overflow-hidden">
-            <h6 class="mb-0 fw-bold text-truncate">{{ doctor.username }}</h6>
-            <small class="opacity-75 text-truncate d-block">{{ doctor.email }}</small>
-          </div>
-        </div>
-
-        <!-- Card Body -->
-        <div class="card-body p-4">
-          <div class="mb-3">
-            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
-              <i class="fas fa-hospital-alt me-1"></i>
-              {{ doctor.dept if doctor.dept else 'No Department' }}
-            </span>
-          </div>
-          <div class="d-flex align-items-center gap-2 text-muted small mb-2">
-            <i class="fas fa-id-badge"></i>
-            <span>Doctor ID: <strong class="text-dark">{{ doctor.id }}</strong></span>
-          </div>
-          <div class="d-flex align-items-center gap-2 text-muted small">
-            <i class="fas fa-shield-alt text-success"></i>
-            <span class="badge bg-success rounded-pill">Doctor</span>
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="card-footer bg-light border-0 rounded-bottom-4 p-3">
-          <div class="d-flex gap-2">
-            <!-- 🚨 CORRECTED EDIT BUTTON -->
-            <button class="btn btn-outline-primary btn-sm rounded-pill flex-fill fw-bold"onclick="openEditModal('{{ doctor.id }}', '{{ doctor.username }}', '{{ doctor.email }}', '{{ doctor.dept if doctor.dept else '' }}')">
-              <i class="fas fa-edit me-1"></i>Edit
-            </button>
-            
-            <button class="btn btn-outline-warning btn-sm rounded-pill flex-fill fw-bold"
-                    onclick="openPasswordModal('{{ doctor.id }}', '{{ doctor.username }}')">
-              <i class="fas fa-key me-1"></i>Password
-            </button>
-            
-            <button class="btn btn-outline-danger btn-sm rounded-pill flex-fill fw-bold"
-                    onclick="openDeleteModal('{{ doctor.id }}', '{{ doctor.username }}')">
-              <i class="fas fa-trash me-1"></i>Remove
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-    {% else %}
+  {% else %}
     <div class="col-12">
-      <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-body text-center py-5 text-muted">
-          <i class="fas fa-user-md fa-4x mb-3 text-secondary opacity-50"></i>
-          <h5>No Doctors Registered</h5>
-          <p class="mb-0">Add doctors from the Admin Dashboard to see them here.</p>
+      <div class="hms-card">
+        <div class="hms-card-body">
+          {{ empty_state(
+            title='No Doctors Registered',
+            message='No active medical doctors found in the hospital registry.',
+            icon='user-doctor'
+          ) }}
         </div>
       </div>
     </div>
-    {% endfor %}
-  </div>
-
-  <!-- No search results message -->
-  <div id="noResults" class="text-center py-5 d-none">
-    <i class="fas fa-search fa-3x text-muted mb-3 opacity-50"></i>
-    <h5 class="text-muted">No doctors found</h5>
-    <p class="text-muted">Try a different search term.</p>
-  </div>
-
+  {% endfor %}
 </div>
 
-<!-- ===== EDIT DOCTOR MODAL ===== -->
-<div class="modal fade" id="editDoctorModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow rounded-4">
-      <div class="modal-header bg-primary text-white rounded-top-4">
-        <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Doctor Details</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <form action="/admin/edit_doctor" method="POST">
-        {{ csrf_field() }}
-        <div class="modal-body p-4">
-          <input type="hidden" name="doctor_id" id="editDoctorId">
-          <div class="mb-3">
-            <label class="form-label fw-bold">Full Name</label>
-            <input type="text" class="form-control" name="username" id="editDoctorName" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Email Address</label>
-            <input type="email" class="form-control" name="email" id="editDoctorEmail" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Department</label>
-            <input type="text" class="form-control" name="dept" id="editDoctorDept" placeholder="e.g., Cardiology">
-          </div>
-        </div>
-        <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary rounded-pill fw-bold px-4">
-            <i class="fas fa-save me-1"></i>Save Changes
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- ===== CHANGE PASSWORD MODAL ===== -->
-<div class="modal fade" id="changePasswordModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow rounded-4">
-      <div class="modal-header bg-warning text-dark rounded-top-4">
-        <h5 class="modal-title fw-bold"><i class="fas fa-key me-2"></i>Change Doctor Password</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <form action="/admin/change_doctor_password" method="POST">
-        {{ csrf_field() }}
-        <div class="modal-body p-4">
-          <input type="hidden" name="doctor_id" id="pwDoctorId">
-          <div class="alert alert-warning border-0 rounded-3 small">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            Changing password for: <strong id="pwDoctorName"></strong>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">New Password</label>
-            <div class="input-group">
-              <input type="password" class="form-control" name="new_password" id="newPwField" placeholder="Enter new password" required minlength="6">
-              <button class="btn btn-outline-secondary" type="button" onclick="togglePw('newPwField', this)">
-                <i class="fas fa-eye"></i>
-              </button>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Confirm Password</label>
-            <div class="input-group">
-              <input type="password" class="form-control" name="confirm_password" id="confirmPwField" placeholder="Re-enter new password" required minlength="6">
-              <button class="btn btn-outline-secondary" type="button" onclick="togglePw('confirmPwField', this)">
-                <i class="fas fa-eye"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-warning fw-bold rounded-pill px-4">
-            <i class="fas fa-lock me-1"></i>Update Password
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- ===== DELETE CONFIRM MODAL ===== -->
-<div class="modal fade" id="deleteDoctorModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow rounded-4">
-      <div class="modal-header bg-danger text-white rounded-top-4">
-        <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Removal</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <form action="/admin/delete_doctor" method="POST">
-        {{ csrf_field() }}
-        <div class="modal-body p-4 text-center">
-          <input type="hidden" name="doctor_id" id="deleteDoctorId">
-          <i class="fas fa-user-minus fa-4x text-danger mb-3 opacity-75"></i>
-          <h5>Remove Doctor Account?</h5>
-          <p class="text-muted mb-0">
-            You are about to permanently remove <strong id="deleteDoctorName" class="text-danger"></strong>'s account.
-            This action cannot be undone.
-          </p>
-        </div>
-        <div class="modal-footer border-0 justify-content-center gap-3">
-          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-danger rounded-pill fw-bold px-4">
-            <i class="fas fa-trash me-1"></i>Yes, Remove
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- ===== ADD NEW DOCTOR MODAL ===== -->
-<div class="modal fade" id="addDoctorModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg rounded-4">
-      <div class="modal-header bg-primary text-white rounded-top-4">
-        <h5 class="modal-title fw-bold"><i class="fas fa-user-plus me-2"></i>Provision New Doctor</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
+{# Add Doctor Modal #}
+<div class="modal fade" id="addDoctorModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-hms">
+    <div class="modal-content modal-content-hms">
       <form action="{{ url_for('admin.add_staff') }}" method="POST">
-        {{ csrf_field() }}
-        <div class="modal-body p-4 bg-light">
-          <!-- Hidden input forces the role to Doctor -->
-          <input type="hidden" name="usertype" value="Doctor">
-          
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark small text-uppercase">Doctor's Full Name</label>
-            <input type="text" class="form-control border-0 shadow-sm px-3 py-2" name="username" placeholder="e.g., Dr. Jane Doe" required>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="role" value="Doctor"/>
+
+        <div class="modal-header modal-header-hms">
+          <h3 class="h5 mb-0">Register New Physician</h3>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body modal-body-hms">
+          <div class="hms-form-group mb-3">
+            <label for="add_doc_name" class="hms-label">Full Name <span class="text-danger">*</span></label>
+            <input type="text" class="hms-input" id="add_doc_name" name="username" placeholder="e.g. Dr. Rajesh Sharma" required/>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark small text-uppercase">Official Email</label>
-            <input type="email" class="form-control border-0 shadow-sm px-3 py-2" name="email" placeholder="name@hospital.com" required>
+
+          <div class="hms-form-group mb-3">
+            <label for="add_doc_email" class="hms-label">Email Address <span class="text-danger">*</span></label>
+            <input type="email" class="hms-input" id="add_doc_email" name="email" placeholder="doc@hedgewar.org" required/>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark small text-uppercase">Department / Specialty</label>
-            <input type="text" class="form-control border-0 shadow-sm px-3 py-2" name="dept" placeholder="e.g., Cardiology" required>
+
+          <div class="hms-form-group mb-3">
+            <label for="add_doc_pass" class="hms-label">Initial Password <span class="text-danger">*</span></label>
+            <input type="password" class="hms-input" id="add_doc_pass" name="password" minlength="10" placeholder="Minimum 10 characters" required/>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark small text-uppercase">Temporary Password</label>
-            <input type="password" class="form-control border-0 shadow-sm px-3 py-2" name="password" placeholder="••••••••" required minlength="6">
-            <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle me-1"></i>They can change this upon first login.</small>
+
+          <div class="hms-form-group mb-3">
+            <label for="add_doc_dept" class="hms-label">Clinical Department <span class="text-danger">*</span></label>
+            <input type="text" class="hms-input" id="add_doc_dept" name="dept" placeholder="e.g. Cardiology" required/>
+          </div>
+
+          <div class="hms-form-group mb-3">
+            <label for="add_doc_fee" class="hms-label">Consultation Fee (₹)</label>
+            <input type="number" step="0.01" min="0" class="hms-input" id="add_doc_fee" name="fee" value="500.00"/>
+          </div>
+
+          <div class="hms-form-group">
+            <label for="add_doc_qual" class="hms-label">Qualifications</label>
+            <input type="text" class="hms-input" id="add_doc_qual" name="qualifications" placeholder="e.g. MBBS, MD, DM"/>
           </div>
         </div>
-        <div class="modal-footer border-0 bg-light rounded-bottom-4">
-          <button type="button" class="btn btn-outline-secondary rounded-pill fw-bold" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary rounded-pill fw-bold px-4 shadow-sm">
-            <i class="fas fa-check-circle me-1"></i>Create Doctor Account
-          </button>
+
+        <div class="modal-footer modal-footer-hms">
+          <button type="button" class="btn-hms btn-hms-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn-hms btn-hms-primary">Create Doctor</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<script>
-  function openEditModal(id, name, email, dept) {
-    document.getElementById('editDoctorId').value = id;
-    document.getElementById('editDoctorName').value = name;
-    document.getElementById('editDoctorEmail').value = email;
-    document.getElementById('editDoctorDept').value = dept;
-    new bootstrap.Modal(document.getElementById('editDoctorModal')).show();
-  }
-
-  function openPasswordModal(id, name) {
-    document.getElementById('pwDoctorId').value = id;
-    document.getElementById('pwDoctorName').textContent = name;
-    document.getElementById('newPwField').value = '';
-    document.getElementById('confirmPwField').value = '';
-    new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
-  }
-
-  function openDeleteModal(id, name) {
-    document.getElementById('deleteDoctorId').value = id;
-    document.getElementById('deleteDoctorName').textContent = name;
-    new bootstrap.Modal(document.getElementById('deleteDoctorModal')).show();
-  }
-
-  function togglePw(fieldId, btn) {
-    const field = document.getElementById(fieldId);
-    const isText = field.type === 'text';
-    field.type = isText ? 'password' : 'text';
-    btn.innerHTML = isText ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-  }
-
-  function searchDoctors() {
-    const query = document.getElementById('doctorSearch').value.toLowerCase().trim();
-    const cards = document.querySelectorAll('.doctor-card-wrap');
-    let visible = 0;
-    cards.forEach(card => {
-      const name = card.dataset.name || '';
-      const email = card.dataset.email || '';
-      const dept = card.dataset.dept || '';
-      if (name.includes(query) || email.includes(query) || dept.includes(query)) {
-        card.style.display = '';
-        visible++;
-      } else {
-        card.style.display = 'none';
-      }
-    });
-    document.getElementById('noResults').classList.toggle('d-none', visible > 0);
-  }
-
-  function clearSearch() {
-    document.getElementById('doctorSearch').value = '';
-    searchDoctors();
-  }
-</script>
-
-<style>
-  .doctor-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .doctor-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 0.75rem 2rem rgba(0,0,0,.12) !important;
-  }
-</style>
-{% endblock body %}
+<script src="{{ url_for('static', filename='js/pages/directory_search.js') }}"></script>
+{% endblock content %}
