@@ -10,11 +10,13 @@ from hms.models import (
     AppointmentStatus,
     Department,
     Doctor,
+    NotificationOutbox,
     Room,
     User,
     db,
 )
 from hms.services.appointments import AppointmentService
+from hms.services.notifications import NotificationService
 
 
 def register_cli(app):
@@ -159,10 +161,11 @@ def register_cli(app):
             click.secho("=======================================================\n", fg="cyan")
 
     @app.cli.command("mark-missed")
-    def mark_missed():
+    @click.option("--grace-minutes", default=60, help="Grace minutes after scheduled start before marking Missed")
+    def mark_missed(grace_minutes):
         """Automatically transition past unattended appointments to Missed (R-04)."""
         with app.app_context():
-            cutoff = datetime.now() - timedelta(minutes=60)
+            cutoff = datetime.now() - timedelta(minutes=grace_minutes)
             past_due = Appointment.query.filter(
                 Appointment.status == AppointmentStatus.SCHEDULED,
                 Appointment.starts_at < cutoff,
@@ -170,20 +173,80 @@ def register_cli(app):
             ).all()
             count = 0
             for apt in past_due:
-                AppointmentService.mark_missed(apt.id)
-                count += 1
+                try:
+                    AppointmentService.mark_missed(apt.id)
+                    count += 1
+                except Exception as e:
+                    click.secho(f"Warning: Failed to mark appointment {apt.id} missed: {e}", fg="yellow")
             click.echo(f"Processed {count} missed appointments.")
 
     @app.cli.command("send-reminders")
-    def send_reminders():
-        """Simulate or dispatch appointment reminder notifications (R-04)."""
+    @click.option("--lead-hours", default=24, help="Advance notice hours for reminder (default 24h)")
+    @click.option("--window-minutes", default=60, help="Search window tolerance in minutes (default +/- 60m)")
+    def send_reminders(lead_hours, window_minutes):
+        """Dispatch appointment reminder notifications idempotently (R-04)."""
         with app.app_context():
-            tomorrow = datetime.now() + timedelta(days=1)
-            window_start = tomorrow - timedelta(hours=1)
-            window_end = tomorrow + timedelta(hours=1)
+            target_time = datetime.now() + timedelta(hours=lead_hours)
+            window_start = target_time - timedelta(minutes=window_minutes)
+            window_end = target_time + timedelta(minutes=window_minutes)
+
             upcoming = Appointment.query.filter(
                 Appointment.status == AppointmentStatus.SCHEDULED,
                 Appointment.starts_at >= window_start,
-                Appointment.starts_at <= window_end
+                Appointment.starts_at <= window_end,
+                Appointment.is_active.is_(True)
             ).all()
-            click.echo(f"Found {len(upcoming)} upcoming appointments requiring 24h reminders.")
+
+            sent = 0
+            skipped = 0
+            for apt in upcoming:
+                # Idempotency check: verify if a reminder has already been queued
+                existing = NotificationOutbox.query.filter(
+                    NotificationOutbox.event_type == 'appointment_reminder',
+                    NotificationOutbox.recipient == apt.patient.email,
+                    NotificationOutbox.body.contains(f'#{apt.id}')
+                ).first()
+
+                if existing:
+                    skipped += 1
+                    continue
+
+                try:
+                    NotificationService.send_appointment_reminder(apt)
+                    sent += 1
+                except Exception as e:
+                    click.secho(f"Warning: Failed to send reminder for appointment {apt.id}: {e}", fg="yellow")
+
+            click.echo(f"Reminders processed: {sent} dispatched, {skipped} skipped (already queued).")
+
+    @app.cli.command("run-scheduler")
+    @click.option("--interval-reminders", default=900, help="Seconds between reminder checks (default 900s / 15m)")
+    @click.option("--interval-missed", default=600, help="Seconds between missed checks (default 600s / 10m)")
+    @click.option("--once", is_flag=True, help="Run one cycle of all scheduled jobs and exit")
+    def run_scheduler(interval_reminders, interval_missed, once):
+        """Run scheduled background jobs continuously or one-off (R-04)."""
+        import time
+
+        click.echo("Starting HMS Background Job Scheduler (R-04)...")
+        click.echo(f"Config: Reminders every {interval_reminders}s, Mark-Missed every {interval_missed}s")
+
+        last_reminders = 0.0
+        last_missed = 0.0
+
+        while True:
+            now = time.time()
+            if now - last_reminders >= interval_reminders or once:
+                click.echo(f"[{datetime.now().isoformat()}] Running send-reminders...")
+                send_reminders.callback(lead_hours=24, window_minutes=60)
+                last_reminders = now
+
+            if now - last_missed >= interval_missed or once:
+                click.echo(f"[{datetime.now().isoformat()}] Running mark-missed...")
+                mark_missed.callback(grace_minutes=60)
+                last_missed = now
+
+            if once:
+                click.echo("Scheduler one-off run complete.")
+                break
+
+            time.sleep(10)

@@ -77,6 +77,47 @@ class NotificationService:
             return False
 
     @classmethod
+    def send_appointment_reminder(cls, appointment) -> bool:
+        """Send 24-hour appointment reminder via outbox and in-app (R-04)."""
+        try:
+            patient = appointment.patient
+            starts_fmt = appointment.starts_at.strftime('%B %d, %Y at %I:%M %p')
+            doc_name = (
+                appointment.doctor_rel.user.username
+                if getattr(appointment, 'doctor_rel', None) and appointment.doctor_rel.user
+                else str(getattr(appointment, 'doctor', 'Physician'))
+            )
+            subject = f"Appointment Reminder: Tomorrow at {starts_fmt} - Hedgewar Hospital Care (#{appointment.id})"
+            body = (
+                f"Dear {patient.username},\n\n"
+                f"This is a gentle reminder for your upcoming consultation with Dr. {doc_name} "
+                f"scheduled for tomorrow, {starts_fmt}.\n\n"
+                f"Reason for visit: {appointment.reason or 'Consultation'}\n"
+                f"Appointment Ref: #{appointment.id}\n\n"
+                f"If you need to reschedule or cancel, please do so at least 2 hours in advance via your portal.\n\n"
+                f"Hedgewar Hospital Care\n"
+                f"Helpline: +91 98500 64866"
+            )
+            cls.queue_outbox(
+                recipient=patient.email,
+                event_type='appointment_reminder',
+                subject=subject,
+                body=body,
+            )
+
+            cls.send_in_app(
+                user_id=patient.id,
+                title="Appointment Reminder",
+                message=f"Upcoming consultation with Dr. {doc_name} tomorrow at {starts_fmt}.",
+                category="reminder",
+                link="/my_appointments",
+            )
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to dispatch appointment reminder notification: {e}")
+            return False
+
+    @classmethod
     def send_reschedule_notification(cls, appointment, old_starts_at: datetime) -> bool:
         """Send appointment rescheduled notification."""
         try:

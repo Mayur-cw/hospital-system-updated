@@ -39,6 +39,12 @@ class Config:
     PAYMENT_GATEWAY = os.environ.get('PAYMENT_GATEWAY', 'mock')
     MAIL_BACKEND = os.environ.get('MAIL_BACKEND', 'mailpit')
 
+    # Reliability, Observability & Serving (R-01, R-06, R-07)
+    BEHIND_PROXY = os.environ.get('BEHIND_PROXY', 'false').lower() in ('true', '1', 't')
+    ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()]
+    SENTRY_DSN = os.environ.get('SENTRY_DSN')
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+
 
 class DevelopmentConfig(Config):
     """Development configuration with safe defaults."""
@@ -75,6 +81,7 @@ class ProductionConfig(Config):
     TESTING = False
     SESSION_COOKIE_SECURE = True
     FORCE_HTTPS = True
+    BEHIND_PROXY = True
     RATELIMIT_STORAGE_URI = os.environ.get('REDIS_URL', 'memory://')
 
     def __init__(self):

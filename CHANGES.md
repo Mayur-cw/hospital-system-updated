@@ -302,13 +302,13 @@ These are the forks in the road. Each lists the options considered so the owner 
 
 ## PHASE 6 — Reliability and observability
 
-- [ ] **R-01 · P1 · Structured logging** — JSON logs with `request_id`, user id (not name/email), route, latency, status; no PHI; request id also shown on error pages.
-- [ ] **R-02 · P1 · Health endpoints** — `/healthz` (process up), `/readyz` (DB reachable, migrations at head).
-- [ ] **R-03 · P1 · Error handling** — global handlers for 400/403/404/409/429/500; map `IntegrityError`/`OperationalError` to friendly messages; transactions rolled back in one place (`teardown`/service boundary).
-- [ ] **R-04 · P1 · Scheduled jobs** — `flask send-reminders` (every 15 min) and `flask mark-missed` (every 10 min) run by APScheduler or cron; idempotent and safe to run twice.
-- [ ] **R-05 · P2 · Backups and restore** — documented `mysqldump` backup + restore drill; migration downgrade tested at least one step.
-- [ ] **R-06 · P2 · Production serving** — gunicorn, `ProxyFix` behind a reverse proxy, `SERVER_NAME`/trusted hosts, gzip + long-cache for hashed static assets.
-- [ ] **R-07 · P3 · Error monitoring hook** — optional Sentry DSN via env; PHI scrubbing before send.
+- [x] **R-01 · P1 · Structured logging** — JSON logs with `request_id`, user id (not name/email), route, latency, status; no PHI; request id also shown on error pages.
+- [x] **R-02 · P1 · Health endpoints** — `/healthz` (process up), `/readyz` (DB reachable, migrations at head).
+- [x] **R-03 · P1 · Error handling** — global handlers for 400/403/404/409/429/500; map `IntegrityError`/`OperationalError` to friendly messages; transactions rolled back in one place (`teardown`/service boundary).
+- [x] **R-04 · P1 · Scheduled jobs** — `flask send-reminders` (every 15 min) and `flask mark-missed` (every 10 min) run by APScheduler or cron; idempotent and safe to run twice.
+- [x] **R-05 · P2 · Backups and restore** — documented `mysqldump` backup + restore drill; migration downgrade tested at least one step.
+- [x] **R-06 · P2 · Production serving** — gunicorn, `ProxyFix` behind a reverse proxy, `SERVER_NAME`/trusted hosts, gzip + long-cache for hashed static assets.
+- [x] **R-07 · P3 · Error monitoring hook** — optional Sentry DSN via env; PHI scrubbing before send.
 
 ---
 
