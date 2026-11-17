@@ -24,6 +24,17 @@
     --color-navy-muted: #94a3b8;
     --color-white: #ffffff;
 
+    /* Legacy Theme Compatibility Aliases */
+    --hms-navy: #0b1d35;
+    --hms-navy-mid: #122a4d;
+    --hms-teal: #00c9a7;
+    --hms-teal-soft: #e6faf6;
+    --hms-amber: #f59e0b;
+    --hms-danger: #ef4444;
+    --hms-success: #10b981;
+    --hms-surface: #f7f9fc;
+    --hms-border: #e2e8f0;
+
     /* Semantic States (Verified WCAG AA on white and subtle backgrounds) */
     --color-success: #15803d;
     --color-success-hover: #166534;

@@ -1,6 +1,5 @@
 import os
 import random
-import secrets
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
@@ -84,14 +83,30 @@ def register_cli(app):
                 click.secho("Database already contains user records. Use --force to seed anyway.", fg="yellow")
                 return
 
+            if force:
+                Payment.query.delete()
+                InvoiceItem.query.delete()
+                Invoice.query.delete()
+                PrescriptionItem.query.delete()
+                MedicalRecord.query.delete()
+                Admission.query.delete()
+                Appointment.query.delete()
+                DoctorSchedule.query.delete()
+                Doctor.query.delete()
+                PatientProfile.query.delete()
+                Room.query.delete()
+                NotificationOutbox.query.delete()
+                User.query.delete()
+                db.session.commit()
+
             fake = Faker('en_IN')
             Faker.seed(42)
             random.seed(42)
 
-            admin_pwd = secrets.token_urlsafe(12)
-            recep_pwd = secrets.token_urlsafe(12)
-            doc_pwd = secrets.token_urlsafe(12)
-            patient_pwd = secrets.token_urlsafe(12)
+            admin_pwd = "Admin@12345"
+            recep_pwd = "Staff@12345"
+            doc_pwd = "Doctor@12345"
+            patient_pwd = "Patient@12345"
 
             # 1. Hospital Settings
             settings = [
@@ -124,37 +139,39 @@ def register_cli(app):
                 dept_map[name] = dept
 
             # 3. Staff Accounts: Admin & Receptionist
-            admin = User.query.filter_by(email="admin.demo@hedgewar.local").first()
-            if not admin:
-                admin = User(
-                    username="Admin Executive",
-                    usertype=UserRole.ADMIN,
-                    email="admin.demo@hedgewar.local",
-                    password=generate_password_hash(admin_pwd),
-                    phone="+91 98200 00100",
-                    gender="Male"
-                )
-                db.session.add(admin)
+            for admin_email in ["admin@hedgewar.hospital", "admin.demo@hedgewar.local"]:
+                admin = User.query.filter_by(email=admin_email).first()
+                if not admin:
+                    admin = User(
+                        username="Admin Executive",
+                        usertype=UserRole.ADMIN,
+                        email=admin_email,
+                        password=generate_password_hash(admin_pwd),
+                        phone="+91 98200 00100",
+                        gender="Male"
+                    )
+                    db.session.add(admin)
 
-            recep = User.query.filter_by(email="receptionist.demo@hedgewar.local").first()
-            if not recep:
-                recep = User(
-                    username="Front Desk Reception",
-                    usertype=UserRole.RECEPTIONIST,
-                    email="receptionist.demo@hedgewar.local",
-                    password=generate_password_hash(recep_pwd),
-                    phone="+91 98200 00101",
-                    gender="Female"
-                )
-                db.session.add(recep)
+            for recep_email in ["receptionist.priya@hedgewar.hospital", "receptionist.demo@hedgewar.local"]:
+                recep = User.query.filter_by(email=recep_email).first()
+                if not recep:
+                    recep = User(
+                        username="Front Desk Reception",
+                        usertype=UserRole.RECEPTIONIST,
+                        email=recep_email,
+                        password=generate_password_hash(recep_pwd),
+                        phone="+91 98200 00101",
+                        gender="Female"
+                    )
+                    db.session.add(recep)
 
             # 4. Doctors
             doctor_profiles_spec = [
-                ("Dr. Mayur Sharma", "dr.sharma@hedgewar.local", "Cardiology", "MBBS, MD, DM (Cardiology)", Decimal("800.00"), 14),
-                ("Dr. Priya Patel", "dr.patel@hedgewar.local", "Neurology", "MBBS, MD, DM (Neurology)", Decimal("900.00"), 12),
-                ("Dr. Rajesh Deshmukh", "dr.deshmukh@hedgewar.local", "Orthopedics", "MBBS, MS (Ortho), MCh", Decimal("750.00"), 16),
-                ("Dr. Ananya Kulkarni", "dr.kulkarni@hedgewar.local", "Pediatrics", "MBBS, MD (Pediatrics), DCH", Decimal("600.00"), 9),
-                ("Dr. Vikram Joshi", "dr.joshi@hedgewar.local", "General Medicine", "MBBS, MD (Internal Medicine)", Decimal("500.00"), 18),
+                ("Dr. Mayur Sharma", "dr.sharma@hedgewar.hospital", "Cardiology", "MBBS, MD, DM (Cardiology)", Decimal("800.00"), 14),
+                ("Dr. Priya Patel", "dr.patel@hedgewar.hospital", "Neurology", "MBBS, MD, DM (Neurology)", Decimal("900.00"), 12),
+                ("Dr. Rajesh Deshmukh", "dr.deshmukh@hedgewar.hospital", "Orthopedics", "MBBS, MS (Ortho), MCh", Decimal("750.00"), 16),
+                ("Dr. Ananya Kulkarni", "dr.kulkarni@hedgewar.hospital", "Pediatrics", "MBBS, MD (Pediatrics), DCH", Decimal("600.00"), 9),
+                ("Dr. Vikram Joshi", "dr.joshi@hedgewar.hospital", "General Medicine", "MBBS, MD (Internal Medicine)", Decimal("500.00"), 18),
             ]
             doctors = []
             for name, email, dept_name, qual, fee, exp in doctor_profiles_spec:
@@ -220,29 +237,30 @@ def register_cli(app):
 
             # 6. Patients & Profiles
             patients = []
-            primary_p = User.query.filter_by(email="aarav.patient@hedgewar.local").first()
-            if not primary_p:
-                primary_p = User(
-                    username="Aarav Sharma",
-                    usertype=UserRole.PATIENT,
-                    email="aarav.patient@hedgewar.local",
-                    password=generate_password_hash(patient_pwd),
-                    phone="+91 98300 00201",
-                    gender="Male"
-                )
-                db.session.add(primary_p)
-                db.session.flush()
-                db.session.add(PatientProfile(
-                    user_id=primary_p.id,
-                    dob=date(1992, 5, 14),
-                    blood_group="B+",
-                    address="Flat 402, Shanti Enclave, Station Road, Chhatrapati Sambhajinagar",
-                    emergency_contact_name="Sunita Sharma",
-                    emergency_contact_phone="+91 98300 00202",
-                    allergies="Penicillin",
-                    chronic_conditions="Mild Asthma"
-                ))
-            patients.append(primary_p)
+            for p_name, p_email in [("Rahul Verma", "patient.rahul@hedgewar.hospital"), ("Aarav Sharma", "aarav.patient@hedgewar.local")]:
+                p_user = User.query.filter_by(email=p_email).first()
+                if not p_user:
+                    p_user = User(
+                        username=p_name,
+                        usertype=UserRole.PATIENT,
+                        email=p_email,
+                        password=generate_password_hash(patient_pwd),
+                        phone="+91 98300 00201",
+                        gender="Male"
+                    )
+                    db.session.add(p_user)
+                    db.session.flush()
+                    db.session.add(PatientProfile(
+                        user_id=p_user.id,
+                        dob=date(1992, 5, 14),
+                        blood_group="B+",
+                        address="Flat 402, Shanti Enclave, Station Road, Chhatrapati Sambhajinagar",
+                        emergency_contact_name="Sunita Sharma",
+                        emergency_contact_phone="+91 98300 00202",
+                        allergies="Penicillin",
+                        chronic_conditions="Mild Asthma"
+                    ))
+                patients.append(p_user)
 
             blood_groups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
             for i in range(1, 21):

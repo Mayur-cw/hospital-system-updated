@@ -3,6 +3,22 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Automatically load environment variables from .env if present
+_env_file = BASE_DIR / '.env'
+if _env_file.exists():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(_env_file)
+    except Exception:
+        with open(_env_file, 'r', encoding='utf-8') as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and not _line.startswith('#') and '=' in _line:
+                    _k, _v = _line.split('=', 1)
+                    _k, _v = _k.strip(), _v.strip().strip("'\"")
+                    if _k not in os.environ:
+                        os.environ[_k] = _v
+
 class Config:
     """Base application configuration."""
     APP_ENV = os.environ.get('APP_ENV', 'development').lower()

@@ -25,26 +25,27 @@
   <header class="navbar navbar-expand-lg public-header">
     <div class="container px-4">
       <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('main.index') }}" aria-label="Hedgewar Hospital Home">
-        <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Hedgewar Hospital Logo" height="38">
+        <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Hedgewar Hospital Logo" height="36">
+        <span class="brand-text-gleam">Hedgewar Hospital</span>
       </a>
 
       <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#publicNav" aria-controls="publicNav" aria-expanded="false" aria-label="Toggle navigation">
-        <i class="fa-solid fa-bars text-secondary"></i>
+        <i class="fa-solid fa-bars text-white"></i>
       </button>
 
       <div class="collapse navbar-collapse" id="publicNav">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-lg-2">
           <li class="nav-item">
-            <a class="nav-link text-secondary fw-medium" href="{{ url_for('main.index') }}">Home</a>
+            <a class="nav-link" href="{{ url_for('main.index') }}">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-secondary fw-medium" href="{{ url_for('main.doctors') }}">Doctors Directory</a>
+            <a class="nav-link" href="{{ url_for('main.doctors') }}">Doctors Directory</a>
           </li>
         </ul>
 
         <div class="d-flex align-items-center gap-3">
           <!-- Theme Toggle Button -->
-          <button type="button" class="btn-hms btn-icon btn-hms-ghost" id="theme-toggle-btn" aria-label="Switch to dark mode">
+          <button type="button" class="btn-hms btn-icon btn-hms-ghost text-white" id="theme-toggle-btn" aria-label="Switch to dark mode">
             <i class="fa-solid fa-moon" aria-hidden="true"></i>
           </button>
 
@@ -61,10 +62,10 @@
               </a>
             {% endif %}
           {% else %}
-            <a href="{{ url_for('auth.login') }}" class="btn-hms btn-hms-secondary">
+            <a href="{{ url_for('auth.login') }}" class="btn-nav-signin">
               <span>Sign In</span>
             </a>
-            <a href="{{ url_for('auth.signup') }}" class="btn-hms btn-hms-primary">
+            <a href="{{ url_for('auth.signup') }}" class="btn-nav-register">
               <span>Register</span>
             </a>
           {% endif %}
