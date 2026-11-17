@@ -260,7 +260,7 @@
             <h5 class="modal-title fw-bold"><i class="fas fa-user-plus me-2"></i>Provision New Doctor</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <form action="/add_staff" method="POST">
+          <form action="{{ url_for('admin.add_staff') }}" method="POST">
             <div class="modal-body p-4 bg-light">
               <input type="hidden" name="usertype" value="Doctor">
               <div class="mb-3">
@@ -300,7 +300,7 @@
             <h5 class="modal-title fw-bold"><i class="fas fa-user-shield me-2"></i>Provision System Administrator</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
-          <form action="/add_staff" method="POST">
+          <form action="{{ url_for('admin.add_staff') }}" method="POST">
             <div class="modal-body p-4 bg-light">
               <input type="hidden" name="usertype" value="Admin">
               <input type="hidden" name="dept" value="IT/Administration">
@@ -338,7 +338,7 @@
                 {% for category, message in messages %}
                     {% set type = 'danger' if category == 'error' else ('info' if category == 'message' else category) %}
                     {% set type = type if type in ['success', 'danger', 'warning', 'info'] else 'info' %}
-                    <div class="toast-alert border-{{ type }}" role="alert">
+                    <div class="toast-alert alert alert-{{ type }} border-{{ type }}" role="alert">
                         <div class="d-flex align-items-center">
                             <div class="rounded-circle bg-{{ type }} bg-opacity-10 p-2 me-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                                 <i class="fas {% if type=='success' %}fa-check-circle{% elif type=='danger' %}fa-times-circle{% elif type=='warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} text-{{ type }} fs-5"></i>

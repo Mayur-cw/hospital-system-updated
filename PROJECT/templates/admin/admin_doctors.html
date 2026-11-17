@@ -12,7 +12,7 @@ Manage Doctors | Hospital Management System
     <div class="col-md-8">
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-1">
-          <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none text-primary">Admin Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{{ url_for('admin.admin_dashboard') }}" class="text-decoration-none text-primary">Admin Dashboard</a></li>
           <li class="breadcrumb-item active text-muted">Manage Doctors</li>
         </ol>
       </nav>
@@ -252,7 +252,7 @@ Manage Doctors | Hospital Management System
         <h5 class="modal-title fw-bold"><i class="fas fa-user-plus me-2"></i>Provision New Doctor</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <form action="/add_staff" method="POST">
+      <form action="{{ url_for('admin.add_staff') }}" method="POST">
         <div class="modal-body p-4 bg-light">
           <!-- Hidden input forces the role to Doctor -->
           <input type="hidden" name="usertype" value="Doctor">
