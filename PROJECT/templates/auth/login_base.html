@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="theme-color" content="#087f75">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <title>{% block title %}Sign in · Hedgewar Hospital{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/clinical_precision.css') }}">
+  {% block css %}{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/workspace.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/clinical-theme.css') }}">
+</head>
+<body class="public-body" data-role="Guest">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="public-header"><a class="workspace-brand" href="{{ url_for('main.index') }}"><span class="brand-mark"><i aria-hidden="true" class="fa-solid fa-plus"></i></span><span>Hedgewar<span class="brand-subtitle">MEMORIAL HOSPITAL</span></span></a><nav aria-label="Main navigation"><a href="{{ url_for('main.doctors') }}">Our specialists</a><a href="{{ url_for('auth.login') }}">Sign in</a><a class="btn btn-primary" href="{{ url_for('auth.signup') }}">Create account</a></nav></header>
+  <main id="main-content" tabindex="-1">{% block body %}{% endblock %}</main>
+  <footer class="workspace-footer"><span>Dr. Hedgewar Memorial Hospital</span><span>Your care. Connected.</span></footer>
+  <div class="workspace-toasts" aria-live="polite">
+    {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="workspace-toast toast-{{ category }}" role="status"><i aria-hidden="true" class="fa-solid {{ 'fa-circle-check' if category == 'success' else 'fa-circle-info' }}"></i><span>{{ message }}</span><button type="button" class="icon-button" aria-label="Dismiss notification" data-dismiss-toast><i aria-hidden="true" class="fa-solid fa-xmark"></i></button></div>{% endfor %}{% endwith %}
+  </div>
+  <script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/signin.js') }}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

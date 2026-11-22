@@ -4,6 +4,15 @@
 Home | Hospital Management System
 {% endblock title %}
 
+{% block css %}
+{% if not current_user.is_authenticated or current_user.usertype not in ['Doctor', 'Patient', 'Admin'] %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+{% endif %}
+{% endblock css %}
+
 {% block body %}
 
 <!-- ========================================== -->
@@ -969,261 +978,63 @@ Home | Hospital Management System
 <!-- =========================================================== -->
 {% else %}
 
-<style>
-  /* Premium Centered Hero with Background Image */
-  .public-hero-centered {
-    position: relative;
-    /* Clean Spacing */
-    padding: 70px 0px 0px; 
-    background: url('static/images/bg1.jpg') center/cover no-repeat;
-    background-attachment: fixed;
-    text-align: center;
-    overflow: hidden;
-  }
-
-  .hero-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(10, 25, 47, 0.86) 0%, rgba(11, 29, 53, 0.74) 50%, rgba(13, 148, 136, 0.44) 100%);
-    z-index: 1;
-  }
-
-  .hero-system-highlight {
-    color: #22d3ee;
-    font-weight: 800;
-    letter-spacing: 3px;
-    text-shadow: 
-      0 2px 4px rgba(0, 0, 0, 0.95),
-      0 0 25px rgba(34, 211, 238, 0.85),
-      0 0 50px rgba(6, 182, 212, 0.6);
-    display: inline-block;
-  }
-
-  .public-hero-content {
-    position: relative;
-    z-index: 2;
-  }
-
-  /* Upgraded Overlapping Cards */
-  .hms-card-overlap {
-    background: #ffffff;
-    border: none;
-    border-radius: 20px;
-    padding: 40px 30px;
-    text-align: center;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-  }
-
-  .hms-card-overlap:hover {
-    transform: translateY(-12px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-  }
-
-  .card-icon-wrapper {
-    width: 75px;
-    height: 75px;
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 30px;
-    margin: 0 auto 24px;
-    transition: transform 0.3s ease;
-  }
-
-  .hms-card-overlap:hover .card-icon-wrapper {
-    transform: scale(1.1);
-  }
-
-  /* 🚨 HERO BUTTONS: CLEAR LOGIN & SIGNUP IN FRONT 🚨 */
-  .hero-btn-primary {
-    background: #ffffff;
-    color: var(--hms-navy);
-    border: none;
-    padding: 14px 36px;
-    border-radius: 50px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.25); 
-    display: inline-flex;
-    align-items: center;
-  }
-  
-  .hero-btn-primary:hover {
-    background: #f8f9fa;
-    transform: translateY(-3px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.3);
-    color: var(--hms-teal);
-  }
-
-  .hero-btn-outline {
-    background: rgba(11, 29, 53, 0.4); 
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: #ffffff;
-    border: 2px solid #ffffff;
-    padding: 12px 36px;
-    border-radius: 50px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .hero-btn-outline:hover {
-    border-color: #ffffff;
-    background: rgba(255,255,255,0.15);
-    transform: translateY(-3px);
-    color: #ffffff;
-  }
-</style>
-
-<!-- 🚨 CENTERED HERO SECTION 🚨 -->
-<div class="public-hero-centered">
-  <div class="hero-overlay"></div>
-  
-  <div class="container public-hero-content">
-    
-    <!-- Top Pill -->
-    <div class="anim-1 mb-4">
-      <span class="d-inline-block px-4 py-2 rounded-pill text-white fw-bold shadow-sm" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(8px); font-size: 12px; letter-spacing: 0.5px;">
-        Dr. Hedgewar Memorial Hospital & Research Centre
-      </span>
-    </div>
-    
-    <!-- Main Title -->
-    <h1 class="public-hero-title anim-2 mb-4 text-white brand-font" style="font-size: clamp(40px, 6vw, 68px); letter-spacing: -1px; line-height: 1.15; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);">
-      HOSPITAL MANAGEMENT<br>
-      <span class="hero-system-highlight">SYSTEM</span>
-    </h1>
-    
-    <!-- Description -->
-    <p class="anim-3 mx-auto mb-5 text-white opacity-75" style="max-width: 650px; font-size: 20px; line-height: 1.4;">
-      <i><b>Smart, Secure, and Seamless Hospital Management.</b></i>
-    </p>
-    
-    <!-- Action Buttons: Clear Login and Signup in Front -->
-    <div class="d-flex justify-content-center gap-4 flex-wrap anim-4 mt-3 pb-3">
-      <a href="/signup" class="hero-btn-primary">
-        <i class="fas fa-user-plus me-2"></i>Create Account
-      </a>
-      <a href="/login" class="hero-btn-outline">
-        <i class="fas fa-sign-in-alt me-2"></i>Login
-      </a>
-    </div>
-  </div>
-  
-  <!-- Sweeping White Curve Transition -->
-  <div class="hms-curve" style="z-index: 2;">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-          <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" class="shape-fill"></path>
-          <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" class="shape-fill"></path>
-          <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" class="shape-fill"></path>
-      </svg>
-  </div>
-</div>
-
-<!-- 🚨 LIFTED FEATURE CARDS 🚨 -->
-<div class="container" style="margin-top: -85px; position: relative; z-index: 10; margin-bottom: 80px;">
-  <div class="row g-4 justify-content-center anim-4">
-    
-    <!-- Smart Appointments -->
-    <div class="col-md-4">
-      <div class="hms-card-overlap" style="border-top: 5px solid var(--hms-teal);">
-        <div class="card-icon-wrapper" style="background:var(--hms-teal-soft);color:#0f766e;">
-          <i class="fas fa-calendar-check"></i>
-        </div>
-        <h4 class="brand-font fw-bold text-dark mb-3">Smart Appointments</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">Conflict-free slot booking seamlessly integrated with verified specialist doctors.</p>
-        <a href="/login" class="hms-btn hms-btn-ghost w-100 py-2 rounded-pill mt-auto" style="background: var(--hms-teal); color: white; border: none; box-shadow: 0 4px 10px rgba(0,201,167,0.3);">Login to Book</a>
+<div class="landing-page">
+  <section class="landing-hero" aria-labelledby="landing-title">
+    <div class="landing-hero-backdrop" aria-hidden="true"></div>
+    <div class="landing-hero-glow" aria-hidden="true"></div>
+    <div class="container landing-hero-content">
+      <div class="landing-eyebrow"><span class="landing-eyebrow-mark" aria-hidden="true"><i class="fas fa-plus"></i></span>Dr. Hedgewar Memorial Hospital & Research Centre</div>
+      <p class="landing-kicker">A more connected hospital experience</p>
+      <h1 id="landing-title">Hospital management.<br><span>Made seamless.</span></h1>
+      <p class="landing-hero-description">From your first appointment to your next follow-up,<br class="landing-desktop-break"> everything you need for your care, brought together.</p>
+      <div class="landing-hero-actions">
+        <a class="landing-button landing-button-primary" href="{{ url_for('auth.signup') }}"><i class="fas fa-user-plus" aria-hidden="true"></i>Create account</a>
+        <a class="landing-button landing-button-glass" href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt" aria-hidden="true"></i>Sign in</a>
       </div>
+      <p class="landing-hero-note"><i class="fas fa-heartbeat" aria-hidden="true"></i> Thoughtful care. One connected place.</p>
     </div>
+    <div class="landing-hero-curve" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 100" preserveAspectRatio="none"><path d="M0 35C300 105 1140 105 1440 35V100H0Z"/></svg></div>
+  </section>
 
-    <!-- Specialist Directory -->
-    <div class="col-md-4">
-      <div class="hms-card-overlap" style="border-top: 5px solid #3b82f6;">
-        <div class="card-icon-wrapper" style="background:#eff6ff;color:#1d4ed8;">
-          <i class="fas fa-user-md"></i>
-        </div>
-        <h4 class="brand-font fw-bold text-dark mb-3">Specialist Directory</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">Browse our verified roster of medical professionals across Cardiology, Dermatology, and Medicine.</p>
-        <a href="/doctors" class="hms-btn w-100 py-2 rounded-pill mt-auto" style="background: #3b82f6; color: white; border: none; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">View Doctors</a>
-      </div>
-    </div>
-
-    <!-- Past Records -->
-    <div class="col-md-4">
-      <div class="hms-card-overlap" style="border-top: 5px solid #8b5cf6;">
-        <div class="card-icon-wrapper" style="background:#f5f3ff;color:#6d28d9;">
-          <i class="fas fa-notes-medical"></i>
-        </div>
-        <h4 class="brand-font fw-bold text-dark mb-3">Past Records</h4>
-        <p class="text-muted small mb-4 flex-grow-1" style="font-size: 14.5px; line-height: 1.6;">View your previous completed visits, signed clinical notes, and verified prescriptions.</p>
-        <a href="/login" class="hms-btn hms-btn-ghost w-100 py-2 rounded-pill mt-auto" style="background: #8b5cf6; color: white; border: none; box-shadow: 0 4px 10px rgba(139,92,246,0.3);">Login to View</a>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- 🚨 DATABASE & SYSTEM CAPABILITIES 🚨 -->
-<div class="container mb-5 pb-4 anim-3">
-  <div class="hms-card p-5" style="background: var(--hms-navy); border: none; overflow: hidden; position: relative; border-radius: 24px;">
-    
-    <!-- Decorative subtle grid background inside the card -->
-    <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size: 30px 30px; pointer-events: none;"></div>
-    
-    <div class="row align-items-center mb-5 position-relative z-index-2">
-      <div class="col text-center">
-        <h2 class="brand-font text-white mb-2">Hospital Management Core Capabilities</h2>
-        <p class="text-white opacity-50 mb-0" style="font-size: 16px;">Enterprise clinical workflows, role-based security, and verified audit logging</p>
-      </div>
-    </div>
-    
-    <div class="row g-4 position-relative z-index-2">
+  <section class="container landing-features" aria-label="Your hospital essentials">
+    <div class="row g-4">
       <div class="col-md-4">
-        <div class="text-center px-2">
-          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(245,158,11,0.1); color:var(--hms-amber); width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(245,158,11,0.2);"><i class="fas fa-bolt"></i></div>
-          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Automated Audit Logs</div>
-          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
-            Real-time immutable audit trail for clinical diagnoses, inpatient admissions, and financial settlements.
-          </div>
-        </div>
+        <article class="landing-feature-card landing-feature-teal">
+          <div class="landing-feature-top"><span class="landing-feature-icon"><i class="far fa-calendar-check" aria-hidden="true"></i></span><span class="landing-feature-tag">PLAN YOUR VISIT</span></div>
+          <h2>Smart appointments</h2>
+          <p>Find the right specialist and choose an available time. A simpler way to plan your next visit.</p>
+          <a class="landing-feature-link landing-feature-link-primary" href="{{ url_for('auth.login') }}">Sign in to book</a>
+        </article>
       </div>
-      
       <div class="col-md-4">
-        <div class="text-center px-2">
-          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(16,185,129,0.1); color:var(--hms-success); width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(16,185,129,0.2);"><i class="fas fa-shield-alt"></i></div>
-          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Role-Based Security</div>
-          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
-            Strict routing protocols separating Doctor, Patient, and Admin privileges using session security.
-          </div>
-        </div>
+        <article class="landing-feature-card landing-feature-blue">
+          <div class="landing-feature-top"><span class="landing-feature-icon"><i class="fas fa-user-md" aria-hidden="true"></i></span><span class="landing-feature-tag">FIND YOUR CARE TEAM</span></div>
+          <h2>Specialist directory</h2>
+          <p>Explore our medical specialists and their departments to find the care that’s right for you.</p>
+          <a class="landing-feature-link" href="{{ url_for('main.doctors') }}">Meet our doctors</a>
+        </article>
       </div>
-      
       <div class="col-md-4">
-        <div class="text-center px-2">
-          <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="background:rgba(96,165,250,0.1); color:#60a5fa; width:64px;height:64px;font-size:24px; border-radius: 16px; border: 1px solid rgba(96,165,250,0.2);"><i class="fas fa-network-wired"></i></div>
-          <div style="font-family:'DM Sans'; font-weight:700; color:#fff; font-size: 17px; margin-bottom:10px;">Relational Integrity</div>
-          <div style="font-size:14px; color:rgba(255,255,255,.6); line-height:1.6;">
-            Optimized schemas with foreign key constraints ensuring conflict-free scheduling and bed allocations.
-          </div>
-        </div>
+        <article class="landing-feature-card landing-feature-violet">
+          <div class="landing-feature-top"><span class="landing-feature-icon"><i class="far fa-file-alt" aria-hidden="true"></i></span><span class="landing-feature-tag">KEEP YOUR CARE CLOSE</span></div>
+          <h2>Past records</h2>
+          <p>Your previous visits, clinical notes, and prescriptions, ready whenever you need to revisit them.</p>
+          <a class="landing-feature-link" href="{{ url_for('auth.login') }}">View your records</a>
+        </article>
       </div>
     </div>
-    
-  </div>
+  </section>
+
+  <section class="container landing-capabilities" aria-labelledby="landing-capabilities-title">
+    <div class="landing-capabilities-panel">
+      <div class="landing-capabilities-header"><p class="landing-section-label">THE CARE BEHIND THE EXPERIENCE</p><h2 id="landing-capabilities-title">Thoughtfully built. Seamlessly connected.</h2><p>A clearer experience for patients.<br class="landing-mobile-break"> A smoother day for the people who care for them.</p></div>
+      <div class="row g-4 landing-capability-grid">
+        <div class="col-md-4"><article class="landing-capability"><span class="landing-capability-icon"><i class="fas fa-history" aria-hidden="true"></i></span><h3>Every step, accounted for.</h3><p>Follow key activity across consultations, admissions, and billing in one organized system.</p></article></div>
+        <div class="col-md-4"><article class="landing-capability"><span class="landing-capability-icon"><i class="fas fa-shield-alt" aria-hidden="true"></i></span><h3>The right access. By design.</h3><p>Dedicated workspaces for patients, doctors, and administrators, built around their roles.</p></article></div>
+        <div class="col-md-4"><article class="landing-capability"><span class="landing-capability-icon"><i class="fas fa-network-wired" aria-hidden="true"></i></span><h3>Care that stays connected.</h3><p>Appointments, hospital stays, and payments brought together for a more coordinated experience.</p></article></div>
+      </div>
+    </div>
+  </section>
 </div>
 
 {% endif %}

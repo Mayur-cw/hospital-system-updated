@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: hospital-management-system
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn wsgi:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: APP_ENV
+        value: production
+      - key: DEMO_ONLY
+        value: "true"
+      - key: FLASK_DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true

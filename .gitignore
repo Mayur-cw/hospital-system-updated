@@ -1,6 +1,8 @@
 # Python & Virtualenv
 .venv/
+.venv*/
 venv/
+env/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -15,6 +17,10 @@ instance/
 
 # macOS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 .AppleDouble
 .LSOverride
 
@@ -23,8 +29,9 @@ instance/
 .coverage
 .coverage.*
 htmlcov/
+.ruff_cache/
 
-# Local Environment
+# Local Environment & Secrets
 .env
 !.env.example
 project.env

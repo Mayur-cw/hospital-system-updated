@@ -61,8 +61,8 @@ class Config:
                     "The application refuses to start."
                 )
             db_url = os.environ.get('DATABASE_URL')
-            if not db_url:
+            if not db_url and not cls.DEMO_ONLY:
                 raise RuntimeError(
                     "CRITICAL SECURITY FAILURE: DATABASE_URL environment variable is missing in production mode. "
-                    "Root database defaults are prohibited."
+                    "Root database defaults are prohibited unless DEMO_ONLY is enabled."
                 )
