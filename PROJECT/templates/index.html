@@ -518,7 +518,7 @@ Home | Hospital Management System
   .appt-hover-row:last-child { border-bottom: none; }
 </style>
 
-<div class="container mb-5" style="position: relative; z-index: 10;">
+<div class="container mb-5">
   
   <!-- 🚨 PREMIUM WELCOME BANNER -->
   <div class="patient-banner anim-1">
@@ -697,14 +697,22 @@ Home | Hospital Management System
 
       <!-- Status Notice if Discharge Requested -->
       {% if active_admission.discharge_requested %}
-      <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-3">
-        <i class="fas fa-hourglass-half fa-2x text-warning flex-shrink-0"></i>
-        <div>
-          <strong>Early Discharge Request Under Review:</strong> Your attending physician has been notified. Rounds will be conducted to evaluate vitals and clear departure.
-          {% if active_admission.discharge_notes %}
-          <div class="small text-muted mt-1"><strong>Your Notes:</strong> "{{ active_admission.discharge_notes }}"</div>
-          {% endif %}
+      <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <i class="fas fa-hourglass-half fa-2x text-warning flex-shrink-0"></i>
+          <div>
+            <strong>Early Discharge Request Under Review:</strong> Your attending physician has been notified. Rounds will be conducted to evaluate vitals and clear departure.
+            {% if active_admission.discharge_notes %}
+            <div class="small text-muted mt-1"><strong>Your Notes:</strong> "{{ active_admission.discharge_notes }}"</div>
+            {% endif %}
+          </div>
         </div>
+        <form action="{{ url_for('patient.cancel_discharge_request', admission_id=active_admission.admission_id) }}" method="POST" class="m-0" onsubmit="return confirm('Withdraw your early discharge request and continue monitored inpatient care?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="submit" class="btn btn-sm btn-outline-danger bg-white rounded-pill px-3 py-1 fw-bold shadow-sm">
+            <i class="fas fa-undo me-1"></i> Cancel Request
+          </button>
+        </form>
       </div>
       {% endif %}
 
@@ -717,9 +725,17 @@ Home | Hospital Management System
           <span>Request Early Discharge</span>
         </button>
         {% else %}
-        <button type="button" class="btn btn-secondary rounded-pill px-4 py-2 fw-bold disabled" style="opacity: 0.7;">
-          <i class="fas fa-check-circle me-1"></i> Early Discharge Requested
-        </button>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="badge bg-warning text-dark rounded-pill px-3 py-2 fw-bold shadow-sm">
+            <i class="fas fa-hourglass-half me-1"></i> Early Discharge Requested
+          </span>
+          <form action="{{ url_for('patient.cancel_discharge_request', admission_id=active_admission.admission_id) }}" method="POST" class="d-inline" onsubmit="return confirm('Withdraw your early discharge request and continue monitored inpatient care?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-2 fw-bold shadow-sm">
+              <i class="fas fa-undo me-1"></i> Cancel Request
+            </button>
+          </form>
+        </div>
         {% endif %}
 
         <!-- 2. View Rx / Clinical Record -->
@@ -737,50 +753,6 @@ Home | Hospital Management System
 
     </div>
 
-    <!-- DISCHARGE REQUEST MODAL -->
-    {% if not active_admission.discharge_requested %}
-    <div class="modal fade" id="dischargeRequestModal" tabindex="-1" aria-labelledby="dischargeRequestModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
-          <div class="modal-header bg-dark text-white p-4">
-            <div class="d-flex align-items-center gap-3">
-              <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                <i class="fas fa-sign-out-alt"></i>
-              </div>
-              <div>
-                <h5 class="modal-title fw-bold" id="dischargeRequestModalLabel">Request Early Discharge</h5>
-                <div class="small text-white text-opacity-75">Room {{ active_admission.room.room_number }} &bull; {{ active_admission.room.ward_type }} Ward</div>
-              </div>
-            </div>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <form action="{{ url_for('patient.request_discharge', admission_id=active_admission.admission_id) }}" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <div class="modal-body p-4">
-              <p class="text-muted small mb-3">
-                If you feel recovered before your tentative {{ active_admission.tentative_days or 3 }}-day stay, you can submit an early discharge request. Your attending doctor (<strong class="text-dark">{% if active_admission.doctor.user_account.username.lower().startswith('dr') %}{{ active_admission.doctor.user_account.username }}{% else %}Dr. {{ active_admission.doctor.user_account.username }}{% endif %}</strong>) will conduct bedside rounds to confirm clinical stability.
-              </p>
-              <div class="mb-3">
-                <label for="dischargeNotes" class="form-label fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">
-                  Notes for Attending Physician <span class="text-muted fw-normal text-lowercase">(Optional)</span>
-                </label>
-                <textarea class="form-control rounded-3" id="dischargeNotes" name="notes" rows="3" placeholder="e.g. Feeling much better, fever resolved, transport arranged."></textarea>
-              </div>
-              <div class="p-3 bg-light rounded-3 border small text-muted">
-                <i class="fas fa-shield-alt text-info me-1"></i> Patient Safety Invariant: Discharge is finalized only after physician clinical clearance and final room bill settlement.
-              </div>
-            </div>
-            <div class="modal-footer bg-light p-3 border-top d-flex justify-content-end gap-2">
-              <button type="button" class="btn btn-light rounded-pill px-4 fw-bold border" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
-                <i class="fas fa-paper-plane me-1"></i> Submit Early Request
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-    {% endif %}
     {% endif %}
   {% elif unpaid_bills %}
     <!-- 💳 STAGE: UNPAID BILLS / OUTSTANDING HOSPITAL DUES -->
@@ -972,6 +944,51 @@ Home | Hospital Management System
   .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
   .hover-lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-md) !important; }
 </style>
+
+{% if active_admission and not active_admission.discharge_requested %}
+<!-- DISCHARGE REQUEST MODAL (Global placement to avoid stacking context clipping) -->
+<div class="modal fade" id="dischargeRequestModal" tabindex="-1" aria-labelledby="dischargeRequestModalLabel" aria-hidden="true" style="z-index: 1060;">
+  <div class="modal-dialog modal-dialog-centered" style="z-index: 1065;">
+    <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+      <div class="modal-header bg-dark text-white p-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="fas fa-sign-out-alt"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold" id="dischargeRequestModalLabel">Request Early Discharge</h5>
+            <div class="small text-white text-opacity-75">Room {{ active_admission.room.room_number if active_admission.room else '' }} &bull; {{ active_admission.room.ward_type if active_admission.room else '' }} Ward</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('patient.request_discharge', admission_id=active_admission.admission_id) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="modal-body p-4">
+          <p class="text-muted small mb-3">
+            If you feel recovered before your tentative {{ active_admission.tentative_days or 3 }}-day stay, you can submit an early discharge request. Your attending doctor (<strong class="text-dark">{% if active_admission.doctor and active_admission.doctor.user_account %}{% if active_admission.doctor.user_account.username.lower().startswith('dr') %}{{ active_admission.doctor.user_account.username }}{% else %}Dr. {{ active_admission.doctor.user_account.username }}{% endif %}{% else %}Attending Physician{% endif %}</strong>) will conduct bedside rounds to confirm clinical stability.
+          </p>
+          <div class="mb-3">
+            <label for="dischargeNotes" class="form-label fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">
+              Notes for Attending Physician <span class="text-muted fw-normal text-lowercase">(Optional)</span>
+            </label>
+            <textarea class="form-control rounded-3" id="dischargeNotes" name="notes" rows="3" placeholder="e.g. Feeling much better, fever resolved, transport arranged."></textarea>
+          </div>
+          <div class="p-3 bg-light rounded-3 border small text-muted">
+            <i class="fas fa-shield-alt text-info me-1"></i> Patient Safety Invariant: Discharge is finalized only after physician clinical clearance and final room bill settlement.
+          </div>
+        </div>
+        <div class="modal-footer bg-light p-3 border-top d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-light rounded-pill px-4 fw-bold border" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
+            <i class="fas fa-paper-plane me-1"></i> Submit Early Request
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- =========================================================== -->
 <!-- 🏥 PUBLIC / LOGGED OUT VIEW (ORIGINAL CLEAN LANDING)        -->

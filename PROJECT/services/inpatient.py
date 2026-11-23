@@ -207,18 +207,55 @@ class InpatientService:
         admission.discharge_requested = True
         admission.discharge_requested_at = datetime.now()
         admission.discharge_rejection_reason = None
-        if notes:
-            admission.discharge_notes = notes.strip()
+        admission.discharge_notes = notes.strip() if notes else None
             
+        room_no = admission.room.room_number if admission.room else 'N/A'
+        actor_name = patient_user.username if patient_user else 'Patient'
         audit = AuditLog(
             apt_id=admission.apt_id,
             user_id=patient_user.id,
-            action=f"DISCHARGE REQUESTED by Patient {patient_user.username} (Room: {admission.room.room_number})",
+            action=f"DISCHARGE REQUESTED by Patient {actor_name} (Room: {room_no})",
             timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         )
         db.session.add(audit)
         db.session.commit()
         return True, "Your early discharge request has been submitted to your attending medical team. Clearance rounds will be conducted shortly."
+
+    @staticmethod
+    def cancel_discharge_request(admission_id, patient_user):
+        """
+        Patient-initiated withdrawal/cancellation of a pending early discharge request.
+        """
+        admission = Admission.query.get(admission_id)
+        if not admission:
+            return False, "Admission record not found."
+            
+        if admission.patient_id != patient_user.id:
+            return False, "Access Denied: You cannot cancel discharge requests for another patient."
+            
+        if admission.status == 'Discharged':
+            return False, "Patient is already discharged from this inpatient stay."
+            
+        if admission.status == 'Billing Pending':
+            return False, "Your discharge has already been approved by your doctor. Please proceed with billing settlement."
+            
+        if not admission.discharge_requested:
+            return False, "No active early discharge request to cancel."
+            
+        admission.discharge_requested = False
+        admission.discharge_notes = None
+        
+        room_no = admission.room.room_number if admission.room else 'N/A'
+        actor_name = patient_user.username if patient_user else 'Patient'
+        audit = AuditLog(
+            apt_id=admission.apt_id,
+            user_id=patient_user.id,
+            action=f"EARLY DISCHARGE CANCELLED by Patient {actor_name} (Room: {room_no}). Continuous inpatient care active.",
+            timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        )
+        db.session.add(audit)
+        db.session.commit()
+        return True, "Early discharge request cancelled. Monitored inpatient care remains active."
 
     @staticmethod
     def get_or_create_interim_bill(admission_id):

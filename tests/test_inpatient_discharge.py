@@ -99,3 +99,51 @@ def test_t_disch_002_patient_discharge_request_and_interim_bill(app_no_csrf):
         assert adm.discharge_requested is False
         assert room.status == 'Available'
 
+
+def test_t_disch_003_patient_cancel_discharge_request_lifecycle(app_no_csrf):
+    """
+    T-DISCH-003: Patient can cancel/withdraw their pending early discharge request,
+    retaining active monitored inpatient care status.
+    """
+    with app_no_csrf.app_context():
+        patient = User.query.get(4)
+        unrelated_user = User.query.get(1) # Admin
+        room = Room.query.get(2)
+        room.status = 'Occupied'
+
+        adm = Admission(
+            apt_id=3,
+            patient_id=patient.id,
+            doctor_id=1,
+            room_id=room.room_id,
+            admission_date=datetime.now() - timedelta(days=1),
+            status='Admitted'
+        )
+        db.session.add(adm)
+        db.session.commit()
+
+        # Step 1: Patient requests discharge
+        ok, msg = InpatientService.request_discharge(adm.admission_id, patient, "Feel better")
+        assert ok is True
+        assert adm.discharge_requested is True
+        assert adm.discharge_notes == "Feel better"
+
+        # Step 2: Unrelated user cannot cancel request
+        bad_cancel, bad_msg = InpatientService.cancel_discharge_request(adm.admission_id, unrelated_user)
+        assert bad_cancel is False
+        assert "Access Denied" in bad_msg
+        assert adm.discharge_requested is True
+
+        # Step 3: Patient cancels their own early discharge request
+        cancel_ok, cancel_msg = InpatientService.cancel_discharge_request(adm.admission_id, patient)
+        assert cancel_ok is True
+        assert adm.discharge_requested is False
+        assert adm.discharge_notes is None
+        assert "cancelled" in cancel_msg.lower()
+
+        # Step 4: Redundant cancel returns error
+        again_ok, again_msg = InpatientService.cancel_discharge_request(adm.admission_id, patient)
+        assert again_ok is False
+        assert "No active early discharge request" in again_msg
+
+

@@ -111,7 +111,10 @@ def dashboard():
         query = Appointments.query.filter_by(doctor=current_user.username).all()
     else:
         query = Appointments.query.filter_by(user_id=current_user.id).all()
-        active_admission = Admission.query.filter_by(patient_id=current_user.id, status='Admitted').first()
+        active_admission = Admission.query.filter(
+            Admission.patient_id == current_user.id,
+            Admission.status.in_(['Admitted', 'Billing Pending'])
+        ).order_by(Admission.admission_date.desc()).first()
     
     query.sort(key=lambda x: datetime.strptime(f"{x.date} {x.time}", '%Y-%m-%d %I:%M %p'), reverse=True)
     records = MedicalRecord.query.all()
@@ -136,7 +139,10 @@ def upcoming_bookings():
             Appointments.user_id == current_user.id, 
             Appointments.date >= str(today)
         ).all()
-        active_admission = Admission.query.filter_by(patient_id=current_user.id, status='Admitted').first()
+        active_admission = Admission.query.filter(
+            Admission.patient_id == current_user.id,
+            Admission.status.in_(['Admitted', 'Billing Pending'])
+        ).order_by(Admission.admission_date.desc()).first()
     
     records = MedicalRecord.query.all()
     prescribed_apt_ids = [r.apt_id for r in records]
@@ -259,7 +265,7 @@ def view_receipt(bill_id):
 def request_discharge(admission_id):
     if current_user.usertype != 'Patient':
         flash("Unauthorized action.", "danger")
-        return redirect(url_for('main.index'))
+        return redirect(request.referrer or url_for('main.index'))
 
     notes = request.form.get('notes', '').strip()
     success, message = InpatientService.request_discharge(
@@ -268,7 +274,22 @@ def request_discharge(admission_id):
         notes=notes
     )
     flash(message, "success" if success else "warning")
-    return redirect(url_for('main.index'))
+    return redirect(request.referrer or url_for('main.index'))
+
+
+@patient_bp.route('/cancel_discharge_request/<int:admission_id>', methods=['POST'])
+@login_required
+def cancel_discharge_request(admission_id):
+    if current_user.usertype != 'Patient':
+        flash("Unauthorized action.", "danger")
+        return redirect(request.referrer or url_for('main.index'))
+
+    success, message = InpatientService.cancel_discharge_request(
+        admission_id=admission_id,
+        patient_user=current_user
+    )
+    flash(message, "success" if success else "warning")
+    return redirect(request.referrer or url_for('main.index'))
 
 
 @patient_bp.route('/inpatient_pay/<int:admission_id>')
